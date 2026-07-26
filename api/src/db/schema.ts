@@ -1,0 +1,143 @@
+import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+
+// ── better-auth tables ──────────────────────────────────────────────────────
+// Standard better-auth shapes. If a better-auth upgrade changes them, regenerate
+// with `npx @better-auth/cli generate` and diff against this file.
+
+export const user = sqliteTable('user', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  email: text('email').notNull().unique(),
+  emailVerified: integer('email_verified', { mode: 'boolean' }).notNull().default(false),
+  image: text('image'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const session = sqliteTable('session', {
+  id: text('id').primaryKey(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  token: text('token').notNull().unique(),
+  ipAddress: text('ip_address'),
+  userAgent: text('user_agent'),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const account = sqliteTable('account', {
+  id: text('id').primaryKey(),
+  accountId: text('account_id').notNull(),
+  providerId: text('provider_id').notNull(),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  idToken: text('id_token'),
+  accessTokenExpiresAt: integer('access_token_expires_at', { mode: 'timestamp' }),
+  refreshTokenExpiresAt: integer('refresh_token_expires_at', { mode: 'timestamp' }),
+  scope: text('scope'),
+  password: text('password'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const verification = sqliteTable('verification', {
+  id: text('id').primaryKey(),
+  identifier: text('identifier').notNull(),
+  value: text('value').notNull(),
+  expiresAt: integer('expires_at', { mode: 'timestamp' }).notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp' }),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }),
+})
+
+// ── App tables ──────────────────────────────────────────────────────────────
+
+/**
+ * Membership is allowlisted: signing in with Google/Facebook creates a `user`
+ * row, but authenticated content is served only when a matching (by email)
+ * member row exists. Admins add the 100 families here.
+ */
+export const member = sqliteTable('member', {
+  id: text('id').primaryKey(),
+  email: text('email').notNull().unique(),
+  displayName: text('display_name').notNull(),
+  role: text('role', { enum: ['member', 'committee', 'admin'] })
+    .notNull()
+    .default('member'),
+  portfolio: text('portfolio'), // e.g. "Treasurer" — committee only
+  familyName: text('family_name'),
+  phone: text('phone'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const event = sqliteTable('event', {
+  id: text('id').primaryKey(), // "durga-pujo-2026"
+  kind: text('kind').notNull(),
+  year: integer('year').notNull(),
+  nameBn: text('name_bn').notNull(),
+  nameEn: text('name_en').notNull(),
+  startsOn: text('starts_on').notNull(),
+  endsOn: text('ends_on').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
+})
+
+export const notice = sqliteTable('notice', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id').references(() => event.id),
+  title: text('title').notNull(),
+  body: text('body').notNull(), // markdown
+  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
+  publishedAt: integer('published_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const timetableEntry = sqliteTable('timetable_entry', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id),
+  title: text('title').notNull(),
+  detail: text('detail'),
+  startsAt: text('starts_at').notNull(), // ISO datetime
+  endsAt: text('ends_at'),
+  venue: text('venue'),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+export const galleryItem = sqliteTable('gallery_item', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id').references(() => event.id),
+  kind: text('kind', { enum: ['photo', 'video'] }).notNull(),
+  ref: text('ref').notNull(), // Drive file id or YouTube video id
+  caption: text('caption'),
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+export const budgetLine = sqliteTable('budget_line', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id),
+  category: text('category').notNull(), // "Pandal", "Protima", "Bhog", "Music"...
+  item: text('item').notNull(),
+  budgeted: integer('budgeted').notNull(), // paise-free: whole rupees
+  actual: integer('actual'),
+  notes: text('notes'),
+})
+
+export const procurementItem = sqliteTable('procurement_item', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id),
+  item: text('item').notNull(),
+  quantity: text('quantity'),
+  status: text('status', { enum: ['needed', 'ordered', 'received'] })
+    .notNull()
+    .default('needed'),
+  assignee: text('assignee'),
+  notes: text('notes'),
+})

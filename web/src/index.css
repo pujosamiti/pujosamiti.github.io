@@ -1,0 +1,129 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * লাল-পাড় সাদা — the pujosamiti visual identity.
+ * Light: white sari ground with sindoor red. Dark: dhunuchi night.
+ * Every colour is named for what it is in the pujo world; see docs/design.md.
+ */
+:root {
+  --radius: 0.625rem;
+
+  /* shadcn tokens */
+  --background: #ffffff; /* shada — pure white */
+  --foreground: #2b1a10; /* kali — warm ink */
+  --card: #ffffff; /* kash */
+  --card-foreground: #2b1a10;
+  --popover: #ffffff;
+  --popover-foreground: #2b1a10;
+  --primary: #e10d11; /* sindoor */
+  --primary-foreground: #ffffff;
+  --secondary: #efa51e; /* genda — never used as text colour */
+  --secondary-foreground: #3a2504;
+  --muted: #f5eee1;
+  --muted-foreground: #6b5340;
+  --accent: #f8efdf; /* quiet warm hover surface */
+  --accent-foreground: #2b1a10;
+  --destructive: #99090c; /* rokto */
+  --destructive-foreground: #ffffff;
+  --border: #ece3d4;
+  --input: #ece3d4;
+  --ring: #e10d11;
+
+  /* pujo-specific tokens */
+  --genda: #efa51e;
+  --shiuli: #d96410;
+  --matir: #9a5732;
+  --sharat: #2e6e8e; /* info states in admin tables only */
+  --band: #e10d11; /* sindoor header bands carrying white alpona */
+  --band-foreground: #ffffff;
+  --jaba: #d70000; /* hibiscus — hover/pressed red */
+  --palash: #eb0000; /* flame of the forest — vivid highlight, small doses */
+}
+
+.dark {
+  --background: #191008;
+  --foreground: #f2e6d0;
+  --card: #241811;
+  --card-foreground: #f2e6d0;
+  --popover: #241811;
+  --popover-foreground: #f2e6d0;
+  --primary: #ff5a52;
+  --primary-foreground: #2a0b06;
+  --secondary: #f2b440;
+  --secondary-foreground: #3a2504;
+  --muted: #2b1d13;
+  --muted-foreground: #c4ae92;
+  --accent: #2e2013;
+  --accent-foreground: #f2e6d0;
+  --destructive: #ff928c;
+  --destructive-foreground: #2a0b06;
+  --border: #3d2c1e;
+  --input: #3d2c1e;
+  --ring: #ff5a52;
+
+  --genda: #f2b440;
+  --shiuli: #e88a34;
+  --matir: #b97a4c;
+  --sharat: #6fa8c4;
+  --band: #99090c;
+  --band-foreground: #ffffff;
+  --jaba: #e5322c;
+  --palash: #ff4c42;
+}
+
+@theme inline {
+  --font-sans: 'Hind Siliguri', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Noto Serif Bengali', Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-genda: var(--genda);
+  --color-shiuli: var(--shiuli);
+  --color-matir: var(--matir);
+  --color-sharat: var(--sharat);
+  --color-band: var(--band);
+  --color-band-foreground: var(--band-foreground);
+  --color-jaba: var(--jaba);
+  --color-palash: var(--palash);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-serif;
+    text-wrap: balance;
+  }
+}

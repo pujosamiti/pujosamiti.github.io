@@ -1,0 +1,17 @@
+{
+  "name": "পুজো সমিতি · Magarpatta",
+  "short_name": "পুজো সমিতি",
+  "description": "Durga Puja and year-round Bengali festivals with the probasi community of Magarpatta City, Pune",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#E10D11",
+  "icons": [
+    {
+      "src": "favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

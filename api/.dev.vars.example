@@ -1,0 +1,22 @@
+# Copy to .dev.vars for local dev. In production set each with `wrangler secret put <NAME>`.
+
+# better-auth
+BETTER_AUTH_SECRET=generate-a-long-random-string
+BETTER_AUTH_URL=http://localhost:8787
+
+# Google OAuth (console.cloud.google.com → Credentials → OAuth client)
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=
+
+# Facebook Login (developers.facebook.com → your app)
+FACEBOOK_CLIENT_ID=
+FACEBOOK_CLIENT_SECRET=
+
+# Service account for Sheets/Drive (share the sheet & Drive folders with this email)
+GOOGLE_SERVICE_ACCOUNT_EMAIL=
+# PKCS8 private key from the service-account JSON, newlines escaped as \n
+GOOGLE_SERVICE_ACCOUNT_KEY=
+
+# Data locations
+ACCOUNTS_SHEET_ID=
+CONTENT_DRIVE_FOLDER_ID=

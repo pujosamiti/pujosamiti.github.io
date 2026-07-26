@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Pujo Samiti</title>
+    <script>
+      // GitHub Pages SPA fallback: stash the deep link and bounce to the app root,
+      // where main.tsx's router restores it. Works for both / and /<repo>/ bases.
+      const segments = location.pathname.split('/').filter(Boolean)
+      const base = segments.length > 1 ? `/${segments[0]}/` : '/'
+      sessionStorage.setItem('spa-redirect', location.pathname + location.search + location.hash)
+      location.replace(base)
+    </script>
+  </head>
+  <body></body>
+</html>

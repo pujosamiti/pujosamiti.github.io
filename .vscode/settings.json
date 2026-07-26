@@ -1,0 +1,36 @@
+{
+  // Line endings & whitespace — mirrors .editorconfig so behavior is identical
+  // even before the EditorConfig extension is installed (esp. on Windows)
+  "files.eol": "\n",
+
+  // Use Material icons once pkief.material-icon-theme is installed
+  "workbench.iconTheme": "material-icon-theme",
+  "files.insertFinalNewline": true,
+  "editor.insertSpaces": true,
+  "editor.tabSize": 2,
+
+  // Always use the repo's TypeScript (v7), not the one bundled with VS Code
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+
+  "files.associations": {
+    "wrangler.jsonc": "jsonc",
+    ".dev.vars*": "properties"
+  },
+
+  // Tailwind v4 at-rules (@theme, @plugin, @custom-variant) aren't known to
+  // the built-in CSS language server
+  "css.lint.unknownAtRules": "ignore",
+  "tailwindCSS.classFunctions": ["cn", "clsx", "cva", "twMerge"],
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.wrangler": true,
+    "api/drizzle/meta": true
+  },
+  "files.watcherExclude": {
+    "**/.wrangler/**": true,
+    "**/dist/**": true
+  }
+}

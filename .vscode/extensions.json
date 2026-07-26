@@ -1,0 +1,21 @@
+{
+  "recommendations": [
+    // Applies .editorconfig (LF, 2-space indent, final newline) on every save
+    "editorconfig.editorconfig",
+    // oxlint — the linter used by the web workspace (npm run lint -w web)
+    "oxc.oxc-vscode",
+    // Tailwind v4 IntelliSense (CSS-first config in web/src/index.css)
+    "bradlc.vscode-tailwindcss",
+    // Lint/validate the deploy workflows in .github/workflows
+    "github.vscode-github-actions",
+    // File/folder icons (activated via workbench.iconTheme in settings.json)
+    "pkief.material-icon-theme",
+    // Export markdown docs (e.g. docs/) to PDF
+    "yzane.markdown-pdf"
+  ],
+  "unwantedRecommendations": [
+    // This repo uses oxlint + EditorConfig; ESLint/Prettier would fight them
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}

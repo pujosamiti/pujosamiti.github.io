@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "pujosamiti-api",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-07-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "pujosamiti",
+      // Replace after `wrangler d1 create pujosamiti`
+      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "migrations_dir": "drizzle"
+    }
+  ],
+  // Uncomment after `wrangler r2 bucket create pujosamiti-files`
+  // "r2_buckets": [{ "binding": "FILES", "bucket_name": "pujosamiti-files" }],
+  "vars": {
+    // Public, non-secret config. Secrets go in .dev.vars locally and
+    // `wrangler secret put` in production — see .dev.vars.example.
+    // Production value: "https://pujosamiti.github.io" (CORS + auth trusted origin).
+    "WEB_ORIGIN": "http://localhost:5173"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "name": "pujosamiti",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Durga Puja committee app for the probasi bengali community of Magarpatta City, Pune",
+  "engines": {
+    "node": ">=24"
+  },
+  "workspaces": [
+    "shared",
+    "web",
+    "api"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run dev -w api",
+    "build": "npm run build -w shared -w web -w api --if-present",
+    "typecheck": "npm run typecheck -w shared -w web -w api --if-present",
+    "outdated": "npm outdated"
+  }
+}
