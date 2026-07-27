@@ -8,8 +8,7 @@
     {
       "binding": "DB",
       "database_name": "pujosamiti",
-      // Replace after `wrangler d1 create pujosamiti`
-      "database_id": "REPLACE_WITH_D1_DATABASE_ID",
+      "database_id": "ecdf8218-2679-4866-abde-57d405d5efb2",
       "migrations_dir": "drizzle"
     }
   ],
@@ -18,7 +17,7 @@
   "vars": {
     // Public, non-secret config. Secrets go in .dev.vars locally and
     // `wrangler secret put` in production — see .dev.vars.example.
-    // Production value: "https://pujosamiti.github.io" (CORS + auth trusted origin).
-    "WEB_ORIGIN": "http://localhost:5173"
+    // Local dev overrides this via WEB_ORIGIN in .dev.vars (CORS + auth trusted origin).
+    "WEB_ORIGIN": "https://pujosamiti.github.io"
   }
 }
