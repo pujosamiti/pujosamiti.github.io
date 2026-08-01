@@ -1,6 +1,9 @@
-# DB schema v2 — full design (single migration, no phases)
+# DB schema v2 — design notes
 
-Derived from the 2020–2025 archive crunch plus these settled decisions:
+Derived from the 2020–2025 archive crunch. Being built **feature by feature** —
+each section lands as its own migration when its feature ships; unimplemented
+sections are reference sketches, expected to be refined right before building.
+Settled decisions:
 
 - **Sponsorships are separate generosity** — only the Durga Pujo subscription
   (≥ threshold, ₹10,000 today) confers core tier. Threshold is a shared
@@ -22,23 +25,31 @@ Derived from the 2020–2025 archive crunch plus these settled decisions:
 
 ### Membership
 
+✅ **Implemented** (migrations `0001_add-family-person`, `0002_drop-member`):
+
 ```
 family
   id, name, society, residence_detail,
   workplace, workplace_detail,           -- for works-in-MGP families
-  eligibility  enum: resident | works_in_mgp
-  tier         enum: member | core       -- cached; derived from subscriptions
+  eligibility  enum: resident | works_in_mgp   (default resident)
+  tier         enum: non_member | member | core   (default non_member; cached,
+                                          -- derived from Durga Pujo subscription)
   phone, notes, is_active, created_at
 
-person                                   -- replaces `member`
+person                                   -- replaced `member`
   id, family_id FK, display_name,
   email UNIQUE NULL,                     -- login key; NULL = no-Google member
   phone, gender NULL,                    -- mahila-volunteer scheduling
   is_admin bool,
-  is_wallet bool,                        -- current wallet-holder (collector)
   portfolio TEXT NULL,                   -- free text
-  created_at
+  notes, created_at
 ```
+
+Access rule as implemented: session email → person (family joined); denied
+unless family `is_active` and tier ≠ `non_member`. Role in the API contract:
+`admin` if `person.is_admin`, else `committee` for core-tier families, else
+`member`. Wallet-holders are not flagged on person — collector attribution
+lives on future money tables.
 
 ### Money
 
