@@ -36,15 +36,21 @@ export const MAGARPATTA_SOCIETIES = [
 /** Workplace buildings, grouped the way locals refer to them. */
 export const MAGARPATTA_WORKPLACE_GROUPS = [
   {
+    // 1–12 (Wikipedia), 14/15/16 individually verified (16 = Principal Global
+    // Services). No evidence found of a "Tower 13" — likely skipped; add it if
+    // a resident confirms it exists.
     group: 'Cybercity Towers',
-    options: Array.from({ length: 15 }, (_, i) => `Tower ${i + 1}`),
+    options: Array.from({ length: 16 }, (_, i) => `Tower ${i + 1}`).filter(
+      (t) => t !== 'Tower 13',
+    ),
   },
   {
     group: 'Pentagon Towers',
     options: Array.from({ length: 5 }, (_, i) => `Pentagon P${i + 1}`),
   },
   {
-    // Distinct from the SEZ buildings below.
+    // Distinct from the SEZ buildings below. S3/S4 verified via registered
+    // company addresses; S1/S2 unverified — trim if locals say they don't exist.
     group: 'S Towers',
     options: ['Tower S1', 'Tower S2', 'Tower S3', 'Tower S4'],
   },
