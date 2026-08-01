@@ -1,168 +1,190 @@
-# DB schema v2 — proposal from the 2020–2025 data crunch
+# DB schema v2 — full design (single migration, no phases)
 
-Derived from reading all six years of samiti Drive folders (every sheet tab and
-document). Status: **proposal, not yet implemented**. The current `member`
-table gets replaced; everything else in the current schema survives.
+Derived from the 2020–2025 archive crunch plus these settled decisions:
 
-## What six years of operations actually contain
+- **Sponsorships are separate generosity** — only the Durga Pujo subscription
+  (≥ threshold, ₹10,000 today) confers core tier. Threshold is a shared
+  constant, not schema.
+- **No bank account.** All cash sits with 4–5 **wallet-holders** — core
+  members acting as collectors ("wallets"). No bank/UPI account modeling.
+- **Books are per event**, except Durga Pujo + Kojagari Lakshmi Puja which
+  always share one book. Event kinds are fixed to the current five
+  (`EVENT_KINDS` in shared) — adding a kind is a code change, by design.
+- **Everything lives in D1**, including Puja Essentials. Google Sheets become
+  generated read-only mirrors (write-through + nightly reconciler); documents
+  (coupons, nirghanto, PMC/police letters) are generated from DB data.
+- **History back to 2020 gets imported** (one-time ETL with per-year totals
+  reconciled against the original sheets).
 
-Every workflow the samiti has run, found in the archives:
+## Table inventory
 
-| # | Workflow | Seen in | Today's tool |
-| - | --- | --- | --- |
-| 1 | Membership & families (tier, society, subscription status) | 2020→2025 | sheet tab per year |
-| 2 | Contributions (per event, collector attribution, carry-forward) | 2020→2025 | sheet tabs |
-| 3 | Sponsorship catalog (item, patron, received-by, multi-event items) | 2022→2025 | sheet tab |
-| 4 | Double-entry-ish ledger (credit/debit/internal transfer, collector wallets, sub-project ledgers) | 2021→2025 | sheet tabs |
-| 5 | Budget with prior-year actual vs projection + reasons | 2021→2025 | sheet tab |
-| 6 | Procurement (categories, day-wise morning/evening quantities, status) | 2022→2025 | sheet + doc |
-| 7 | Puja essentials / fordo (ritual sections, purohit-vs-committee owner) | 2022 only (!) | sheet tab |
-| 8 | Nirghanto / timetable (bilingual, template + yearly times) | every year | doc (template since 2024) |
-| 9 | Food/bhog coupons (per family per day counts, per-plate rates, printed numbered coupons) | 2024→2025 | sheet + docx |
-| 10 | Event RSVP with veg/non-veg headcounts (Vijaya Sammilani, Poila Baishakh) | 2023→2024 | sheet tabs |
-| 11 | Volunteer slots per ritual (incl. gendered slots, Mahila attendance schedule) | 2020→2022, then dropped | sheets |
-| 12 | Task list (owner 1/2, due date, status) | 2022→2025 | sheet tab, then doc |
-| 13 | Vendor list | 2022 | sheet tab (mostly empty) |
-| 14 | Paperwork (police application Q&A, PMC intimation — Marathi letters, yearly) | every year | docs/PDFs in Drive |
-| 15 | Small-event books (Saraswati, Poila Baishakh: contributions + bhog counts + expenses) | 2023→2025 | separate sheets |
-| 16 | Comms & assets (WhatsApp poster, invitation cards, stamps, banners, dhak mp3s) | every year | Drive files |
+**Auth (better-auth, unchanged):** `user`, `session`, `account`, `verification`.
 
-Key historical facts encoded in the design:
-- The ₹10,000 core-membership threshold dates to 2022 (founding families ×
-  ₹10,000 pool). 2020–21 had flat ₹4,000 contributions. Amounts change — they
-  are data, not schema.
-- Membership formalized in 2023 (`core-members-details`: family couple-name +
-  society + subscription status) and legally via the registered society
-  ("Magarpatta Bangiya Parishad", Societies Registration Act 1860 — classes:
-  Life / Ordinary members).
-- Collector attribution ("Collected By" / "Received By" / wallet) appears in
-  every money record since 2020 — it is a first-class concept.
-- Sponsorship items are a *catalog defined before patrons attach* (2023→2025),
-  and one item can span multiple events (2025 murti covered Durga + Lakshmi +
-  Saraswati pujo).
-- Annual books chain by carry-forward (verified consistent 2021→2025).
-- 2024 ran a sub-project ledger (music system) with its own collectors.
-
-## Phase 1 — replaces `member`, unblocks membership + money features
+### Membership
 
 ```
 family
-  id TEXT PK
-  name TEXT                     -- "Sudeshna & Mousum" style couple/family name
-  society TEXT                  -- from shared locations list, or free text
-  residence_detail TEXT         -- flat no
-  workplace TEXT                -- tower, for works-in-MGP families
-  workplace_detail TEXT         -- company name
-  eligibility TEXT enum: resident | works_in_mgp
-  tier TEXT enum: member | core -- cached; derived from contributions (see rule)
-  phone TEXT
-  notes TEXT                    -- e.g. "including parents from both sides"
-  is_active INTEGER bool
+  id, name, society, residence_detail,
+  workplace, workplace_detail,           -- for works-in-MGP families
+  eligibility  enum: resident | works_in_mgp
+  tier         enum: member | core       -- cached; derived from subscriptions
+  phone, notes, is_active, created_at
+
+person                                   -- replaces `member`
+  id, family_id FK, display_name,
+  email UNIQUE NULL,                     -- login key; NULL = no-Google member
+  phone, gender NULL,                    -- mahila-volunteer scheduling
+  is_admin bool,
+  is_wallet bool,                        -- current wallet-holder (collector)
+  portfolio TEXT NULL,                   -- free text
   created_at
-
-person                          -- replaces `member`; email nullable = manual members
-  id TEXT PK
-  family_id FK -> family
-  display_name TEXT
-  email TEXT UNIQUE NULL        -- login match key; NULL for no-Google members
-  phone TEXT
-  gender TEXT NULL              -- some rituals schedule mahila volunteers
-  is_admin INTEGER bool
-  portfolio TEXT NULL           -- free text by decision
-  created_at
-
-contribution                    -- all money IN, any event
-  id TEXT PK
-  family_id FK NULL             -- NULL for anonymous (dan peti / hundi)
-  source TEXT NULL              -- "Big Dan Peti", "Named envelope" when anonymous
-  event_id FK -> event
-  kind TEXT enum: subscription | sponsorship | donation
-  sponsorship_item_id FK NULL   -- set when kind = sponsorship
-  amount INTEGER                -- whole rupees
-  collected_by FK -> person NULL
-  method TEXT NULL              -- cash | upi | bank
-  paid_on TEXT
-  receipt_no TEXT
-  notes TEXT
-
-sponsorship_item                -- the catalog, defined before patrons exist
-  id TEXT PK
-  year INTEGER
-  event_id FK NULL              -- NULL = season-wide (e.g. murti for all pujos)
-  type TEXT                     -- Bhog | Murti | Dhak | Stage | Puja Item | ...
-  item TEXT                     -- "Full day bhog 2", "Murti Moncha"
-  amount INTEGER
-  patron_family_id FK NULL
-  patron_name TEXT NULL         -- for non-family patrons
-  referred_by TEXT
-  status TEXT enum: open | committed | received
-  is_public INTEGER bool        -- show on sponsors board
-  notes TEXT
 ```
 
-**Tier rule**: family is `core` for a membership year (Durga Pujo → next
-Durga Pujo) iff it has a `kind=subscription` contribution on that year's
-durga-pujo event ≥ threshold (constant in shared config; ₹10,000 today).
-Open question: whether large sponsorships alone confer core (2022 practice
-suggests subscription-only; pending decision).
-
-**Access rule**: session email → `person.email` → member access;
-`family.tier = core` → committee content; `person.is_admin` → admin screens.
-
-## Phase 2 — designed now, built when the feature ships
+### Money
 
 ```
-ledger_txn        -- replaces fin_accounting when the treasurer UI is ready
-  id, year, date, description, kind enum: credit | debit | internal
-  from_wallet FK -> person NULL, from_text NULL   -- text for vendors/external
-  to_wallet FK -> person NULL, to_text NULL
-  amount, expense_category, expense_subcategory
-  event_id FK NULL, project TEXT NULL             -- "music-system" style sub-ledgers
-  notes
-  -- opening balance = one carry-forward credit txn per year
+ledger_book                              -- one set of books; carry-forward chains books
+  id            -- "durga-kojagari-2025", "saraswati-pujo-2025"
+  year, name,
+  opening_balance INTEGER                -- carry-forward in (₹)
 
-bhog_day          -- per-day bhog pricing for an event
-  id, event_id, date, label ("Nabami"), per_plate INTEGER, extras TEXT
-bhog_coupon       -- per-family booking; printed coupons derive from count
-  id, bhog_day_id, family_id, count, amount, paid bool, collected_by FK NULL
+event (existing table, gains:)
+  ledger_book_id FK                      -- DP + KLP of a year share one book
+  purohit_name NULL, purohit_phone NULL  -- nirghanto header data
 
-rsvp              -- Vijaya Sammilani / Poila Baishakh pattern
-  id, event_id, family_id, headcount_veg, headcount_nonveg,
-  amount, collected_by FK NULL, contact_person TEXT, status
+contribution                             -- money IN: who gave, why
+  id, family_id FK NULL,                 -- NULL = anonymous (dan peti / hundi)
+  source NULL,                           -- "Big Dan Peti" etc. when anonymous
+  event_id FK,                           -- per-event contribution ledgers
+  kind enum: subscription | sponsorship | donation,
+  sponsorship_item_id FK NULL,
+  amount, collected_by FK->person NULL,  -- which wallet received it
+  paid_on, receipt_no, notes,
+  status enum: committed | received
 
-volunteer_slot    -- restores the lost 2020–22 workflow
-  id, event_id, date, activity, time_from, time_to, needed INTEGER,
-  gender_pref TEXT NULL
+sponsorship_item                         -- catalog defined before patrons attach
+  id, year, event_id FK NULL,            -- NULL = season-wide (murti for all pujos)
+  type,                                  -- Bhog | Murti | Dhak | Stage | Puja Item…
+  item, amount,
+  patron_family_id FK NULL, patron_name NULL,
+  referred_by, received_by FK->person NULL,
+  status enum: open | committed | received,
+  is_public bool, notes
+
+ledger_txn                               -- money MOVEMENT between hands
+  id, book_id FK->ledger_book,
+  event_id FK NULL,                      -- finer tagging inside a clubbed book
+  date, description,
+  kind enum: credit | debit | internal,  -- internal = wallet→wallet transfer
+  from_person FK NULL, from_text NULL,   -- text for vendors/external parties
+  to_person FK NULL,   to_text NULL,
+  amount,
+  category, subcategory,                 -- canonical taxonomy
+  category_raw NULL,                     -- original label from imported history
+  project NULL,                          -- sub-ledgers ("music-system")
+  contribution_id FK NULL,               -- auto-created credit ← contribution
+  entered_by FK NULL, notes
+```
+
+Rules enforced in the app layer:
+- Marking a contribution `received` auto-creates the matching `ledger_txn`
+  credit (linked via `contribution_id`).
+- Reconciliation query per book: credits minus non-contribution credits must
+  equal received contributions. Import ETL must reproduce each historical
+  year's sheet totals exactly.
+- Wallet balances are derived (per person: credits − debits ± internals), not
+  stored — the `fin_masterdata` view becomes a query.
+
+### Operations (per event)
+
+```
+budget_line (existing, unchanged)        -- budgeted = projection; prior actual queryable
+
+procurement_item (existing, gains day-wise needs via child:)
+procurement_need
+  id, procurement_item_id FK,
+  day_label,                             -- "Saptami"
+  slot enum: morning | noon | evening,
+  quantity TEXT                          -- "250/500 gm", "2 set" — units are free text
+
+bhog_day                                 -- per-day bhog pricing
+  id, event_id FK, date, label, per_plate INTEGER, extras NULL
+bhog_coupon                              -- per-family booking; coupons print from count
+  id, bhog_day_id FK, family_id FK, count, amount,
+  paid bool, collected_by FK NULL
+
+rsvp                                     -- Vijaya Sammilani / Poila Baishakh pattern
+  id, event_id FK, family_id FK,
+  headcount_veg, headcount_nonveg, amount,
+  collected_by FK NULL, contact_person NULL,
+  status enum: invited | confirmed | done
+
+volunteer_slot                           -- restores the 2020–22 workflow
+  id, event_id FK, date, activity, time_from, time_to,
+  needed INTEGER, gender_pref NULL
 volunteer_signup
-  id, slot_id, person_id FK NULL, name TEXT   -- name for non-app volunteers
+  id, slot_id FK, person_id FK NULL, name NULL   -- name for non-app volunteers
 
 task
-  id, event_id NULL, year, title, owner1 FK/TEXT, owner2 FK/TEXT,
+  id, event_id FK NULL, year, title,
+  owner1 FK->person NULL, owner1_text NULL,
+  owner2 FK->person NULL, owner2_text NULL,
   due_date, status enum: todo | in_progress | done, notes
 
-vendor            -- year-independent master
+vendor                                   -- year-independent master
   id, name, description, phone1, phone2, email, notes
+```
 
-document          -- lightweight index over Drive paperwork (files stay in Drive)
-  id, year, kind (police-application | pmc-noc | society-registration | ...),
+### Content & reference
+
+```
+essential_item                           -- the পুজোর ফর্দমালা, imported from 2022
+  id, section,                           -- "Kalparambho", "Sandhi Puja"… (13)
+  section_order, sort_order,
+  name_bn, name_translit, description,
+  quantity NULL,
+  owner enum: purohit | committee,
+  notes
+
+timetable_entry (existing, gains:)
+  title_bn NULL                          -- bilingual nirghanto rendering
+
+notice, gallery_item (existing, unchanged)
+
+document                                 -- index over Drive paperwork; files stay in Drive
+  id, year, kind,                        -- police-application | pmc-noc | mandap-plan…
   title, drive_file_id, status, notes
 ```
 
-## Deliberately NOT in the database
+## Flow highlights
 
-- **Puja Essentials / fordo** — curated bilingual reference content; stays in
-  Sheets, served via the service account as a (future) public page. ⚠️ It
-  exists only in the 2022 workbook — preserve/copy it forward.
-- **Nirghanto ritual times** — the template structure maps to
-  `timetable_entry` (add `name_bn`); yearly times entered via admin UI.
-- **Historical books 2020–2025** — stay in their sheets; readable on demand
-  via the service account. No migration of old data.
-- **Graphics/PDF assets** — Drive, indexed by `document` where useful.
-- **Cash denomination counting** (2020–21 tabs) — physical treasurer ritual,
-  out of scope.
+- **Tier**: family is `core` for the membership year iff it has a
+  `subscription` contribution ≥ threshold on that year's durga-pujo event.
+  Sponsorships never affect tier.
+- **Flower orders / daily procurement docs**: `procurement_item`
+  (category = Flowers) + `procurement_need` rows → generated printable
+  order sheet, replacing the yearly docx.
+- **Bhog coupons**: `bhog_coupon.count` → generated printable numbered
+  coupons per day.
+- **Nirghanto**: `event` purohit fields + `timetable_entry` (bilingual) →
+  generated printable schedule from the 2024 template layout.
+- **Locations** (societies/towers) stay in `shared/src/locations.ts` by
+  decision; revisit if admin editing is wanted later.
 
-## Migration plan (when approved)
+## Historical import (one-time ETL)
 
-Current prod data is only seed + 2 test allowlist rows, so: drop `member`,
-create Phase 1 tables in one new Drizzle migration, update the allowlist query
-(join person→family), update seed with the admin family, keep everything else.
+2020 Contri/Expense → 2021 workbook → 2022 Sponsors/Accounts (messiest —
+mixed-column format) → 2023–2025 accounting + sponsorship + core-members tabs.
+Produces: back-dated `ledger_book`s per year, `contribution`s,
+`sponsorship_item`s, `ledger_txn`s (with `category_raw` preserving original
+labels), and the family registry seeded from all names seen since 2020
+(canonicalization list reviewed by admin before load). Acceptance: every
+year's totals and carry-forward chain must match the sheets to the rupee.
+
+## Migration
+
+Single Drizzle migration: drop `member`, create everything above, extend
+`event`/`timetable_entry`/`procurement_item`. Prod holds only seed + two test
+allowlist rows, so destructive is fine. Allowlist query changes to
+person→family join; seed gains the admin family and the five current events
+wired to their ledger books.
