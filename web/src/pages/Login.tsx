@@ -87,7 +87,7 @@ export function Login() {
                 <p className="truncate text-sm font-medium">{me.email}</p>
                 <div className="mt-1 flex gap-2">
                   <Badge>{me.role}</Badge>
-                  {me.portfolio && <Badge variant="secondary">{me.portfolio}</Badge>}
+                  {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
                 </div>
               </div>
             </div>

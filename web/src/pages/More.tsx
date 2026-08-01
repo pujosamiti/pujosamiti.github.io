@@ -39,7 +39,7 @@ export function More() {
           <CardContent className="flex items-center justify-between gap-3">
             <div className="flex gap-2">
               <Badge>{me.role}</Badge>
-              {me.portfolio && <Badge variant="secondary">{me.portfolio}</Badge>}
+              {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
             </div>
             <Button variant="outline" size="sm" onClick={endSession}>
               <LogOut /> Sign out
