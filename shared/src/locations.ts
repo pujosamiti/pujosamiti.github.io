@@ -44,8 +44,9 @@ export const MAGARPATTA_WORKPLACE_GROUPS = [
     options: Array.from({ length: 5 }, (_, i) => `Pentagon P${i + 1}`),
   },
   {
-    group: 'S Towers (SEZ)',
-    options: ['Tower S1', 'Tower S2', 'Tower S3'],
+    // Distinct from the SEZ buildings below.
+    group: 'S Towers',
+    options: ['Tower S1', 'Tower S2', 'Tower S3', 'Tower S4'],
   },
   {
     // Known colloquially by anchor tenant (Accenture: B1/B4, Eaton: B6/B7);
