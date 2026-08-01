@@ -132,3 +132,6 @@ export interface BudgetLine {
 // ── API envelope ────────────────────────────────────────────────────────────
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
+
+// Magarpatta location reference data (societies, towers) for pickers
+export * from './locations';
