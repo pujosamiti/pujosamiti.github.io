@@ -37,12 +37,10 @@ export const MAGARPATTA_SOCIETIES = [
 export const MAGARPATTA_WORKPLACE_GROUPS = [
   {
     // 1–12 (Wikipedia), 14/15/16 individually verified (16 = Principal Global
-    // Services). No evidence found of a "Tower 13" — likely skipped; add it if
-    // a resident confirms it exists.
+    // Services). 13 unverified (kept; may be skipped as unlucky). One source
+    // claims 18 towers total — add 17/18 once confirmed on the ground.
     group: 'Cybercity Towers',
-    options: Array.from({ length: 16 }, (_, i) => `Tower ${i + 1}`).filter(
-      (t) => t !== 'Tower 13',
-    ),
+    options: Array.from({ length: 16 }, (_, i) => `Tower ${i + 1}`),
   },
   {
     group: 'Pentagon Towers',
