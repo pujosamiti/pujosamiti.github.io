@@ -6,6 +6,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 import { AppLayout } from '@/components/AppLayout'
 import { Gallery } from '@/pages/Gallery'
 import { Home } from '@/pages/Home'
+import { Login } from '@/pages/Login'
 import { More } from '@/pages/More'
 import { Notices } from '@/pages/Notices'
 import { Schedule } from '@/pages/Schedule'
@@ -42,6 +43,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="gallery" element={<Gallery />} />
             <Route path="notices" element={<Notices />} />
             <Route path="more" element={<More />} />
+            <Route path="login" element={<Login />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>
