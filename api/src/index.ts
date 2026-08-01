@@ -3,7 +3,9 @@ import { cors } from 'hono/cors'
 
 import { createAuth } from './auth'
 import type { Env } from './env'
+import { adminRoutes } from './routes/admin'
 import { memberRoutes } from './routes/members'
+import { onboardingRoutes } from './routes/onboarding'
 import { postRoutes } from './routes/posts'
 import { publicRoutes } from './routes/public'
 
@@ -25,5 +27,7 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => createAuth(c.env).handler(c.req.ra
 app.route('/api/public', publicRoutes)
 app.route('/api/public', postRoutes)
 app.route('/api/members', memberRoutes)
+app.route('/api/onboarding', onboardingRoutes)
+app.route('/api/admin', adminRoutes)
 
 export default app

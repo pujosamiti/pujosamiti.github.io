@@ -1,13 +1,68 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, Loader2, LogOut, ShieldQuestion } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Hourglass, Loader2, LogOut } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
+import { Onboarding } from '@/components/Onboarding'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signInWithGoogle, signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
+import { useOnboardingState } from '@/lib/onboarding'
+
+/** Signed-in but not a member: route to the right funnel stage. */
+function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const { data: ob, isPending } = useOnboardingState()
+
+  if (isPending || !ob) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+      </div>
+    )
+  }
+
+  if (ob.state === 'no_person') {
+    return (
+      <>
+        <Onboarding email={email} />
+        <Button variant="outline" className="self-start" onClick={onSignOut}>
+          <LogOut /> Sign out
+        </Button>
+      </>
+    )
+  }
+
+  const copy =
+    ob.state === 'request_pending'
+      ? {
+          title: 'Request sent',
+          body: `Your request to join the ${ob.familyName} family is with the committee admins. You'll get access as soon as it's approved — check back here.`,
+        }
+      : {
+          title: 'Registration received',
+          body: `Your family (${'familyName' in ob ? ob.familyName : ''}) is registered but membership isn't active yet. A committee admin confirms membership (usually after the subscription) — then everything unlocks here.`,
+        }
+
+  return (
+    <Card>
+      <CardHeader>
+        <Hourglass className="size-6 text-shiuli" aria-hidden="true" />
+        <CardTitle>{copy.title}</CardTitle>
+        <CardDescription>
+          Signed in as <span className="font-medium">{email}</span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <p className="text-sm text-muted-foreground">{copy.body}</p>
+        <Button variant="outline" className="self-start" onClick={onSignOut}>
+          <LogOut /> Sign out
+        </Button>
+      </CardContent>
+    </Card>
+  )
+}
 
 /** Google's "G" — brand guidelines want the multicolour mark on sign-in buttons. */
 function GoogleMark() {
@@ -105,33 +160,11 @@ export function Login() {
     )
   }
 
-  // ── Signed in, but not on the allowlist ───────────────────────────────────
+  // ── Signed in, but not (yet) a member: the onboarding funnel ──────────────
   if (session) {
     return (
       <div className="mx-auto flex max-w-md flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <ShieldQuestion className="size-6 text-shiuli" aria-hidden="true" />
-            <CardTitle>Almost there</CardTitle>
-            <CardDescription>
-              You're signed in as <span className="font-medium">{session.user.email}</span>, but
-              this email isn't on the samiti member list yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <p className="text-sm text-muted-foreground">
-              Member content (accounts, budgets, procurement) is limited to samiti families. Ask
-              any committee member to add this email to the member list — then just refresh this
-              page.
-            </p>
-            <p className="text-sm text-muted-foreground">
-              Used the wrong Google account? Sign out and try the one your family registered.
-            </p>
-            <Button variant="outline" className="self-start" onClick={endSession}>
-              <LogOut /> Sign out
-            </Button>
-          </CardContent>
-        </Card>
+        <SignedInFunnel email={session.user.email} onSignOut={endSession} />
       </div>
     )
   }

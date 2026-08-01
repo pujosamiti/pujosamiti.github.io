@@ -100,6 +100,71 @@ export interface Me {
   portfolio: string | null;
 }
 
+// ── Onboarding & membership admin ───────────────────────────────────────────
+
+export type FamilyTier = 'non_member' | 'member' | 'core';
+export type FamilyEligibility = 'resident' | 'works_in_mgp';
+
+/** Where a signed-in (but not-yet-member) user stands in the funnel. */
+export type OnboardingState =
+  | { state: 'member' }
+  | { state: 'awaiting_activation'; familyName: string }
+  | { state: 'request_pending'; familyName: string }
+  | { state: 'no_person' };
+
+export interface FamilySearchResult {
+  id: string;
+  name: string;
+  society: string | null;
+}
+
+export interface CreateFamilyInput {
+  familyName: string;
+  eligibility: FamilyEligibility;
+  society: string | null;
+  residenceDetail: string | null;
+  workplace: string | null;
+  workplaceDetail: string | null;
+  familyPhone: string | null;
+  displayName: string;
+  phone: string | null;
+  gender: string | null;
+}
+
+export interface JoinFamilyInput {
+  familyId: string;
+  displayName: string;
+  note: string | null;
+}
+
+export interface AdminPerson {
+  id: string;
+  displayName: string;
+  email: string | null;
+  isAdmin: boolean;
+  portfolio: string | null;
+}
+
+export interface AdminFamily {
+  id: string;
+  name: string;
+  society: string | null;
+  eligibility: FamilyEligibility;
+  tier: FamilyTier;
+  isActive: boolean;
+  people: AdminPerson[];
+}
+
+export interface JoinRequestView {
+  id: string;
+  familyId: string;
+  familyName: string;
+  email: string;
+  displayName: string;
+  note: string | null;
+  createdAt: string;
+}
+
 // ── Accounting (Sheets is source of truth; Worker reads via service account) ─
 
 export interface CollectorWallet {

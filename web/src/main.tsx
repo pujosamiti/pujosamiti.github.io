@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
+import { Admin } from '@/pages/Admin'
 import { Gallery } from '@/pages/Gallery'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
@@ -44,6 +45,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="notices" element={<Notices />} />
             <Route path="more" element={<More />} />
             <Route path="login" element={<Login />} />
+            <Route path="admin" element={<Admin />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>

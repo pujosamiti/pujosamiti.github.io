@@ -99,6 +99,27 @@ export const person = sqliteTable('person', {
 })
 
 
+/**
+ * Self-service "join an existing family" requests from first-time sign-ins.
+ * Creating a person from one requires admin approval — otherwise anyone could
+ * attach themselves to a core family and inherit member access.
+ */
+export const joinRequest = sqliteTable('join_request', {
+  id: text('id').primaryKey(),
+  familyId: text('family_id')
+    .notNull()
+    .references(() => family.id),
+  email: text('email').notNull(),
+  displayName: text('display_name').notNull(),
+  note: text('note'),
+  status: text('status', { enum: ['pending', 'approved', 'rejected'] })
+    .notNull()
+    .default('pending'),
+  decidedBy: text('decided_by'), // person id of the admin
+  decidedAt: integer('decided_at', { mode: 'timestamp' }),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
 export const event = sqliteTable('event', {
   id: text('id').primaryKey(), // "durga-pujo-2026"
   kind: text('kind').notNull(),

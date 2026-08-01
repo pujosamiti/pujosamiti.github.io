@@ -41,9 +41,16 @@ export function More() {
               <Badge>{me.role}</Badge>
               {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
             </div>
-            <Button variant="outline" size="sm" onClick={endSession}>
-              <LogOut /> Sign out
-            </Button>
+            <div className="flex gap-2">
+              {me.role === 'admin' && (
+                <Button size="sm" asChild>
+                  <Link to="/admin">Admin</Link>
+                </Button>
+              )}
+              <Button variant="outline" size="sm" onClick={endSession}>
+                <LogOut /> Sign out
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : session ? (
