@@ -10,21 +10,10 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, Search, UserPlus, Users } from 'lucide-react'
 import { useState } from 'react'
 
+import { Field, inputCls } from '@/components/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { createFamily, requestToJoin, searchFamilies } from '@/lib/onboarding'
-
-const inputCls =
-  'w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-ring/50'
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="flex flex-col gap-1 text-sm">
-      <span className="font-medium">{label}</span>
-      {children}
-    </label>
-  )
-}
 
 /** First sign-in funnel: create a new family, or request to join an existing one. */
 export function Onboarding({ email }: { email: string }) {

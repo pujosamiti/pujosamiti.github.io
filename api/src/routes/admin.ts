@@ -1,5 +1,12 @@
-import type { AdminFamily, ApiResult, FamilyTier, JoinRequestView } from '@pujosamiti/shared'
-import { eq } from 'drizzle-orm'
+import type {
+  AdminFamily,
+  AdminFamilyUpdate,
+  AdminPersonInput,
+  ApiResult,
+  FamilyTier,
+  JoinRequestView,
+} from '@pujosamiti/shared'
+import { and, eq, ne } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -50,18 +57,122 @@ adminRoutes.get('/families', async (c) => {
     id: f.id,
     name: f.name,
     society: f.society,
+    residenceDetail: f.residenceDetail,
+    workplace: f.workplace,
+    workplaceDetail: f.workplaceDetail,
     eligibility: f.eligibility,
     tier: f.tier,
     isActive: f.isActive,
+    phone: f.phone,
+    notes: f.notes,
     people: (byFamily.get(f.id) ?? []).map((p) => ({
       id: p.id,
       displayName: p.displayName,
       email: p.email,
+      phone: p.phone,
+      gender: p.gender,
       isAdmin: p.isAdmin,
       portfolio: p.portfolio,
+      notes: p.notes,
     })),
   }))
   return c.json(ok(out))
+})
+
+adminRoutes.post('/families/:id', async (c) => {
+  const body = (await c.req.json()) as AdminFamilyUpdate
+  if (!body.name?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [fam] = await db.select({ id: schema.family.id }).from(schema.family).where(eq(schema.family.id, id)).limit(1)
+  if (!fam) return c.json({ ok: false, error: 'family not found' }, 404)
+  await db
+    .update(schema.family)
+    .set({
+      name: body.name.trim(),
+      society: body.society?.trim() || null,
+      residenceDetail: body.residenceDetail?.trim() || null,
+      workplace: body.workplace?.trim() || null,
+      workplaceDetail: body.workplaceDetail?.trim() || null,
+      eligibility: body.eligibility === 'works_in_mgp' ? 'works_in_mgp' : 'resident',
+      phone: body.phone?.trim() || null,
+      notes: body.notes?.trim() || null,
+      isActive: !!body.isActive,
+    })
+    .where(eq(schema.family.id, id))
+  return c.json(ok({ id }))
+})
+
+adminRoutes.post('/families/:id/people', async (c) => {
+  const body = (await c.req.json()) as AdminPersonInput
+  if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const familyId = c.req.param('id')
+  const [fam] = await db.select({ id: schema.family.id }).from(schema.family).where(eq(schema.family.id, familyId)).limit(1)
+  if (!fam) return c.json({ ok: false, error: 'family not found' }, 404)
+  const email = body.email?.trim() || null
+  if (email) {
+    const [dup] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.email, email)).limit(1)
+    if (dup) return c.json({ ok: false, error: 'that email already belongs to a person' }, 409)
+  }
+  const id = crypto.randomUUID()
+  await db.insert(schema.person).values({
+    id,
+    familyId,
+    displayName: body.displayName.trim(),
+    email,
+    phone: body.phone?.trim() || null,
+    gender: body.gender?.trim() || null,
+    isAdmin: !!body.isAdmin,
+    portfolio: body.portfolio?.trim() || null,
+    notes: body.notes?.trim() || null,
+    createdAt: new Date(),
+  })
+  return c.json(ok({ id }))
+})
+
+adminRoutes.post('/people/:id', async (c) => {
+  const body = (await c.req.json()) as AdminPersonInput
+  if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [p] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.id, id)).limit(1)
+  if (!p) return c.json({ ok: false, error: 'person not found' }, 404)
+  if (id === c.get('adminPersonId') && !body.isAdmin)
+    return c.json({ ok: false, error: 'you cannot remove your own admin access' }, 400)
+  const email = body.email?.trim() || null
+  if (email) {
+    const [dup] = await db
+      .select({ id: schema.person.id })
+      .from(schema.person)
+      .where(and(eq(schema.person.email, email), ne(schema.person.id, id)))
+      .limit(1)
+    if (dup) return c.json({ ok: false, error: 'that email already belongs to a person' }, 409)
+  }
+  await db
+    .update(schema.person)
+    .set({
+      displayName: body.displayName.trim(),
+      email,
+      phone: body.phone?.trim() || null,
+      gender: body.gender?.trim() || null,
+      isAdmin: !!body.isAdmin,
+      portfolio: body.portfolio?.trim() || null,
+      notes: body.notes?.trim() || null,
+    })
+    .where(eq(schema.person.id, id))
+  return c.json(ok({ id }))
+})
+
+adminRoutes.delete('/people/:id', async (c) => {
+  const id = c.req.param('id')
+  if (id === c.get('adminPersonId'))
+    return c.json({ ok: false, error: 'you cannot delete yourself' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const [p] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.id, id)).limit(1)
+  if (!p) return c.json({ ok: false, error: 'person not found' }, 404)
+  await db.delete(schema.person).where(eq(schema.person.id, id))
+  return c.json(ok({ id }))
 })
 
 adminRoutes.post('/families/:id/tier', async (c) => {

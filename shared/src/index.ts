@@ -141,18 +141,49 @@ export interface AdminPerson {
   id: string;
   displayName: string;
   email: string | null;
+  phone: string | null;
+  gender: string | null;
   isAdmin: boolean;
   portfolio: string | null;
+  notes: string | null;
 }
 
 export interface AdminFamily {
   id: string;
   name: string;
   society: string | null;
+  residenceDetail: string | null;
+  workplace: string | null;
+  workplaceDetail: string | null;
   eligibility: FamilyEligibility;
   tier: FamilyTier;
   isActive: boolean;
+  phone: string | null;
+  notes: string | null;
   people: AdminPerson[];
+}
+
+/** Admin edit payloads. Email nullable on person = manual/no-Google member. */
+export interface AdminFamilyUpdate {
+  name: string;
+  society: string | null;
+  residenceDetail: string | null;
+  workplace: string | null;
+  workplaceDetail: string | null;
+  eligibility: FamilyEligibility;
+  phone: string | null;
+  notes: string | null;
+  isActive: boolean;
+}
+
+export interface AdminPersonInput {
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  gender: string | null;
+  isAdmin: boolean;
+  portfolio: string | null;
+  notes: string | null;
 }
 
 export interface JoinRequestView {
