@@ -11,7 +11,7 @@ function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
 }
 
-const PHASES: TaskPhase[] = ['initiated', 'in_progress', 'completed']
+const PHASES: TaskPhase[] = ['todo', 'in_progress', 'completed']
 
 /**
  * Task distribution over the year-independent durgapuja_task catalog.
@@ -68,7 +68,7 @@ taskRoutes.get('/', async (c) => {
         title: t.title,
         details: t.details,
         isActive: t.isActive,
-        phase: y?.phase ?? 'initiated',
+        phase: y?.phase ?? 'todo',
         checks: [
           { date: y?.check1Date ?? null, notes: y?.check1Notes ?? null },
           { date: y?.check2Date ?? null, notes: y?.check2Notes ?? null },
@@ -143,7 +143,7 @@ taskRoutes.post('/:id/year', async (c) => {
   if (!editor && !owner) return c.json({ ok: false, error: 'owners or core members only' }, 403)
 
   const checks = [0, 1, 2].map((i) => body.checks?.[i] ?? { date: null, notes: null })
-  const phase = PHASES.includes(body.phase) ? body.phase : 'initiated'
+  const phase = PHASES.includes(body.phase) ? body.phase : 'todo'
   const yearValues = {
     phase,
     check1Date: checks[0].date || null,

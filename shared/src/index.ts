@@ -104,7 +104,7 @@ export interface Me {
 
 // ── Task distribution (Core Members feature) ────────────────────────────────
 
-export type TaskPhase = 'initiated' | 'in_progress' | 'completed';
+export type TaskPhase = 'todo' | 'in_progress' | 'completed';
 
 export const TASK_MAX_OWNERS = 5;
 

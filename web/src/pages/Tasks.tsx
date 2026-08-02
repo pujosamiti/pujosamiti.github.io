@@ -19,9 +19,9 @@ import {
   useTasks,
 } from '@/lib/tasks'
 
-const PHASES: TaskPhase[] = ['initiated', 'in_progress', 'completed']
+const PHASES: TaskPhase[] = ['todo', 'in_progress', 'completed']
 const PHASE_LABEL: Record<TaskPhase, string> = {
-  initiated: 'Initiated',
+  todo: 'To Do',
   in_progress: 'In progress',
   completed: 'Completed',
 }
@@ -328,7 +328,7 @@ function TaskForm({
   const [title, setTitle] = useState(task?.title ?? '')
   const [details, setDetails] = useState(task?.details ?? '')
   const [isActive, setIsActive] = useState(task?.isActive ?? true)
-  const [phase, setPhase] = useState<TaskPhase>(task?.phase ?? 'initiated')
+  const [phase, setPhase] = useState<TaskPhase>(task?.phase ?? 'todo')
   const [checks, setChecks] = useState<[TaskCheck, TaskCheck, TaskCheck]>(task?.checks ?? EMPTY_CHECKS)
   const [ownerIds, setOwnerIds] = useState<string[]>(task?.owners.map((o) => o.id) ?? [])
   const [volunteerIds, setVolunteerIds] = useState<string[]>(task?.volunteers.map((v) => v.id) ?? [])
