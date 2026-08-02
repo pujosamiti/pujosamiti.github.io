@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
+import { useOnboardingState } from '@/lib/onboarding'
 
 const memberSections = [
   { icon: Wallet, title: 'Collections & expenses', desc: 'Collector wallets, accounts summary' },
@@ -19,6 +20,7 @@ const memberSections = [
 export function More() {
   const queryClient = useQueryClient()
   const { session, memberState } = useMemberState()
+  const { data: onboarding } = useOnboardingState()
   const me = memberState?.status === 'member' ? memberState.me : null
 
   const endSession = async () => {
@@ -54,17 +56,31 @@ export function More() {
           </CardContent>
         </Card>
       ) : session ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Signed in — membership pending</CardTitle>
-            <CardDescription>
-              {session.user.email} isn't on the member list yet.{' '}
-              <Link to="/login" className="underline">
-                Details
-              </Link>
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        onboarding?.state === 'no_person' ? (
+          <Card>
+            <CardHeader>
+              <CardTitle>One step left</CardTitle>
+              <CardDescription>
+                You're signed in as {session.user.email} —{' '}
+                <Link to="/login" className="underline">
+                  complete your profile
+                </Link>{' '}
+                to register with the samiti.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        ) : (
+          <Card>
+            <CardHeader>
+              <CardTitle>Registration received — membership pending</CardTitle>
+              <CardDescription>
+                Thanks, {session.user.email}! Your profile is registered. A committee admin
+                activates membership (usually after the subscription) — everything below unlocks
+                then.
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        )
       ) : (
         <Card>
           <CardHeader>

@@ -8,6 +8,7 @@ import {
 import { useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
+import { useNavigate } from 'react-router'
 
 import { Field, inputCls } from '@/components/form'
 import { Button } from '@/components/ui/button'
@@ -22,6 +23,7 @@ import { saveProfile } from '@/lib/onboarding'
  */
 export function ProfileForm({ email }: { email: string }) {
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const { data: session } = useSession()
   const [eligibility, setEligibility] = useState<FamilyEligibility>('resident')
   // Google already told us their name — pre-fill, keep editable
@@ -55,6 +57,8 @@ export function ProfileForm({ email }: { email: string }) {
     try {
       await saveProfile(input)
       await queryClient.invalidateQueries()
+      // Land on More: the pending banner shows there, with the rest of the site around it
+      navigate('/more')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'something went wrong')
       setBusy(false)
