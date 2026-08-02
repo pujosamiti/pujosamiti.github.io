@@ -1,7 +1,7 @@
 import type { MemberLite, TaskCheck, TaskPhase, TaskView } from '@pujosamiti/shared'
 import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCheck, Eye, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
+import { CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -52,7 +52,6 @@ export function Tasks() {
   const { data: tasks, isPending: tasksPending, error } = useTasks(me ? year : null)
   const { data: people } = useMembersLite()
   const [adding, setAdding] = useState(false)
-  const [showHidden, setShowHidden] = useState(false)
 
   if (sessionPending || memberPending) {
     return (
@@ -100,16 +99,9 @@ export function Tasks() {
         (adding ? (
           <TaskForm year={year} people={people ?? []} categories={categories} onClose={() => setAdding(false)} />
         ) : (
-          <div className="flex flex-wrap gap-2">
-            <Button size="sm" onClick={() => setAdding(true)}>
-              <Plus /> Add task
-            </Button>
-            {skipped.length > 0 && (
-              <Button size="sm" variant="outline" onClick={() => setShowHidden((v) => !v)}>
-                {showHidden ? <EyeOff /> : <Eye />} {showHidden ? 'Hide' : 'Show'} hidden ({skipped.length})
-              </Button>
-            )}
-          </div>
+          <Button size="sm" className="self-start" onClick={() => setAdding(true)}>
+            <Plus /> Add task
+          </Button>
         ))}
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
@@ -135,7 +127,7 @@ export function Tasks() {
                 ))}
             </section>
           ))}
-          {canEdit && showHidden && skipped.length > 0 && <SkippedList tasks={skipped} year={year} />}
+          {canEdit && skipped.length > 0 && <SkippedList tasks={skipped} year={year} />}
         </>
       )}
     </div>
@@ -222,11 +214,11 @@ function TaskCard({
                 size="sm"
                 variant="ghost"
                 onClick={() => {
-                  if (confirm(`Hide "${t.title}" for ${year}? It stays in the catalog and other years.`)) skipMut.mutate()
+                  if (confirm(`Skip "${t.title}" for ${year}? It stays in the catalog for other years.`)) skipMut.mutate()
                 }}
                 disabled={skipMut.isPending}
-                aria-label={`Hide ${t.title} this year`}
-                title="Hide this year"
+                aria-label={`Skip ${t.title} this year`}
+                title="Skip this year"
               >
                 <EyeOff />
               </Button>
@@ -508,7 +500,7 @@ function SkippedList({ tasks, year }: { tasks: TaskView[]; year: number }) {
   })
   return (
     <section className="flex flex-col gap-2">
-      <h2 className="font-serif text-lg font-bold text-muted-foreground">Hidden this year ({tasks.length})</h2>
+      <h2 className="font-serif text-lg font-bold text-muted-foreground">Skipped this year ({tasks.length})</h2>
       {tasks.map((t) => (
         <div key={t.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 opacity-70">
           <span className="text-sm">
@@ -516,7 +508,7 @@ function SkippedList({ tasks, year }: { tasks: TaskView[]; year: number }) {
             <span className="text-muted-foreground"> · {t.category}</span>
           </span>
           <Button size="sm" variant="outline" onClick={() => restore.mutate(t.id)} disabled={restore.isPending}>
-            <Undo2 /> Unhide
+            <Undo2 /> Restore
           </Button>
         </div>
       ))}
