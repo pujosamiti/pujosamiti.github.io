@@ -7,8 +7,8 @@ import type {
 } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
 import { Badge } from '@/components/ui/badge'
@@ -27,9 +27,46 @@ const TIER_LABEL: Record<FamilyTier, string> = {
 const post = (path: string, body: unknown) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
+/** Search across name, email, society/tower, detail, family — and digits against phone. */
+function personMatches(p: AdminPerson, q: string): boolean {
+  if (!q) return true
+  const needle = q.toLowerCase()
+  const haystacks = [
+    p.displayName,
+    p.email,
+    p.society,
+    p.workplace,
+    p.residenceDetail,
+    p.workplaceDetail,
+    p.familyName,
+    p.portfolio,
+  ]
+  if (haystacks.some((h) => h?.toLowerCase().includes(needle))) return true
+  const digits = q.replace(/\D/g, '')
+  return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
+}
+
+type View = 'members' | 'pending' | 'families'
+
 export function Admin() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
+  const [view, setView] = useState<View>('members')
+  const [q, setQ] = useState('')
+
+  const { data: people, isPending: peoplePending, error } = useQuery({
+    queryKey: ['admin-people'],
+    queryFn: () => api<AdminPerson[]>('/api/admin/people'),
+    enabled: me?.role === 'admin',
+  })
+  const { data: families } = useQuery({
+    queryKey: ['admin-families'],
+    queryFn: () => api<AdminFamily[]>('/api/admin/families'),
+    enabled: me?.role === 'admin',
+  })
+
+  const members = useMemo(() => people?.filter((p) => p.tier !== 'non_member') ?? [], [people])
+  const pending = useMemo(() => people?.filter((p) => p.tier === 'non_member') ?? [], [people])
 
   if (sessionPending || memberPending) {
     return (
@@ -48,45 +85,97 @@ export function Admin() {
       </Card>
     )
   }
+
+  const tabs: { key: View; label: string; icon: typeof Users; count: number }[] = [
+    { key: 'members', label: 'Members', icon: ShieldCheck, count: members.length },
+    { key: 'pending', label: 'Pending activation', icon: Hourglass, count: pending.length },
+    { key: 'families', label: 'Families', icon: Users, count: families?.length ?? 0 },
+  ]
+
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-2">
-        <ShieldCheck className="size-6 text-primary" aria-hidden="true" />
-        <h1 className="text-2xl font-bold">Membership admin</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-bold">Membership admin</h1>
+
+      <div className="flex flex-wrap gap-2">
+        {tabs.map(({ key, label, icon: Icon, count }) => (
+          <Button
+            key={key}
+            size="sm"
+            variant={view === key ? 'default' : 'outline'}
+            onClick={() => { setView(key); setQ('') }}
+          >
+            <Icon /> {label} ({count})
+          </Button>
+        ))}
       </div>
-      <People />
-      <Families />
+
+      <div className="relative max-w-md">
+        <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
+        <input
+          className={`${inputCls} pl-8`}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+          placeholder={
+            view === 'families'
+              ? 'Search families by name or notes…'
+              : 'Search by name, society, email or WhatsApp number…'
+          }
+        />
+      </div>
+
+      {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
+
+      {view === 'families' ? (
+        <FamiliesView families={families} q={q} />
+      ) : (
+        <PeopleView
+          people={view === 'members' ? members : pending}
+          q={q}
+          families={families ?? []}
+          loading={peoplePending}
+          emptyText={view === 'members' ? 'No members yet.' : 'Nobody is waiting for activation.'}
+          allowAdd={view === 'members'}
+        />
+      )}
     </div>
   )
 }
 
-function People() {
-  const { data: people, isPending, error } = useQuery({
-    queryKey: ['admin-people'],
-    queryFn: () => api<AdminPerson[]>('/api/admin/people'),
-  })
-  const { data: families } = useQuery({
-    queryKey: ['admin-families'],
-    queryFn: () => api<AdminFamily[]>('/api/admin/families'),
-  })
+function PeopleView({
+  people,
+  q,
+  families,
+  loading,
+  emptyText,
+  allowAdd,
+}: {
+  people: AdminPerson[]
+  q: string
+  families: AdminFamily[]
+  loading: boolean
+  emptyText: string
+  allowAdd: boolean
+}) {
   const [adding, setAdding] = useState(false)
+  const shown = people.filter((p) => personMatches(p, q.trim()))
+
+  if (loading) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">People ({people?.length ?? '…'})</h2>
-        {!adding && (
-          <Button size="sm" onClick={() => setAdding(true)}>
+      {allowAdd &&
+        (adding ? (
+          <PersonForm families={families} onClose={() => setAdding(false)} />
+        ) : (
+          <Button size="sm" className="self-start" onClick={() => setAdding(true)}>
             <Plus /> Add person
           </Button>
-        )}
-      </div>
-      {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
-      {adding && <PersonForm families={families ?? []} onClose={() => setAdding(false)} />}
-      {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
-      ) : (
-        people?.map((p) => <PersonCard key={p.id} person={p} families={families ?? []} />)
+        ))}
+      {shown.map((p) => (
+        <PersonCard key={p.id} person={p} families={families} />
+      ))}
+      {!shown.length && (
+        <p className="text-sm text-muted-foreground">{q ? 'No matches.' : emptyText}</p>
       )}
     </section>
   )
@@ -137,7 +226,7 @@ function PersonCard({ person: p, families }: { person: AdminPerson; families: Ad
               )}
             </p>
             <p className="truncate text-sm text-muted-foreground">
-              {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.familyName && `family: ${p.familyName}`]
+              {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.phone, p.familyName && `family: ${p.familyName}`]
                 .filter(Boolean)
                 .join(' · ')}
             </p>
@@ -361,47 +450,41 @@ function PersonForm({
   )
 }
 
-function Families() {
-  const { data: families, isPending, error } = useQuery({
-    queryKey: ['admin-families'],
-    queryFn: () => api<AdminFamily[]>('/api/admin/families'),
-  })
+function FamiliesView({ families, q }: { families: AdminFamily[] | undefined; q: string }) {
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const needle = q.trim().toLowerCase()
+  const shown = (families ?? []).filter(
+    (f) => !needle || f.name.toLowerCase().includes(needle) || f.notes?.toLowerCase().includes(needle),
+  )
 
   return (
     <section className="flex flex-col gap-3">
-      <div className="flex items-center justify-between">
-        <h2 className="text-lg font-semibold">Families (optional grouping)</h2>
-        {!adding && (
-          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
-            <Plus /> Add family
-          </Button>
-        )}
-      </div>
-      {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
-      {adding && <FamilyForm onClose={() => setAdding(false)} />}
-      {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+      {adding ? (
+        <FamilyForm onClose={() => setAdding(false)} />
       ) : (
-        families?.map((f) =>
-          editingId === f.id ? (
-            <FamilyForm key={f.id} family={f} onClose={() => setEditingId(null)} />
-          ) : (
-            <Card key={f.id} className={f.isActive ? undefined : 'opacity-60'}>
-              <CardContent className="flex items-center justify-between gap-2 pt-4">
-                <p className="text-sm">
-                  <span className="font-medium">{f.name}</span>
-                  {f.notes && <span className="text-muted-foreground"> · {f.notes}</span>}
-                </p>
-                <Button size="sm" variant="ghost" onClick={() => setEditingId(f.id)} aria-label={`Edit ${f.name}`}>
-                  <Pencil />
-                </Button>
-              </CardContent>
-            </Card>
-          ),
-        )
+        <Button size="sm" variant="outline" className="self-start" onClick={() => setAdding(true)}>
+          <Plus /> Add family
+        </Button>
       )}
+      {shown.map((f) =>
+        editingId === f.id ? (
+          <FamilyForm key={f.id} family={f} onClose={() => setEditingId(null)} />
+        ) : (
+          <Card key={f.id} className={f.isActive ? undefined : 'opacity-60'}>
+            <CardContent className="flex items-center justify-between gap-2 pt-4">
+              <p className="text-sm">
+                <span className="font-medium">{f.name}</span>
+                {f.notes && <span className="text-muted-foreground"> · {f.notes}</span>}
+              </p>
+              <Button size="sm" variant="ghost" onClick={() => setEditingId(f.id)} aria-label={`Edit ${f.name}`}>
+                <Pencil />
+              </Button>
+            </CardContent>
+          </Card>
+        ),
+      )}
+      {!shown.length && <p className="text-sm text-muted-foreground">{q ? 'No matches.' : 'No families yet.'}</p>}
     </section>
   )
 }
