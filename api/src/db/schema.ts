@@ -82,7 +82,7 @@ export const person = sqliteTable('person', {
   residenceDetail: text('residence_detail'), // flat no
   workplace: text('workplace'), // tower, for works-in-MGP people
   workplaceDetail: text('workplace_detail'), // company name
-  eligibility: text('eligibility', { enum: ['resident', 'works_in_mgp'] })
+  eligibility: text('eligibility', { enum: ['resident', 'works_in_mgp', 'by_invitation'] })
     .notNull()
     .default('resident'),
   tier: text('tier', { enum: ['non_member', 'member', 'core'] })

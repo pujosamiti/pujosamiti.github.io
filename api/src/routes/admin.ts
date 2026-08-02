@@ -65,14 +65,19 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
 }
 
 function personValues(body: AdminPersonInput) {
+  const eligibility =
+    body.eligibility === 'works_in_mgp' || body.eligibility === 'by_invitation'
+      ? body.eligibility
+      : ('resident' as const)
+  const invited = eligibility === 'by_invitation' // invited patrons carry no location
   return {
     familyId: body.familyId || null,
     displayName: body.displayName.trim(),
-    society: body.society?.trim() || null,
-    residenceDetail: body.residenceDetail?.trim() || null,
-    workplace: body.workplace?.trim() || null,
-    workplaceDetail: body.workplaceDetail?.trim() || null,
-    eligibility: body.eligibility === 'works_in_mgp' ? ('works_in_mgp' as const) : ('resident' as const),
+    society: invited ? null : body.society?.trim() || null,
+    residenceDetail: invited ? null : body.residenceDetail?.trim() || null,
+    workplace: invited ? null : body.workplace?.trim() || null,
+    workplaceDetail: invited ? null : body.workplaceDetail?.trim() || null,
+    eligibility,
     phone: body.phone?.trim() || null,
     gender: body.gender?.trim() || null,
     isAdmin: !!body.isAdmin,

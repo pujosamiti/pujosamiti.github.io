@@ -106,7 +106,12 @@ function PersonCard({ person: p, families }: { person: AdminPerson; families: Ad
 
   if (editing) return <PersonForm person={p} families={families} onClose={() => setEditing(false)} />
 
-  const where = p.eligibility === 'resident' ? [p.society, p.residenceDetail] : [p.workplace, p.workplaceDetail]
+  const where =
+    p.eligibility === 'by_invitation'
+      ? ['by invitation']
+      : p.eligibility === 'resident'
+        ? [p.society, p.residenceDetail]
+        : [p.workplace, p.workplaceDetail]
 
   return (
     <Card className={p.isActive ? undefined : 'opacity-60'}>
@@ -208,6 +213,7 @@ function PersonForm({
   const set = (patch: Partial<AdminPersonInput>) => setForm((prev) => ({ ...prev, ...patch }))
 
   const resident = form.eligibility === 'resident'
+  const invited = form.eligibility === 'by_invitation'
   const location = resident ? form.society : form.workplace
   const knownLocation =
     !location ||
@@ -242,6 +248,7 @@ function PersonForm({
               >
                 <option value="resident">Resident</option>
                 <option value="works_in_mgp">Works in Magarpatta</option>
+                <option value="by_invitation">By invitation</option>
               </select>
             </Field>
             <Field label="Family (optional group)">
@@ -255,53 +262,57 @@ function PersonForm({
               </select>
             </Field>
           </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Field label={resident ? 'Society' : 'Tower / building'}>
-              <select
-                className={inputCls}
-                value={knownLocation ? (location ?? '') : LOCATION_OTHER}
-                onChange={(e) => {
-                  const v = e.target.value === LOCATION_OTHER ? '' : e.target.value || null
-                  set(resident ? { society: v } : { workplace: v })
-                }}
-              >
-                <option value="">—</option>
-                {resident
-                  ? MAGARPATTA_SOCIETIES.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))
-                  : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
-                      <optgroup key={g.group} label={g.group}>
-                        {g.options.map((o) => (
-                          <option key={o} value={o}>
-                            {o}
+          {!invited && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label={resident ? 'Society' : 'Tower / building'}>
+                  <select
+                    className={inputCls}
+                    value={knownLocation ? (location ?? '') : LOCATION_OTHER}
+                    onChange={(e) => {
+                      const v = e.target.value === LOCATION_OTHER ? '' : e.target.value || null
+                      set(resident ? { society: v } : { workplace: v })
+                    }}
+                  >
+                    <option value="">—</option>
+                    {resident
+                      ? MAGARPATTA_SOCIETIES.map((s) => (
+                          <option key={s} value={s}>
+                            {s}
                           </option>
+                        ))
+                      : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
+                          <optgroup key={g.group} label={g.group}>
+                            {g.options.map((o) => (
+                              <option key={o} value={o}>
+                                {o}
+                              </option>
+                            ))}
+                          </optgroup>
                         ))}
-                      </optgroup>
-                    ))}
-                <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
-              </select>
-            </Field>
-            <Field label={resident ? 'Flat number' : 'Office / company'}>
-              <input
-                className={inputCls}
-                value={(resident ? form.residenceDetail : form.workplaceDetail) ?? ''}
-                onChange={(e) =>
-                  set(resident ? { residenceDetail: e.target.value || null } : { workplaceDetail: e.target.value || null })
-                }
-              />
-            </Field>
-          </div>
-          {!knownLocation && (
-            <Field label={resident ? 'Society name' : 'Building name'}>
-              <input
-                className={inputCls}
-                value={location ?? ''}
-                onChange={(e) => set(resident ? { society: e.target.value || null } : { workplace: e.target.value || null })}
-              />
-            </Field>
+                    <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
+                  </select>
+                </Field>
+                <Field label={resident ? 'Flat number' : 'Office / company'}>
+                  <input
+                    className={inputCls}
+                    value={(resident ? form.residenceDetail : form.workplaceDetail) ?? ''}
+                    onChange={(e) =>
+                      set(resident ? { residenceDetail: e.target.value || null } : { workplaceDetail: e.target.value || null })
+                    }
+                  />
+                </Field>
+              </div>
+              {!knownLocation && (
+                <Field label={resident ? 'Society name' : 'Building name'}>
+                  <input
+                    className={inputCls}
+                    value={location ?? ''}
+                    onChange={(e) => set(resident ? { society: e.target.value || null } : { workplace: e.target.value || null })}
+                  />
+                </Field>
+              )}
+            </>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Phone">

@@ -32,6 +32,7 @@ export function ProfileForm({ email }: { email: string }) {
   const [error, setError] = useState<string | null>(null)
 
   const resident = eligibility === 'resident'
+  const invited = eligibility === 'by_invitation'
   const resolvedLocation = location === LOCATION_OTHER ? locationOther : location
 
   const submit = async (e: React.FormEvent) => {
@@ -41,10 +42,10 @@ export function ProfileForm({ email }: { email: string }) {
     const input: ProfileInput = {
       displayName,
       eligibility,
-      society: resident ? resolvedLocation || null : null,
-      residenceDetail: resident ? detail || null : null,
-      workplace: resident ? null : resolvedLocation || null,
-      workplaceDetail: resident ? null : detail || null,
+      society: resident && !invited ? resolvedLocation || null : null,
+      residenceDetail: resident && !invited ? detail || null : null,
+      workplace: !resident && !invited ? resolvedLocation || null : null,
+      workplaceDetail: !resident && !invited ? detail || null : null,
       phone: phone || null,
       gender: gender || null,
     }
@@ -79,7 +80,7 @@ export function ProfileForm({ email }: { email: string }) {
             />
           </Field>
           <Field label="I am…">
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Button
                 type="button"
                 size="sm"
@@ -91,42 +92,54 @@ export function ProfileForm({ email }: { email: string }) {
               <Button
                 type="button"
                 size="sm"
-                variant={resident ? 'outline' : 'default'}
+                variant={eligibility === 'works_in_mgp' ? 'default' : 'outline'}
                 onClick={() => { setEligibility('works_in_mgp'); setLocation('') }}
               >
                 Working in Magarpatta
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant={invited ? 'default' : 'outline'}
+                onClick={() => { setEligibility('by_invitation'); setLocation('') }}
+              >
+                Invited by the samiti
+              </Button>
             </div>
           </Field>
-          <Field label={resident ? 'Society' : 'Tower / building'}>
-            <select className={inputCls} value={location} onChange={(e) => setLocation(e.target.value)}>
-              <option value="">Select…</option>
-              {resident
-                ? MAGARPATTA_SOCIETIES.map((s) => (
-                    <option key={s} value={s}>
-                      {s}
-                    </option>
-                  ))
-                : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
-                    <optgroup key={g.group} label={g.group}>
-                      {g.options.map((o) => (
-                        <option key={o} value={o}>
-                          {o}
+          {!invited && (
+            <>
+              <Field label={resident ? 'Society' : 'Tower / building'}>
+                <select className={inputCls} value={location} onChange={(e) => setLocation(e.target.value)}>
+                  <option value="">Select…</option>
+                  {resident
+                    ? MAGARPATTA_SOCIETIES.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
                         </option>
+                      ))
+                    : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
+                        <optgroup key={g.group} label={g.group}>
+                          {g.options.map((o) => (
+                            <option key={o} value={o}>
+                              {o}
+                            </option>
+                          ))}
+                        </optgroup>
                       ))}
-                    </optgroup>
-                  ))}
-              <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
-            </select>
-          </Field>
-          {location === LOCATION_OTHER && (
-            <Field label={resident ? 'Society name' : 'Building name'}>
-              <input className={inputCls} value={locationOther} onChange={(e) => setLocationOther(e.target.value)} />
-            </Field>
+                  <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
+                </select>
+              </Field>
+              {location === LOCATION_OTHER && (
+                <Field label={resident ? 'Society name' : 'Building name'}>
+                  <input className={inputCls} value={locationOther} onChange={(e) => setLocationOther(e.target.value)} />
+                </Field>
+              )}
+              <Field label={resident ? 'Flat number' : 'Office / company name'}>
+                <input className={inputCls} value={detail} onChange={(e) => setDetail(e.target.value)} />
+              </Field>
+            </>
           )}
-          <Field label={resident ? 'Flat number' : 'Office / company name'}>
-            <input className={inputCls} value={detail} onChange={(e) => setDetail(e.target.value)} />
-          </Field>
           <Field label="Phone">
             <input className={inputCls} value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
           </Field>

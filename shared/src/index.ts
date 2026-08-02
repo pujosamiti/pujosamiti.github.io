@@ -103,7 +103,7 @@ export interface Me {
 // ── Onboarding & membership admin ───────────────────────────────────────────
 
 export type FamilyTier = 'non_member' | 'member' | 'core';
-export type FamilyEligibility = 'resident' | 'works_in_mgp';
+export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
 
 /** Where a signed-in user stands: member, registered-but-waiting, or new. */
 export type OnboardingState =
