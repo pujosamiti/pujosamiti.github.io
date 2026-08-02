@@ -21,7 +21,7 @@ function formatTime(t: string | null) {
 }
 
 /**
- * The Durga Pujo nirghanto, by year (2025 onward — the site's era). Other
+ * The Durga Pujo nirghanto, by year (2022 onward — the nirghanto era). Other
  * events are one-day gatherings and publish no timetable. The chosen year
  * lives in the URL (?event=…) so schedules can be shared as links.
  */
@@ -34,11 +34,11 @@ export function Schedule() {
     queryFn: () => api<PujoEvent[]>('/api/public/events'),
   })
 
-  // 2025 (the site's first documented year) up to the active season — future
+  // 2022 (the first year with a formal nirghanto) up to the active season — future
   // years join the dropdown automatically as they become active.
   const allDp = (events.data ?? []).filter((e) => e.kind === 'durga-pujo')
   const activeYear = allDp.find((e) => e.isActive)?.year ?? new Date().getFullYear()
-  const dpEvents = allDp.filter((e) => e.year >= 2025 && e.year <= activeYear).sort((a, b) => a.year - b.year)
+  const dpEvents = allDp.filter((e) => e.year >= 2022 && e.year <= activeYear).sort((a, b) => a.year - b.year)
   const selected = dpEvents.find((e) => e.id === eventId) ?? dpEvents.find((e) => e.isActive) ?? dpEvents[dpEvents.length - 1] ?? null
 
   const timetable = useQuery({
@@ -58,11 +58,12 @@ export function Schedule() {
     )
   }
 
-  // Group nirghanto rows by day (rows arrive day-ordered from the API)
+  // Group nirghanto rows by day AND label — a date can host two tithis (e.g.
+  // 2024: Sandhi Puja under Ashtami and Nabami both fell on 11 Oct)
   const days: { date: string; labelBn: string; labelEn: string; rows: TimeTableEntry[] }[] = []
   for (const t of timetable.data ?? []) {
     const last = days[days.length - 1]
-    if (last && last.date === t.dayDate) last.rows.push(t)
+    if (last && last.date === t.dayDate && last.labelEn === t.dayLabelEn) last.rows.push(t)
     else days.push({ date: t.dayDate, labelBn: t.dayLabelBn, labelEn: t.dayLabelEn, rows: [t] })
   }
 

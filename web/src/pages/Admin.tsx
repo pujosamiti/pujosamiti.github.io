@@ -794,7 +794,13 @@ function NirghantoView({ events, q }: { events: PujoEvent[] | undefined; q: stri
       t.dayLabelEn.toLowerCase().includes(needle) ||
       t.dayLabelBn.includes(q.trim()),
   )
-  const days = [...new Set(shown.map((t) => t.dayDate))]
+  const groups: { key: string; rows: TimeTableEntry[] }[] = []
+  for (const t of shown) {
+    const key = `${t.dayDate}|${t.dayLabelEn}`
+    const last = groups[groups.length - 1]
+    if (last?.key === key) last.rows.push(t)
+    else groups.push({ key, rows: [t] })
+  }
 
   return (
     <section className="flex flex-col gap-3">
@@ -825,13 +831,12 @@ function NirghantoView({ events, q }: { events: PujoEvent[] | undefined; q: stri
       {isPending ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
-        days.map((date) => {
-          const rows = shown.filter((t) => t.dayDate === date)
+        groups.map(({ key, rows }) => {
           return (
-            <div key={date} className="flex flex-col gap-2">
+            <div key={key} className="flex flex-col gap-2">
               <h2 className="font-serif text-base font-bold">
                 {rows[0].dayLabelBn} · {rows[0].dayLabelEn}{' '}
-                <span className="font-sans text-sm font-normal text-muted-foreground">{date}</span>
+                <span className="font-sans text-sm font-normal text-muted-foreground">{rows[0].dayDate}</span>
               </h2>
               {rows.map((t) =>
                 editingId === t.id ? (
