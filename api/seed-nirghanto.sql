@@ -13,7 +13,7 @@ INSERT OR IGNORE INTO timetable_entry (id, event_id, day_date, day_label_bn, day
 ('tt26-030', 'durga-pujo-2026', '2026-10-17', 'মহা ষষ্ঠী', 'Maha Shashthi', 'ষষ্ঠী পূজা', 'Shashthi Puja', NULL, NULL, NULL, 30),
 ('tt26-031', 'durga-pujo-2026', '2026-10-17', 'মহা ষষ্ঠী', 'Maha Shashthi', 'পুষ্পাঞ্জলি', 'Pushpanjali', NULL, NULL, NULL, 31),
 ('tt26-032', 'durga-pujo-2026', '2026-10-17', 'মহা ষষ্ঠী', 'Maha Shashthi', 'চন্ডীপাঠ', 'Chandipaath', NULL, NULL, NULL, 32),
-('tt26-033', 'durga-pujo-2026', '2026-10-17', 'মহা ষষ্ঠী', 'Maha Shashthi', 'দেবী বোধন, মায়ের অধিবাস ও আমন্ত্রণ', 'Devi Bodhon, Maa''er Adhibaash O Aamontron', NULL, NULL, NULL, 33),
+('tt26-033', 'durga-pujo-2026', '2026-10-17', 'মহা ষষ্ঠী', 'Maha Shashthi', 'দেবী বোধন / অকাল বোধন, মায়ের অধিবাস ও আমন্ত্রণ', 'Devi Bodhon, Maa''er Adhibaash O Aamontron', NULL, NULL, NULL, 33),
 -- Maha Saptami
 ('tt26-040', 'durga-pujo-2026', '2026-10-18', 'মহা সপ্তমী', 'Maha Saptami', 'কলা বৌ স্নান', 'Kala Bou Snaan', NULL, NULL, NULL, 40),
 ('tt26-041', 'durga-pujo-2026', '2026-10-18', 'মহা সপ্তমী', 'Maha Saptami', 'নবপত্রিকা প্রবেশ', 'Nabapatrika Prabesh', NULL, NULL, NULL, 41),
@@ -51,7 +51,7 @@ INSERT OR IGNORE INTO timetable_entry (id, event_id, day_date, day_label_bn, day
 ('tt25-030', 'durga-pujo-2025', '2025-09-28', 'মহা ষষ্ঠী', 'Maha Shashthi', 'ষষ্ঠী পূজা', 'Shashthi Puja', '08:30', NULL, 'Shashthi ends at 10:43 AM.', 30),
 ('tt25-031', 'durga-pujo-2025', '2025-09-28', 'মহা ষষ্ঠী', 'Maha Shashthi', 'পুষ্পাঞ্জলি', 'Pushpanjali', '09:45', NULL, NULL, 31),
 ('tt25-032', 'durga-pujo-2025', '2025-09-28', 'মহা ষষ্ঠী', 'Maha Shashthi', 'চন্ডীপাঠ', 'Chandipaath', '10:30', NULL, NULL, 32),
-('tt25-033', 'durga-pujo-2025', '2025-09-28', 'মহা ষষ্ঠী', 'Maha Shashthi', 'দেবী বোধন, মায়ের অধিবাস ও আমন্ত্রণ', 'Devi Bodhon, Maa''er Adhibaash O Aamontron', '18:30', '20:00', NULL, 33),
+('tt25-033', 'durga-pujo-2025', '2025-09-28', 'মহা ষষ্ঠী', 'Maha Shashthi', 'দেবী বোধন / অকাল বোধন, মায়ের অধিবাস ও আমন্ত্রণ', 'Devi Bodhon, Maa''er Adhibaash O Aamontron', '18:30', '20:00', NULL, 33),
 ('tt25-040', 'durga-pujo-2025', '2025-09-29', 'মহা সপ্তমী', 'Maha Saptami', 'কলা বৌ স্নান', 'Kala Bou Snaan', '08:30', NULL, 'Kalbela upto 8:29 AM. Saptami upto 12:28 PM.', 40),
 ('tt25-041', 'durga-pujo-2025', '2025-09-29', 'মহা সপ্তমী', 'Maha Saptami', 'নবপত্রিকা প্রবেশ', 'Nabapatrika Prabesh', '09:00', NULL, NULL, 41),
 ('tt25-042', 'durga-pujo-2025', '2025-09-29', 'মহা সপ্তমী', 'Maha Saptami', 'মহা সপ্তমী পূজা', 'Maha Saptami Puja', '09:45', NULL, NULL, 42),
