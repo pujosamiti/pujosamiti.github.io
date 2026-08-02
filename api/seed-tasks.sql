@@ -54,9 +54,11 @@ INSERT OR IGNORE INTO durgapuja_task (id, category, title, details, sort_order, 
 ('sponsorship-drive', 'Money', 'Sponsorship program', 'Drive item sponsorships — murti, bhog days, dhaki, flowers, ghee, fruits…', 100, 1, unixepoch()),
 ('accounting', 'Money', 'Accounting & audit', 'Book-keeping through the season till Saraswati Puja; present the collection/expense summary.', 110, 1, unixepoch()),
 -- Events & Culture
-('cultural-function', 'Events & Culture', 'Cultural function', 'Programme list, slots and pricing, ritual-aware scheduling (e.g. no start before dhunuchi naach on Ashtami).', 420, 1, unixepoch()),
-('kids-competition', 'Events & Culture', 'Kids'' competition', 'Morning competitions for children.', 430, 1, unixepoch()),
-('ananda-mela', 'Events & Culture', 'Ananda Mela', 'Community fair — venue/clubhouse, stalls, coordination.', 440, 1, unixepoch()),
-('bijoya-sammelani', 'Events & Culture', 'Bijoya Sammelani', 'Post-pujo get-together — subject to collection; clubhouse booking and RSVP.', 450, 1, unixepoch()),
+('ananda-mela', 'Events & Culture', 'Ananda Mela', 'Community fair — venue/clubhouse, stalls, coordination.', 420, 1, unixepoch()),
+('ananda-naru', 'Events & Culture', 'Ananda Naru', 'আনন্দ নাড়ু — community naru/sweets-making get-together before pujo; arrange venue, ingredients and participants.', 430, 1, unixepoch()),
+('cultural-function', 'Events & Culture', 'Cultural function', 'Programme list, slots and pricing, ritual-aware scheduling (e.g. no start before dhunuchi naach on Ashtami).', 440, 1, unixepoch()),
+('kids-competition', 'Events & Culture', 'Kids'' competition', 'Morning competitions for children.', 450, 1, unixepoch()),
+('dhunuchi-competitions', 'Events & Culture', 'Dhunuchi Naach & other competitions', 'Dhunuchi naach (Ashtami evening) and other competitions — participants, judging, prizes.', 460, 1, unixepoch()),
+('bijoya-sammelani', 'Events & Culture', 'Bijoya Sammelani', 'Post-pujo get-together — subject to collection; clubhouse booking and RSVP.', 470, 1, unixepoch()),
 -- Ritual staffing
 ('ritual-volunteers', 'Ritual Staffing', 'Ritual volunteer slots', 'Per-ritual volunteer scheduling: thakur sthapona, bodhon, anjali, jharu-pocha, mandap prep, mahila attendance per ritual.', 410, 1, unixepoch());
