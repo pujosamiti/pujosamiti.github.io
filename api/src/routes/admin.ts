@@ -193,6 +193,69 @@ adminRoutes.post('/people/:id/tier', async (c) => {
   return c.json(ok({ id, tier }))
 })
 
+/**
+ * Merge one person into another (admin). The :id record SURVIVES and keeps
+ * its id (foreign keys like task assignments may already point at it); the
+ * source record's profile data overrides the survivor's, task assignments
+ * are repointed, statuses keep the stronger value, then the source is
+ * deleted.
+ */
+adminRoutes.post('/people/:id/merge', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
+  const { sourceId } = (await c.req.json()) as { sourceId: string }
+  const id = c.req.param('id')
+  if (!sourceId || sourceId === id) return c.json({ ok: false, error: 'pick a different person to merge' }, 400)
+  if (sourceId === c.get('adminPersonId')) return c.json({ ok: false, error: 'you cannot merge yourself away' }, 400)
+
+  const db = drizzle(c.env.DB, { schema })
+  const [survivor] = await db.select().from(schema.person).where(eq(schema.person.id, id)).limit(1)
+  const [src] = await db.select().from(schema.person).where(eq(schema.person.id, sourceId)).limit(1)
+  if (!survivor || !src) return c.json({ ok: false, error: 'person not found' }, 404)
+
+  // Repoint the source's task assignments; drop those that would duplicate
+  const srcAssignments = await db.select().from(schema.taskAssignment).where(eq(schema.taskAssignment.personId, sourceId))
+  const survivorAssignments = await db.select().from(schema.taskAssignment).where(eq(schema.taskAssignment.personId, id))
+  for (const a of srcAssignments) {
+    const clash = survivorAssignments.some((b) => b.taskId === a.taskId && b.year === a.year)
+    if (clash) await db.delete(schema.taskAssignment).where(eq(schema.taskAssignment.id, a.id))
+    else await db.update(schema.taskAssignment).set({ personId: id }).where(eq(schema.taskAssignment.id, a.id))
+  }
+
+  // Delete the source first so its unique email is free for the survivor
+  await db.delete(schema.person).where(eq(schema.person.id, sourceId))
+
+  const tierRank = { non_member: 0, member: 1, core: 2 } as const
+  const notes =
+    src.notes && src.notes !== survivor.notes
+      ? survivor.notes
+        ? `${survivor.notes} | ${src.notes}`
+        : src.notes
+      : survivor.notes
+  await db
+    .update(schema.person)
+    .set({
+      // latest (source) info overrides; nulls never erase known values
+      displayName: src.displayName,
+      email: src.email ?? survivor.email,
+      society: src.society ?? survivor.society,
+      residenceDetail: src.residenceDetail ?? survivor.residenceDetail,
+      workplace: src.workplace ?? survivor.workplace,
+      workplaceDetail: src.workplaceDetail ?? survivor.workplaceDetail,
+      eligibility: src.eligibility,
+      phone: src.phone ?? survivor.phone,
+      gender: src.gender ?? survivor.gender,
+      familyId: src.familyId ?? survivor.familyId,
+      portfolio: src.portfolio ?? survivor.portfolio,
+      notes,
+      tier: tierRank[src.tier] > tierRank[survivor.tier] ? src.tier : survivor.tier,
+      isAdmin: survivor.isAdmin || src.isAdmin,
+      isActive: survivor.isActive || src.isActive,
+    })
+    .where(eq(schema.person.id, id))
+  return c.json(ok({ id, merged: sourceId }))
+})
+
 adminRoutes.delete('/people/:id', async (c) => {
   const guard = requireAdmin(c)
   if (guard) return guard

@@ -1,7 +1,7 @@
 import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, FamilyTier } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -172,6 +172,7 @@ function PeopleView({
 function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; families: AdminFamily[]; canEdit: boolean }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
+  const [merging, setMerging] = useState(false)
   const setTier = useMutation({
     mutationFn: (tier: FamilyTier) => post(`/api/admin/people/${p.id}/tier`, { tier }),
     onSuccess: () => queryClient.invalidateQueries(),
@@ -241,6 +242,15 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
                 <Button
                   size="sm"
                   variant="ghost"
+                  onClick={() => setMerging((v) => !v)}
+                  aria-label={`Merge into ${p.displayName}`}
+                  title="Merge a duplicate into this record"
+                >
+                  <GitMerge />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
                   onClick={() => {
                     if (confirm(`Remove ${p.displayName}?`)) remove.mutate()
                   }}
@@ -255,8 +265,70 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
             )}
           </div>
         </div>
+        {merging && <MergePanel survivor={p} onClose={() => setMerging(false)} />}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * Merge a duplicate INTO this record: this record's id survives (existing
+ * task assignments etc. keep working); the absorbed record's newer profile
+ * data overrides, and the duplicate is deleted.
+ */
+function MergePanel({ survivor, onClose }: { survivor: AdminPerson; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [sourceId, setSourceId] = useState('')
+  const [error, setError] = useState<string | null>(null)
+  const { data: everyone } = useQuery({
+    queryKey: ['admin-people', ''],
+    queryFn: () => api<AdminPerson[]>('/api/admin/people?q='),
+  })
+  const options = (everyone ?? []).filter((x) => x.id !== survivor.id)
+  const source = options.find((x) => x.id === sourceId)
+
+  const merge = useMutation({
+    mutationFn: () => post(`/api/admin/people/${survivor.id}/merge`, { sourceId }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries()
+      onClose()
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'failed'),
+  })
+
+  return (
+    <div className="flex flex-col gap-2 rounded-md border border-genda bg-accent/50 p-3">
+      <p className="text-sm">
+        Merge a duplicate into <span className="font-medium">{survivor.displayName}</span> — this
+        record (and its history) survives; the absorbed record's newer details override, and the
+        duplicate is deleted.
+      </p>
+      <select className={inputCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
+        <option value="">Pick the duplicate to absorb…</option>
+        {options.map((x) => (
+          <option key={x.id} value={x.id}>
+            {x.displayName}
+            {x.email ? ` · ${x.email}` : ''} · {TIER_LABEL[x.tier]}
+          </option>
+        ))}
+      </select>
+      {error && <p className="text-sm text-destructive">{error}</p>}
+      <div className="flex gap-2">
+        <Button
+          size="sm"
+          disabled={!sourceId || merge.isPending}
+          onClick={() => {
+            if (source && confirm(`Merge "${source.displayName}" into "${survivor.displayName}"? The duplicate will be deleted.`))
+              merge.mutate()
+          }}
+        >
+          {merge.isPending && <Loader2 className="animate-spin" />} <GitMerge /> Merge
+        </Button>
+        <Button size="sm" variant="outline" onClick={onClose} disabled={merge.isPending}>
+          Cancel
+        </Button>
+      </div>
+    </div>
   )
 }
 
