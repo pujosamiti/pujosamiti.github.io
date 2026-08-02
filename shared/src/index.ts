@@ -132,6 +132,8 @@ export interface TaskView {
   skipped: boolean; // not taken up this year
   phase: TaskPhase;
   checks: [TaskCheck, TaskCheck, TaskCheck];
+  /** Free-form notes for this year's run */
+  notes: string | null;
   owners: TaskPersonRef[]; // max 5
   volunteers: TaskPersonRef[];
 }
@@ -150,6 +152,7 @@ export interface TaskYearInput {
   year: number;
   phase: TaskPhase;
   checks: [TaskCheck, TaskCheck, TaskCheck];
+  notes: string | null;
   ownerIds: string[]; // max TASK_MAX_OWNERS
   volunteerIds: string[];
 }

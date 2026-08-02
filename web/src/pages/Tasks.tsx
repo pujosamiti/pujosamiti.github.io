@@ -174,6 +174,7 @@ function TaskCard({
         year,
         phase,
         checks: t.checks,
+        notes: t.notes,
         ownerIds: t.owners.map((o) => o.id),
         volunteerIds: t.volunteers.map((v) => v.id),
       }),
@@ -253,6 +254,10 @@ function TaskCard({
                 ),
             )}
           </div>
+        )}
+
+        {t.notes && (
+          <p className="whitespace-pre-wrap rounded-md bg-accent px-3 py-2 text-sm">{t.notes}</p>
         )}
 
         <div className="flex flex-wrap items-center gap-2">
@@ -366,6 +371,7 @@ function TaskForm({
   const [sortOrder, setSortOrder] = useState<number>(task?.sortOrder ?? 1000)
   const [phase, setPhase] = useState<TaskPhase>(task?.phase ?? 'todo')
   const [checks, setChecks] = useState<[TaskCheck, TaskCheck, TaskCheck]>(task?.checks ?? EMPTY_CHECKS)
+  const [yearNotes, setYearNotes] = useState(task?.notes ?? '')
   const [ownerIds, setOwnerIds] = useState<string[]>(task?.owners.map((o) => o.id) ?? [])
   const [volunteerIds, setVolunteerIds] = useState<string[]>(task?.volunteers.map((v) => v.id) ?? [])
   const [error, setError] = useState<string | null>(null)
@@ -378,7 +384,7 @@ function TaskForm({
         if (id) await updateMasterTask(id, master)
         else id = (await createMasterTask(master)).id
       }
-      await saveTaskYear(id!, { year, phase, checks, ownerIds, volunteerIds })
+      await saveTaskYear(id!, { year, phase, checks, notes: yearNotes || null, ownerIds, volunteerIds })
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -461,6 +467,15 @@ function TaskForm({
                 </option>
               ))}
             </select>
+          </Field>
+          <Field label={`Notes for ${year} (free form)`}>
+            <textarea
+              className={inputCls}
+              rows={3}
+              value={yearNotes}
+              onChange={(e) => setYearNotes(e.target.value)}
+              placeholder="Vendor finalized, advance paid, pending items…"
+            />
           </Field>
           {checks.map((ck, i) => (
             <div key={i} className="grid gap-3 sm:grid-cols-[10rem_1fr]">

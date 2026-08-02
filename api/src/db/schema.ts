@@ -130,6 +130,7 @@ export const taskYear = sqliteTable('task_year', {
   check2Notes: text('check2_notes'),
   check3Date: text('check3_date'),
   check3Notes: text('check3_notes'),
+  notes: text('notes'), // free-form notes for this year's run of the task
 })
 
 export const taskAssignment = sqliteTable('task_assignment', {

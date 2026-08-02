@@ -76,6 +76,7 @@ taskRoutes.get('/', async (c) => {
           { date: y?.check2Date ?? null, notes: y?.check2Notes ?? null },
           { date: y?.check3Date ?? null, notes: y?.check3Notes ?? null },
         ],
+        notes: y?.notes ?? null,
         owners: assignments
           .filter((x) => x.a.taskId === t.id && x.a.role === 'owner')
           .map((x) => ({ id: x.a.personId, name: x.name })),
@@ -156,6 +157,7 @@ taskRoutes.post('/:id/year', async (c) => {
     check2Notes: checks[1].notes?.trim() || null,
     check3Date: checks[2].date || null,
     check3Notes: checks[2].notes?.trim() || null,
+    notes: body.notes?.trim() || null,
   }
   const [existing] = await db
     .select({ id: schema.taskYear.id })
