@@ -166,6 +166,8 @@ export const event = sqliteTable('event', {
   startsOn: text('starts_on').notNull(), // ISO date
   endsOn: text('ends_on').notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
+  purohitName: text('purohit_name'), // nirghanto header (durga pujo)
+  purohitPhone: text('purohit_phone'),
 })
 
 export const notice = sqliteTable('notice', {
@@ -177,16 +179,25 @@ export const notice = sqliteTable('notice', {
   publishedAt: integer('published_at', { mode: 'timestamp' }).notNull(),
 })
 
+/**
+ * Nirghanto rows (Durga Pujo only — one-day events publish no timetable).
+ * Grouped by day (tithi label + date), each row is a bilingual ritual with
+ * from/to times and panchang comments — mirroring the samiti's yearly
+ * nirghanto document.
+ */
 export const timetableEntry = sqliteTable('timetable_entry', {
   id: text('id').primaryKey(),
   eventId: text('event_id')
     .notNull()
     .references(() => event.id),
-  title: text('title').notNull(),
-  detail: text('detail'),
-  startsAt: text('starts_at').notNull(), // ISO datetime
-  endsAt: text('ends_at'),
-  venue: text('venue'),
+  dayDate: text('day_date').notNull(), // ISO date
+  dayLabelBn: text('day_label_bn').notNull(), // "মহা ষষ্ঠী"
+  dayLabelEn: text('day_label_en').notNull(), // "Maha Shashthi"
+  titleBn: text('title_bn').notNull(), // "ষষ্ঠী পূজা"
+  titleEn: text('title_en').notNull(),
+  timeFrom: text('time_from'), // "08:30" (24h); NULL until the purohit confirms
+  timeTo: text('time_to'),
+  comments: text('comments'), // "Shashthi ends at 10:43 AM"
   sortOrder: integer('sort_order').notNull().default(0),
 })
 

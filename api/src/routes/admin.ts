@@ -1,5 +1,6 @@
 import type {
   AdminEventInput,
+  AdminTimetableInput,
   AdminFamily,
   AdminFamilyInput,
   AdminPerson,
@@ -202,6 +203,8 @@ function eventValues(body: AdminEventInput) {
     startsOn: body.startsOn,
     endsOn: body.endsOn || body.startsOn,
     isActive: !!body.isActive,
+    purohitName: body.purohitName?.trim() || null,
+    purohitPhone: body.purohitPhone?.trim() || null,
   }
 }
 
@@ -251,5 +254,54 @@ adminRoutes.delete('/events/:id', async (c) => {
       409,
     )
   }
+  return c.json(ok({ id }))
+})
+
+// ── Nirghanto (timetable) CRUD — Durga Pujo only ────────────────────────────
+
+function timetableValues(body: AdminTimetableInput) {
+  return {
+    dayDate: body.dayDate,
+    dayLabelBn: body.dayLabelBn.trim(),
+    dayLabelEn: body.dayLabelEn.trim(),
+    titleBn: body.titleBn.trim(),
+    titleEn: body.titleEn.trim(),
+    timeFrom: body.timeFrom || null,
+    timeTo: body.timeTo || null,
+    comments: body.comments?.trim() || null,
+    sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 0,
+  }
+}
+
+adminRoutes.post('/timetable', async (c) => {
+  const body = (await c.req.json()) as AdminTimetableInput
+  if (!body.eventId || !body.dayDate || !body.dayLabelBn?.trim() || !body.dayLabelEn?.trim() || !body.titleBn?.trim() || !body.titleEn?.trim())
+    return c.json({ ok: false, error: 'day, labels and ritual names are required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const [ev] = await db.select({ kind: schema.event.kind }).from(schema.event).where(eq(schema.event.id, body.eventId)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (ev.kind !== 'durga-pujo')
+    return c.json({ ok: false, error: 'time tables are published for Durga Pujo only' }, 400)
+  const id = crypto.randomUUID()
+  await db.insert(schema.timetableEntry).values({ id, eventId: body.eventId, ...timetableValues(body) })
+  return c.json(ok({ id }))
+})
+
+adminRoutes.post('/timetable/:id', async (c) => {
+  const body = (await c.req.json()) as AdminTimetableInput
+  if (!body.dayDate || !body.dayLabelBn?.trim() || !body.dayLabelEn?.trim() || !body.titleBn?.trim() || !body.titleEn?.trim())
+    return c.json({ ok: false, error: 'day, labels and ritual names are required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [t] = await db.select({ id: schema.timetableEntry.id }).from(schema.timetableEntry).where(eq(schema.timetableEntry.id, id)).limit(1)
+  if (!t) return c.json({ ok: false, error: 'entry not found' }, 404)
+  await db.update(schema.timetableEntry).set(timetableValues(body)).where(eq(schema.timetableEntry.id, id))
+  return c.json(ok({ id }))
+})
+
+adminRoutes.delete('/timetable/:id', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  await db.delete(schema.timetableEntry).where(eq(schema.timetableEntry.id, id))
   return c.json(ok({ id }))
 })

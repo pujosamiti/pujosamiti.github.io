@@ -4,13 +4,15 @@ import type {
   AdminFamilyInput,
   AdminPerson,
   AdminPersonInput,
+  AdminTimetableInput,
   EventKind,
   FamilyTier,
   PujoEvent,
+  TimeTableEntry,
 } from '@pujosamiti/shared'
 import { EVENT_KINDS, LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { CalendarDays, Clock, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -49,7 +51,7 @@ function personMatches(p: AdminPerson, q: string): boolean {
   return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
 }
 
-type View = 'members' | 'pending' | 'families' | 'events'
+type View = 'members' | 'pending' | 'families' | 'events' | 'nirghanto'
 
 export function Admin() {
   const { memberState, memberPending, sessionPending } = useMemberState()
@@ -94,11 +96,12 @@ export function Admin() {
     )
   }
 
-  const tabs: { key: View; label: string; icon: typeof Users; count: number }[] = [
+  const tabs: { key: View; label: string; icon: typeof Users; count: number | null }[] = [
     { key: 'members', label: 'Members', icon: ShieldCheck, count: members.length },
     { key: 'pending', label: 'Pending activation', icon: Hourglass, count: pending.length },
     { key: 'families', label: 'Families', icon: Users, count: families?.length ?? 0 },
     { key: 'events', label: 'Events', icon: CalendarDays, count: events?.length ?? 0 },
+    { key: 'nirghanto', label: 'Nirghanto', icon: Clock, count: null },
   ]
 
   return (
@@ -113,7 +116,7 @@ export function Admin() {
             variant={view === key ? 'default' : 'outline'}
             onClick={() => { setView(key); setQ('') }}
           >
-            <Icon /> {label} ({count})
+            <Icon /> {label}{count !== null && ` (${count})`}
           </Button>
         ))}
       </div>
@@ -129,14 +132,18 @@ export function Admin() {
               ? 'Search families by name or notes…'
               : view === 'events'
                 ? 'Search events by name, kind or year…'
-                : 'Search by name, society, email or WhatsApp number…'
+                : view === 'nirghanto'
+                  ? 'Search rituals or days…'
+                  : 'Search by name, society, email or WhatsApp number…'
           }
         />
       </div>
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
 
-      {view === 'events' ? (
+      {view === 'nirghanto' ? (
+        <NirghantoView events={events} q={q} />
+      ) : view === 'events' ? (
         <EventsView events={events} q={q} />
       ) : view === 'families' ? (
         <FamiliesView families={families} q={q} />
@@ -657,6 +664,8 @@ function EventForm({ event, onClose }: { event?: PujoEvent; onClose: () => void 
     startsOn: event?.startsOn ?? '',
     endsOn: event?.endsOn ?? '',
     isActive: event?.isActive ?? false,
+    purohitName: event?.purohitName ?? null,
+    purohitPhone: event?.purohitPhone ?? null,
   })
   const [error, setError] = useState<string | null>(null)
   const set = (patch: Partial<AdminEventInput>) => setForm((prev) => ({ ...prev, ...patch }))
@@ -729,10 +738,303 @@ function EventForm({ event, onClose }: { event?: PujoEvent; onClose: () => void 
               <input type="date" className={inputCls} value={form.endsOn} onChange={(e) => set({ endsOn: e.target.value })} />
             </Field>
           </div>
+          {form.kind === 'durga-pujo' && (
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Field label="Purohit name (nirghanto header)">
+                <input className={inputCls} value={form.purohitName ?? ''} onChange={(e) => set({ purohitName: e.target.value || null })} />
+              </Field>
+              <Field label="Purohit phone">
+                <input className={inputCls} value={form.purohitPhone ?? ''} onChange={(e) => set({ purohitPhone: e.target.value || null })} inputMode="tel" />
+              </Field>
+            </div>
+          )}
           <label className="flex items-center gap-2 text-sm">
             <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />
             Active (the current season's event)
           </label>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending && <Loader2 className="animate-spin" />} Save
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+// ── Nirghanto (Durga Pujo time table) ───────────────────────────────────────
+
+function NirghantoView({ events, q }: { events: PujoEvent[] | undefined; q: string }) {
+  const dpEvents = (events ?? []).filter((e) => e.kind === 'durga-pujo').sort((a, b) => b.year - a.year)
+  const [eventId, setEventId] = useState<string | null>(null)
+  const selected = dpEvents.find((e) => e.id === eventId) ?? dpEvents.find((e) => e.isActive) ?? dpEvents[0] ?? null
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+
+  const { data: entries, isPending } = useQuery({
+    queryKey: ['timetable', selected?.id],
+    queryFn: () => api<TimeTableEntry[]>(`/api/public/timetable?event=${selected!.id}`),
+    enabled: !!selected,
+  })
+
+  if (!selected) return <p className="text-sm text-muted-foreground">No Durga Pujo events yet.</p>
+
+  const needle = q.trim().toLowerCase()
+  const shown = (entries ?? []).filter(
+    (t) =>
+      !needle ||
+      t.titleEn.toLowerCase().includes(needle) ||
+      t.titleBn.includes(q.trim()) ||
+      t.dayLabelEn.toLowerCase().includes(needle) ||
+      t.dayLabelBn.includes(q.trim()),
+  )
+  const days = [...new Set(shown.map((t) => t.dayDate))]
+
+  return (
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <select
+          className={`${inputCls} w-auto`}
+          value={selected.id}
+          onChange={(e) => setEventId(e.target.value)}
+          aria-label="Durga Pujo year"
+        >
+          {dpEvents.map((e) => (
+            <option key={e.id} value={e.id}>
+              Durga Pujo {e.year}
+            </option>
+          ))}
+        </select>
+        {!adding && (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus /> Add ritual
+          </Button>
+        )}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        Purohit for the nirghanto header is set on the event (Events tab → edit Durga Pujo {selected.year}).
+      </p>
+
+      {adding && <TimetableForm event={selected} entries={entries ?? []} onClose={() => setAdding(false)} />}
+      {isPending ? (
+        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+      ) : (
+        days.map((date) => {
+          const rows = shown.filter((t) => t.dayDate === date)
+          return (
+            <div key={date} className="flex flex-col gap-2">
+              <h2 className="font-serif text-base font-bold">
+                {rows[0].dayLabelBn} · {rows[0].dayLabelEn}{' '}
+                <span className="font-sans text-sm font-normal text-muted-foreground">{date}</span>
+              </h2>
+              {rows.map((t) =>
+                editingId === t.id ? (
+                  <TimetableForm
+                    key={t.id}
+                    event={selected}
+                    entry={t}
+                    entries={entries ?? []}
+                    onClose={() => setEditingId(null)}
+                  />
+                ) : (
+                  <TimetableRow key={t.id} entry={t} onEdit={() => setEditingId(t.id)} />
+                ),
+              )}
+            </div>
+          )
+        })
+      )}
+      {!isPending && !shown.length && (
+        <p className="text-sm text-muted-foreground">{q ? 'No matches.' : 'No rituals yet — add the first.'}</p>
+      )}
+    </section>
+  )
+}
+
+function TimetableRow({ entry: t, onEdit }: { entry: TimeTableEntry; onEdit: () => void }) {
+  const queryClient = useQueryClient()
+  const remove = useMutation({
+    mutationFn: () => api(`/api/admin/timetable/${t.id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+  return (
+    <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+      <span className="min-w-0">
+        <span className="font-medium">{t.titleBn}</span>{' '}
+        <span className="text-muted-foreground">{t.titleEn}</span>
+        <span className="ml-2 text-matir">
+          {t.timeFrom ? (t.timeTo ? `${t.timeFrom}–${t.timeTo}` : t.timeFrom) : 'time TBD'}
+        </span>
+        {t.comments && <span className="text-muted-foreground"> · {t.comments}</span>}
+      </span>
+      <span className="flex shrink-0 gap-1">
+        <Button size="sm" variant="ghost" onClick={onEdit} aria-label={`Edit ${t.titleEn}`}>
+          <Pencil />
+        </Button>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => {
+            if (confirm(`Delete "${t.titleEn}"?`)) remove.mutate()
+          }}
+          disabled={remove.isPending}
+          aria-label={`Delete ${t.titleEn}`}
+        >
+          <Trash2 className="text-destructive" />
+        </Button>
+      </span>
+    </div>
+  )
+}
+
+function TimetableForm({
+  event,
+  entry,
+  entries,
+  onClose,
+}: {
+  event: PujoEvent
+  entry?: TimeTableEntry
+  entries: TimeTableEntry[]
+  onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const lastDay = entries[entries.length - 1]
+  const [form, setForm] = useState<AdminTimetableInput>({
+    eventId: event.id,
+    dayDate: entry?.dayDate ?? lastDay?.dayDate ?? event.startsOn,
+    dayLabelBn: entry?.dayLabelBn ?? lastDay?.dayLabelBn ?? '',
+    dayLabelEn: entry?.dayLabelEn ?? lastDay?.dayLabelEn ?? '',
+    titleBn: entry?.titleBn ?? '',
+    titleEn: entry?.titleEn ?? '',
+    timeFrom: entry?.timeFrom ?? null,
+    timeTo: entry?.timeTo ?? null,
+    comments: entry?.comments ?? null,
+    sortOrder: entry?.sortOrder ?? (lastDay?.sortOrder ?? 0) + 1,
+  })
+  const [error, setError] = useState<string | null>(null)
+  const set = (patch: Partial<AdminTimetableInput>) => setForm((prev) => ({ ...prev, ...patch }))
+  const dayOptions = [...new Map(entries.map((t) => [t.dayDate, t])).values()]
+
+  const save = useMutation({
+    mutationFn: () =>
+      api(entry ? `/api/admin/timetable/${entry.id}` : '/api/admin/timetable', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries()
+      onClose()
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'failed'),
+  })
+
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            save.mutate()
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Day date *">
+              <input
+                type="date"
+                className={inputCls}
+                value={form.dayDate}
+                onChange={(e) => {
+                  const known = dayOptions.find((d) => d.dayDate === e.target.value)
+                  set({
+                    dayDate: e.target.value,
+                    ...(known ? { dayLabelBn: known.dayLabelBn, dayLabelEn: known.dayLabelEn } : {}),
+                  })
+                }}
+                required
+              />
+            </Field>
+            <Field label="Day (Bengali) *">
+              <input
+                className={inputCls}
+                value={form.dayLabelBn}
+                onChange={(e) => set({ dayLabelBn: e.target.value })}
+                placeholder="মহা ষষ্ঠী"
+                required
+              />
+            </Field>
+            <Field label="Day (English) *">
+              <input
+                className={inputCls}
+                value={form.dayLabelEn}
+                onChange={(e) => set({ dayLabelEn: e.target.value })}
+                placeholder="Maha Shashthi"
+                required
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Ritual (Bengali) *">
+              <input
+                className={inputCls}
+                value={form.titleBn}
+                onChange={(e) => set({ titleBn: e.target.value })}
+                placeholder="ষষ্ঠী পূজা"
+                required
+              />
+            </Field>
+            <Field label="Ritual (English) *">
+              <input
+                className={inputCls}
+                value={form.titleEn}
+                onChange={(e) => set({ titleEn: e.target.value })}
+                placeholder="Shashthi Puja"
+                required
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="From">
+              <input
+                type="time"
+                className={inputCls}
+                value={form.timeFrom ?? ''}
+                onChange={(e) => set({ timeFrom: e.target.value || null })}
+              />
+            </Field>
+            <Field label="To">
+              <input
+                type="time"
+                className={inputCls}
+                value={form.timeTo ?? ''}
+                onChange={(e) => set({ timeTo: e.target.value || null })}
+              />
+            </Field>
+            <Field label="Sort order">
+              <input
+                type="number"
+                className={inputCls}
+                value={form.sortOrder}
+                onChange={(e) => set({ sortOrder: Number(e.target.value) })}
+              />
+            </Field>
+          </div>
+          <Field label="Comments (panchang notes)">
+            <input
+              className={inputCls}
+              value={form.comments ?? ''}
+              onChange={(e) => set({ comments: e.target.value || null })}
+              placeholder="e.g. Shashthi ends at 10:43 AM"
+            />
+          </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={save.isPending}>

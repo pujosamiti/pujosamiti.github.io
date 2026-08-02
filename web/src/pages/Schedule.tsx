@@ -1,5 +1,6 @@
-import { useQuery } from '@tanstack/react-query'
 import type { PujoEvent, TimeTableEntry } from '@pujosamiti/shared'
+import { useQuery } from '@tanstack/react-query'
+import { Phone } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -14,9 +15,23 @@ function formatRange(e: PujoEvent) {
   return start === end ? `${start} ${e.year}` : `${start} – ${end} ${e.year}`
 }
 
+function formatDay(iso: string) {
+  return new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+}
+
+/** "08:30" → "8:30 AM" */
+function formatTime(t: string | null) {
+  if (!t) return null
+  const [h, m] = t.split(':').map(Number)
+  const ampm = h >= 12 ? 'PM' : 'AM'
+  const h12 = h % 12 || 12
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`
+}
+
 /**
- * Choose an event first, then see its schedule. The chosen event lives in the
- * URL (?event=…) so schedules can be shared as links.
+ * Choose an event first, then see its schedule. Only Durga Pujo publishes a
+ * nirghanto — other events are one-day gatherings. The chosen event lives in
+ * the URL (?event=…) so schedules can be shared as links.
  */
 export function Schedule() {
   const [params, setParams] = useSearchParams()
@@ -27,10 +42,12 @@ export function Schedule() {
     queryFn: () => api<PujoEvent[]>('/api/public/events'),
   })
 
+  const selected = events.data?.find((e) => e.id === eventId) ?? null
+
   const timetable = useQuery({
     queryKey: ['timetable', eventId],
     queryFn: () => api<TimeTableEntry[]>(`/api/public/timetable?event=${eventId}`),
-    enabled: !!eventId,
+    enabled: !!eventId && selected?.kind === 'durga-pujo',
   })
 
   if (events.isError) {
@@ -44,21 +61,18 @@ export function Schedule() {
     )
   }
 
-  // Step 1: choose an event
-  if (!eventId) {
+  // Step 1: choose an event (this season's events lead; older ones follow)
+  if (!eventId || !selected) {
+    const upcoming = (events.data ?? []).filter((e) => e.isActive || new Date(e.endsOn) >= new Date())
+    const shown = upcoming.length ? upcoming.slice(0, 8) : (events.data ?? []).slice(-8)
     return (
       <div className="flex flex-col gap-4">
         <h1 className="text-2xl font-bold">Schedule</h1>
         <p className="text-sm text-muted-foreground">Choose an event to see its schedule.</p>
         <div className="grid gap-3 sm:grid-cols-2">
-          {events.data?.map((e) => (
-            <button
-              key={e.id}
-              type="button"
-              onClick={() => setParams({ event: e.id })}
-              className="text-left"
-            >
-              <Card className="transition-colors hover:border-primary">
+          {shown.map((e) => (
+            <button key={e.id} type="button" onClick={() => setParams({ event: e.id })} className="text-left">
+              <Card className="h-full transition-colors hover:border-primary">
                 <CardHeader>
                   <div className="flex items-center justify-between gap-2">
                     <CardTitle className="text-lg">{e.nameBn}</CardTitle>
@@ -77,13 +91,24 @@ export function Schedule() {
     )
   }
 
-  // Step 2: the chosen event's schedule, with chips to switch
+  const seasonEvents = (events.data ?? []).filter(
+    (e) => e.year === selected.year || e.id === eventId || e.isActive,
+  )
+
+  // Group nirghanto rows by day (rows arrive day-ordered from the API)
+  const days: { date: string; labelBn: string; labelEn: string; rows: TimeTableEntry[] }[] = []
+  for (const t of timetable.data ?? []) {
+    const last = days[days.length - 1]
+    if (last && last.date === t.dayDate) last.rows.push(t)
+    else days.push({ date: t.dayDate, labelBn: t.dayLabelBn, labelEn: t.dayLabelEn, rows: [t] })
+  }
+
   return (
     <div className="flex flex-col gap-4">
       <h1 className="text-2xl font-bold">Schedule</h1>
 
       <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
-        {events.data?.map((e) => (
+        {seasonEvents.map((e) => (
           <button
             key={e.id}
             type="button"
@@ -98,34 +123,78 @@ export function Schedule() {
         ))}
       </div>
 
-      {timetable.isLoading && <p className="text-sm text-muted-foreground">Loading schedule…</p>}
-      {timetable.isError && (
-        <p className="text-sm text-muted-foreground">
-          This schedule could not be loaded right now. Please try again in a little while.
-        </p>
-      )}
-      {timetable.data?.map((t) => (
-        <Card key={t.id}>
+      {selected.kind !== 'durga-pujo' ? (
+        <Card>
           <CardHeader>
-            <CardTitle>{t.title}</CardTitle>
+            <CardTitle>
+              {selected.nameBn} · {selected.nameEn}
+            </CardTitle>
           </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            {t.detail}
-            <p className="mt-1 text-matir">
-              {new Date(t.startsAt).toLocaleString('en-IN', {
-                weekday: 'short',
-                day: 'numeric',
-                month: 'short',
-                hour: 'numeric',
-                minute: '2-digit',
-              })}
-              {t.venue && ` · ${t.venue}`}
-            </p>
+            One-day gathering on <span className="font-medium text-foreground">{formatDay(selected.startsOn)}</span>.
+            Timings are shared in the notices closer to the day.
           </CardContent>
         </Card>
-      ))}
-      {timetable.data?.length === 0 && (
-        <p className="text-sm text-muted-foreground">The schedule for this event is coming soon.</p>
+      ) : (
+        <>
+          <Card className="bg-band text-band-foreground">
+            <CardHeader>
+              <CardTitle className="font-serif">দূর্গা পুজোর নির্ঘণ্ট · {selected.year}</CardTitle>
+              {(selected.purohitName || selected.purohitPhone) && (
+                <p className="text-sm opacity-90">
+                  পুরোহিত: {selected.purohitName}
+                  {selected.purohitPhone && (
+                    <>
+                      {' '}
+                      · <Phone className="inline size-3.5" aria-hidden="true" /> {selected.purohitPhone}
+                    </>
+                  )}
+                </p>
+              )}
+            </CardHeader>
+          </Card>
+
+          {timetable.isLoading && <p className="text-sm text-muted-foreground">Loading nirghanto…</p>}
+          {timetable.isError && (
+            <p className="text-sm text-muted-foreground">
+              The nirghanto could not be loaded right now. Please try again in a little while.
+            </p>
+          )}
+
+          {days.map((day) => (
+            <Card key={day.date}>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  {day.labelBn} <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{formatDay(day.date)}</p>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-2">
+                {day.rows.map((t) => {
+                  const from = formatTime(t.timeFrom)
+                  const to = formatTime(t.timeTo)
+                  return (
+                    <div key={t.id} className="border-b pb-2 text-sm last:border-b-0 last:pb-0">
+                      <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+                        <span>
+                          <span className="font-medium">{t.titleBn}</span>{' '}
+                          <span className="text-muted-foreground">{t.titleEn}</span>
+                        </span>
+                        <span className="whitespace-nowrap text-matir">
+                          {from ? (to ? `${from} – ${to}` : from) : '—'}
+                        </span>
+                      </div>
+                      {t.comments && <p className="text-muted-foreground">{t.comments}</p>}
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          ))}
+          {timetable.data?.length === 0 && (
+            <p className="text-sm text-muted-foreground">The nirghanto for this year is coming soon.</p>
+          )}
+        </>
       )}
     </div>
   )

@@ -29,6 +29,9 @@ export interface PujoEvent {
   startsOn: string; // ISO date
   endsOn: string; // ISO date
   isActive: boolean;
+  /** Nirghanto header (durga pujo) */
+  purohitName: string | null;
+  purohitPhone: string | null;
 }
 
 // ── Public content ──────────────────────────────────────────────────────────
@@ -43,15 +46,32 @@ export interface Notice {
   publishedAt: string; // ISO datetime
 }
 
+/** One nirghanto row: a ritual within a tithi day (Durga Pujo only). */
 export interface TimeTableEntry {
   id: string;
   eventId: EventId;
-  /** e.g. "Maha Sasthi", "Sandhi Pujo" */
-  title: string;
-  detail: string | null;
-  startsAt: string; // ISO datetime
-  endsAt: string | null;
-  venue: string | null;
+  dayDate: string; // ISO date
+  dayLabelBn: string; // "মহা ষষ্ঠী"
+  dayLabelEn: string; // "Maha Shashthi"
+  titleBn: string; // "ষষ্ঠী পূজা"
+  titleEn: string;
+  timeFrom: string | null; // "08:30" 24h; null until the purohit confirms
+  timeTo: string | null;
+  comments: string | null;
+  sortOrder: number;
+}
+
+export interface AdminTimetableInput {
+  eventId: EventId;
+  dayDate: string;
+  dayLabelBn: string;
+  dayLabelEn: string;
+  titleBn: string;
+  titleEn: string;
+  timeFrom: string | null;
+  timeTo: string | null;
+  comments: string | null;
+  sortOrder: number;
 }
 
 export type GalleryKind = 'photo' | 'video';
@@ -247,6 +267,8 @@ export interface AdminEventInput {
   startsOn: string; // ISO date
   endsOn: string;
   isActive: boolean;
+  purohitName: string | null;
+  purohitPhone: string | null;
 }
 
 // ── Accounting (Sheets is source of truth; Worker reads via service account) ─

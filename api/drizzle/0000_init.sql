@@ -44,7 +44,9 @@ CREATE TABLE `event` (
 	`name_en` text NOT NULL,
 	`starts_on` text NOT NULL,
 	`ends_on` text NOT NULL,
-	`is_active` integer DEFAULT false NOT NULL
+	`is_active` integer DEFAULT false NOT NULL,
+	`purohit_name` text,
+	`purohit_phone` text
 );
 --> statement-breakpoint
 CREATE TABLE `family` (
@@ -151,11 +153,14 @@ CREATE TABLE `task_year` (
 CREATE TABLE `timetable_entry` (
 	`id` text PRIMARY KEY NOT NULL,
 	`event_id` text NOT NULL,
-	`title` text NOT NULL,
-	`detail` text,
-	`starts_at` text NOT NULL,
-	`ends_at` text,
-	`venue` text,
+	`day_date` text NOT NULL,
+	`day_label_bn` text NOT NULL,
+	`day_label_en` text NOT NULL,
+	`title_bn` text NOT NULL,
+	`title_en` text NOT NULL,
+	`time_from` text,
+	`time_to` text,
+	`comments` text,
 	`sort_order` integer DEFAULT 0 NOT NULL,
 	FOREIGN KEY (`event_id`) REFERENCES `event`(`id`) ON UPDATE no action ON DELETE no action
 );

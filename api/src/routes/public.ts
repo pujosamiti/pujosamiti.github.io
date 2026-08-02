@@ -51,7 +51,7 @@ publicRoutes.get('/timetable', async (c) => {
     .select()
     .from(schema.timetableEntry)
     .where(eq(schema.timetableEntry.eventId, eventId))
-    .orderBy(asc(schema.timetableEntry.sortOrder), asc(schema.timetableEntry.startsAt))
+    .orderBy(asc(schema.timetableEntry.dayDate), asc(schema.timetableEntry.sortOrder))
   return c.json(ok(rows as unknown as TimeTableEntry[]))
 })
 
