@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { AlertTriangle, CheckCircle2, Hourglass, Loader2, LogOut } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, Hourglass, Loader2, LogOut, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
@@ -13,6 +13,8 @@ import { useMyProfile, useOnboardingState } from '@/lib/onboarding'
 
 /** Signed-in but not a member: route to the right funnel stage. */
 function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+  const queryClient = useQueryClient()
+  const onRefresh = () => queryClient.invalidateQueries()
   const { data: ob, isPending } = useOnboardingState()
   // Someone who left and is rejoining still has their old profile — pre-fill it
   const { data: oldProfile, isPending: profilePending } = useMyProfile(ob?.state === 'no_person')
@@ -50,9 +52,14 @@ function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => 
           Your profile is registered but membership isn't active yet. A committee admin confirms
           membership (usually after the subscription) — then everything unlocks here.
         </p>
-        <Button variant="outline" className="self-start" onClick={onSignOut}>
-          <LogOut /> Sign out
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={onRefresh}>
+            <RefreshCw /> Refresh status
+          </Button>
+          <Button variant="outline" onClick={onSignOut}>
+            <LogOut /> Sign out
+          </Button>
+        </div>
       </CardContent>
     </Card>
   )

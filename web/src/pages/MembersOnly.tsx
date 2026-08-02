@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { BookOpen, FileText, Landmark, LogIn, LogOut, ScrollText, Wallet } from 'lucide-react'
+import { BookOpen, FileText, Landmark, LogIn, LogOut, RefreshCw, ScrollText, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -84,7 +84,10 @@ export function MembersOnly() {
                 activates membership (usually after the subscription) — everything below unlocks
                 then.
               </CardDescription>
-              <div className="mt-2 flex gap-2">
+              <div className="mt-2 flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries()}>
+                  <RefreshCw /> Refresh status
+                </Button>
                 <Button variant="outline" size="sm" asChild>
                   <Link to="/profile">Edit profile</Link>
                 </Button>
