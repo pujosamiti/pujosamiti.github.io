@@ -1,7 +1,7 @@
-import type { MemberLite, TaskCheck, TaskInput, TaskPhase, TaskView } from '@pujosamiti/shared'
+import type { MemberLite, TaskCheck, TaskPhase, TaskView } from '@pujosamiti/shared'
 import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCheck, HandHelping, Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { CalendarCheck, HandHelping, Loader2, Pencil, Plus, Search } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -9,7 +9,15 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useMemberState } from '@/lib/member'
-import { createTask, deleteTask, setTaskPhase, setVolunteering, updateTask, useEvents, useMembersLite, useTasks } from '@/lib/tasks'
+import {
+  createMasterTask,
+  saveTaskYear,
+  setVolunteering,
+  updateMasterTask,
+  useEvents,
+  useMembersLite,
+  useTasks,
+} from '@/lib/tasks'
 
 const PHASES: TaskPhase[] = ['initiated', 'in_progress', 'completed']
 const PHASE_LABEL: Record<TaskPhase, string> = {
@@ -17,19 +25,30 @@ const PHASE_LABEL: Record<TaskPhase, string> = {
   in_progress: 'In progress',
   completed: 'Completed',
 }
+const EMPTY_CHECKS: [TaskCheck, TaskCheck, TaskCheck] = [
+  { date: null, notes: null },
+  { date: null, notes: null },
+  { date: null, notes: null },
+]
 
 export function Tasks() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
   const { data: events } = useEvents()
-  const [eventId, setEventId] = useState<string | null>(null)
+  const [year, setYear] = useState<number | null>(null)
 
-  // Default to the active event once events arrive
+  const years = useMemo(() => {
+    const ys = new Set<number>((events ?? []).filter((e) => e.kind === 'durga-pujo').map((e) => e.year))
+    return [...ys].sort()
+  }, [events])
+
   useEffect(() => {
-    if (!eventId && events?.length) setEventId((events.find((e) => e.isActive) ?? events[0]).id)
-  }, [events, eventId])
+    if (year || !events?.length) return
+    const active = events.find((e) => e.isActive && e.kind === 'durga-pujo')
+    setYear(active?.year ?? years[years.length - 1] ?? new Date().getFullYear())
+  }, [events, year, years])
 
-  const { data: tasks, isPending: tasksPending, error } = useTasks(me ? eventId : null)
+  const { data: tasks, isPending: tasksPending, error } = useTasks(me ? year : null)
   const { data: people } = useMembersLite()
   const [adding, setAdding] = useState(false)
 
@@ -52,6 +71,7 @@ export function Tasks() {
   }
 
   const canEdit = me.role !== 'member'
+  const categories = [...new Set((tasks ?? []).map((t) => t.category))]
 
   return (
     <div className="flex flex-col gap-4">
@@ -59,22 +79,22 @@ export function Tasks() {
         <h1 className="text-2xl font-bold">Task Distribution</h1>
         <select
           className={`${inputCls} w-auto`}
-          value={eventId ?? ''}
-          onChange={(e) => setEventId(e.target.value)}
-          aria-label="Event"
+          value={year ?? ''}
+          onChange={(e) => setYear(Number(e.target.value))}
+          aria-label="Year"
         >
-          {events?.map((e) => (
-            <option key={e.id} value={e.id}>
-              {e.nameEn} {e.year}
+          {years.map((y) => (
+            <option key={y} value={y}>
+              Durga Pujo {y}
             </option>
           ))}
         </select>
       </div>
 
       {canEdit &&
-        eventId &&
+        year &&
         (adding ? (
-          <TaskForm eventId={eventId} people={people ?? []} onClose={() => setAdding(false)} />
+          <TaskForm year={year} people={people ?? []} categories={categories} onClose={() => setAdding(false)} />
         ) : (
           <Button size="sm" className="self-start" onClick={() => setAdding(true)}>
             <Plus /> Add task
@@ -82,17 +102,27 @@ export function Tasks() {
         ))}
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
-      {tasksPending ? (
+      {tasksPending || !year ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
-        <>
-          {tasks?.map((t) => (
-            <TaskCard key={t.id} task={t} canEdit={canEdit} myPersonId={me.personId} people={people ?? []} />
-          ))}
-          {!tasks?.length && (
-            <p className="text-sm text-muted-foreground">No tasks yet for this event.</p>
-          )}
-        </>
+        categories.map((cat) => (
+          <section key={cat} className="flex flex-col gap-3">
+            <h2 className="font-serif text-lg font-bold">{cat}</h2>
+            {tasks
+              ?.filter((t) => t.category === cat)
+              .map((t) => (
+                <TaskCard
+                  key={t.id}
+                  task={t}
+                  year={year}
+                  canEdit={canEdit}
+                  myPersonId={me.personId}
+                  people={people ?? []}
+                  categories={categories}
+                />
+              ))}
+          </section>
+        ))
       )}
     </div>
   )
@@ -100,28 +130,47 @@ export function Tasks() {
 
 function TaskCard({
   task: t,
+  year,
   canEdit,
   myPersonId,
   people,
+  categories,
 }: {
   task: TaskView
+  year: number
   canEdit: boolean
   myPersonId: string
   people: MemberLite[]
+  categories: string[]
 }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
 
-  const phaseMut = useMutation({ mutationFn: (phase: TaskPhase) => setTaskPhase(t.id, phase), onSuccess: invalidate })
-  const volMut = useMutation({ mutationFn: (join: boolean) => setVolunteering(t.id, join), onSuccess: invalidate })
-  const delMut = useMutation({ mutationFn: () => deleteTask(t.id), onSuccess: invalidate })
-
   const isOwner = t.owners.some((o) => o.id === myPersonId)
   const isVolunteer = t.volunteers.some((v) => v.id === myPersonId)
   const canPhase = canEdit || isOwner
 
-  if (editing) return <TaskForm task={t} eventId={t.eventId} people={people} onClose={() => setEditing(false)} />
+  const phaseMut = useMutation({
+    mutationFn: (phase: TaskPhase) =>
+      saveTaskYear(t.id, {
+        year,
+        phase,
+        checks: t.checks,
+        ownerIds: t.owners.map((o) => o.id),
+        volunteerIds: t.volunteers.map((v) => v.id),
+      }),
+    onSuccess: invalidate,
+  })
+  const volMut = useMutation({
+    mutationFn: (join: boolean) => setVolunteering(t.id, year, join),
+    onSuccess: invalidate,
+  })
+
+  if (editing)
+    return (
+      <TaskForm task={t} year={year} people={people} categories={categories} onClose={() => setEditing(false)} />
+    )
 
   return (
     <Card>
@@ -130,8 +179,7 @@ function TaskCard({
           <div className="min-w-0">
             <p className="font-serif text-base font-bold">{t.title}</p>
             <p className="text-sm text-muted-foreground">
-              Owners:{' '}
-              {t.owners.length ? t.owners.map((o) => o.name).join(', ') : '—'}
+              Owners: {t.owners.length ? t.owners.map((o) => o.name).join(', ') : '—'}
             </p>
           </div>
           <div className="flex items-center gap-1">
@@ -146,23 +194,10 @@ function TaskCard({
                 {PHASE_LABEL[ph]}
               </Button>
             ))}
-            {canEdit && (
-              <>
-                <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${t.title}`}>
-                  <Pencil />
-                </Button>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    if (confirm(`Delete task "${t.title}"?`)) delMut.mutate()
-                  }}
-                  disabled={delMut.isPending}
-                  aria-label={`Delete ${t.title}`}
-                >
-                  <Trash2 className="text-destructive" />
-                </Button>
-              </>
+            {(canEdit || isOwner) && (
+              <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${t.title}`}>
+                <Pencil />
+              </Button>
             )}
           </div>
         </div>
@@ -191,7 +226,12 @@ function TaskCard({
             {t.volunteers.length ? t.volunteers.map((v) => v.name).join(', ') : 'none yet'}
           </span>
           {!isOwner && (
-            <Button size="sm" variant={isVolunteer ? 'outline' : 'secondary'} onClick={() => volMut.mutate(!isVolunteer)} disabled={volMut.isPending}>
+            <Button
+              size="sm"
+              variant={isVolunteer ? 'outline' : 'secondary'}
+              onClick={() => volMut.mutate(!isVolunteer)}
+              disabled={volMut.isPending}
+            >
               <HandHelping /> {isVolunteer ? 'Withdraw' : 'Volunteer'}
             </Button>
           )}
@@ -239,7 +279,7 @@ function PeoplePicker({
         <ul className="max-h-40 overflow-y-auto p-2">
           {shown.map((p) => (
             <li key={p.id}>
-              <label className="flex items-center gap-2 py--0.5 text-sm">
+              <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
                   checked={selected.includes(p.id)}
@@ -262,44 +302,47 @@ function PeoplePicker({
   )
 }
 
+/**
+ * Create/edit. Core members edit everything (catalog + this year's plan);
+ * owners who aren't core see only the year section (phase + checkdates).
+ */
 function TaskForm({
   task,
-  eventId,
+  year,
   people,
+  categories,
   onClose,
 }: {
   task?: TaskView
-  eventId: string
+  year: number
   people: MemberLite[]
+  categories: string[]
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
+  const { memberState } = useMemberState()
+  const me = memberState?.status === 'member' ? memberState.me : null
+  const masterEditable = me?.role !== 'member'
+
+  const [category, setCategory] = useState(task?.category ?? '')
   const [title, setTitle] = useState(task?.title ?? '')
   const [details, setDetails] = useState(task?.details ?? '')
+  const [isActive, setIsActive] = useState(task?.isActive ?? true)
   const [phase, setPhase] = useState<TaskPhase>(task?.phase ?? 'initiated')
-  const [checks, setChecks] = useState<[TaskCheck, TaskCheck, TaskCheck]>(
-    task?.checks ?? [
-      { date: null, notes: null },
-      { date: null, notes: null },
-      { date: null, notes: null },
-    ],
-  )
+  const [checks, setChecks] = useState<[TaskCheck, TaskCheck, TaskCheck]>(task?.checks ?? EMPTY_CHECKS)
   const [ownerIds, setOwnerIds] = useState<string[]>(task?.owners.map((o) => o.id) ?? [])
   const [volunteerIds, setVolunteerIds] = useState<string[]>(task?.volunteers.map((v) => v.id) ?? [])
   const [error, setError] = useState<string | null>(null)
 
   const save = useMutation({
-    mutationFn: () => {
-      const input: TaskInput = {
-        eventId: eventId as TaskInput['eventId'],
-        title,
-        details: details || null,
-        phase,
-        checks,
-        ownerIds,
-        volunteerIds,
+    mutationFn: async () => {
+      let id = task?.id
+      if (masterEditable) {
+        const master = { category, title, details: details || null, isActive }
+        if (id) await updateMasterTask(id, master)
+        else id = (await createMasterTask(master)).id
       }
-      return task ? updateTask(task.id, input) : createTask(input)
+      await saveTaskYear(id!, { year, phase, checks, ownerIds, volunteerIds })
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['tasks'] })
@@ -314,7 +357,8 @@ function TaskForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{task ? 'Edit task' : 'New task'}</CardTitle>
+        <CardTitle className="text-base">{task ? `Edit: ${task.title}` : 'New task'}</CardTitle>
+        {task && !masterEditable && <CardDescription>Update this year's progress.</CardDescription>}
       </CardHeader>
       <CardContent>
         <form
@@ -324,18 +368,45 @@ function TaskForm({
             save.mutate()
           }}
         >
-          <Field label="Task title *">
-            <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} required />
-          </Field>
-          <Field label="Details — scope, subtasks, dates">
-            <textarea
-              className={inputCls}
-              rows={4}
-              value={details}
-              onChange={(e) => setDetails(e.target.value)}
-              placeholder={'e.g. Finalize truck + 6 labour for baran and bisarjan.\nBook by 20 Sep. Consult Ashok Da for the vendor.'}
-            />
-          </Field>
+          {masterEditable && (
+            <>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Category *">
+                  <input
+                    className={inputCls}
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    list="task-categories"
+                    required
+                  />
+                  <datalist id="task-categories">
+                    {categories.map((c) => (
+                      <option key={c} value={c} />
+                    ))}
+                  </datalist>
+                </Field>
+                <Field label="Task title *">
+                  <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} required />
+                </Field>
+              </div>
+              <Field label="Details — scope, subtasks (kept year over year)">
+                <textarea
+                  className={inputCls}
+                  rows={4}
+                  value={details}
+                  onChange={(e) => setDetails(e.target.value)}
+                  placeholder={'e.g. Finalize truck + 6 labour for baran and bisarjan.\nBook the vendor well before pujo.'}
+                />
+              </Field>
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                Active (untick to retire this task from the catalog)
+              </label>
+              <hr className="border-border" />
+            </>
+          )}
+
+          <p className="text-sm font-medium">Durga Pujo {year}</p>
           <Field label="Phase">
             <select className={inputCls} value={phase} onChange={(e) => setPhase(e.target.value as TaskPhase)}>
               {PHASES.map((ph) => (
@@ -364,19 +435,23 @@ function TaskForm({
               </Field>
             </div>
           ))}
-          <PeoplePicker
-            people={people}
-            selected={ownerIds}
-            onChange={setOwnerIds}
-            max={TASK_MAX_OWNERS}
-            label={`Primary owners (${ownerIds.length}/${TASK_MAX_OWNERS})`}
-          />
-          <PeoplePicker
-            people={people}
-            selected={volunteerIds}
-            onChange={setVolunteerIds}
-            label={`Volunteers (${volunteerIds.length})`}
-          />
+          {masterEditable && (
+            <>
+              <PeoplePicker
+                people={people}
+                selected={ownerIds}
+                onChange={setOwnerIds}
+                max={TASK_MAX_OWNERS}
+                label={`Primary owners (${ownerIds.length}/${TASK_MAX_OWNERS})`}
+              />
+              <PeoplePicker
+                people={people}
+                selected={volunteerIds}
+                onChange={setVolunteerIds}
+                label={`Volunteers (${volunteerIds.length})`}
+              />
+            </>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
             <Button type="submit" size="sm" disabled={save.isPending}>

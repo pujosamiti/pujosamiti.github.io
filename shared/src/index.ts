@@ -119,22 +119,32 @@ export interface TaskPersonRef {
   name: string;
 }
 
+/** A master-catalog task with one year's execution state folded in. */
 export interface TaskView {
-  id: string;
-  eventId: EventId;
+  id: string; // stable slug, year-independent
+  category: string;
   title: string;
   /** Free text outlining scope / subtasks (a few lines) */
   details: string | null;
+  isActive: boolean;
+  /** Year-scoped execution state (defaults when the year has no row yet) */
   phase: TaskPhase;
   checks: [TaskCheck, TaskCheck, TaskCheck];
   owners: TaskPersonRef[]; // max 5
   volunteers: TaskPersonRef[];
 }
 
-export interface TaskInput {
-  eventId: EventId;
+/** Master-catalog fields (year-independent, curated over time). */
+export interface TaskMasterInput {
+  category: string;
   title: string;
   details: string | null;
+  isActive: boolean;
+}
+
+/** One year's execution state for a task. */
+export interface TaskYearInput {
+  year: number;
   phase: TaskPhase;
   checks: [TaskCheck, TaskCheck, TaskCheck];
   ownerIds: string[]; // max TASK_MAX_OWNERS

@@ -98,18 +98,27 @@ export const person = sqliteTable('person', {
 })
 
 /**
- * Task distribution (the Core Members feature): event-scoped tasks with up to
- * 5 primary owners, unlimited volunteers, three phases and three fixed
- * checkdates/milestones (date + progress notes each). `details` is a free
- * textarea outlining scope/subtasks.
+ * Task distribution (the Core Members feature). `durgapuja_task` is the
+ * year-independent master catalog (category/title/details, curated over
+ * time); `task_year` carries one row per task per year (phase + the three
+ * checkdates with progress notes); `task_assignment` links people per year
+ * as owner (max 5, app-enforced) or volunteer. Soft deletes via is_active.
  */
-export const task = sqliteTable('task', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id')
-    .notNull()
-    .references(() => event.id),
+export const durgapujaTask = sqliteTable('durgapuja_task', {
+  id: text('id').primaryKey(), // stable slug, e.g. "idol-transport-in"
+  category: text('category').notNull(), // e.g. "Murti / Idol", "Permissions"
   title: text('title').notNull(),
   details: text('details'), // scope / subtasks outline
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const taskYear = sqliteTable('task_year', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => durgapujaTask.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(), // e.g. 2026
   phase: text('phase', { enum: ['initiated', 'in_progress', 'completed'] })
     .notNull()
     .default('initiated'),
@@ -119,18 +128,19 @@ export const task = sqliteTable('task', {
   check2Notes: text('check2_notes'),
   check3Date: text('check3_date'),
   check3Notes: text('check3_notes'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 
 export const taskAssignment = sqliteTable('task_assignment', {
   id: text('id').primaryKey(),
   taskId: text('task_id')
     .notNull()
-    .references(() => task.id, { onDelete: 'cascade' }),
+    .references(() => durgapujaTask.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
   personId: text('person_id')
     .notNull()
     .references(() => person.id),
   role: text('role', { enum: ['owner', 'volunteer'] }).notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 })
 
 export const event = sqliteTable('event', {
