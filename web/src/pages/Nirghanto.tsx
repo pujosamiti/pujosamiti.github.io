@@ -4,6 +4,7 @@ import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { SearchSelect } from '@/components/SearchSelect'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
@@ -90,18 +91,17 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        <select
-          className={`${inputCls} w-auto`}
+        <SearchSelect
+          align="left"
+          options={dpEvents.map((e) => ({
+            value: e.id,
+            label: `Durga Pujo ${e.year}`,
+            hint: e.isActive ? 'Active' : undefined,
+          }))}
           value={selected.id}
-          onChange={(e) => setEventId(e.target.value)}
-          aria-label="Durga Pujo year"
-        >
-          {dpEvents.map((e) => (
-            <option key={e.id} value={e.id}>
-              Durga Pujo {e.year}
-            </option>
-          ))}
-        </select>
+          onChange={(v) => setEventId(v)}
+          ariaLabel="Durga Pujo year"
+        />
         {canEdit && !adding && (
           <Button size="sm" onClick={() => setAdding(true)}>
             <Plus /> Add ritual

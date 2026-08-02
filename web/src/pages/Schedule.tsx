@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Phone } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
-import { inputCls } from '@/components/form'
+import { SearchSelect } from '@/components/SearchSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 
@@ -72,18 +72,16 @@ export function Schedule() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Schedule</h1>
         {dpEvents.length > 0 && selected && (
-          <select
-            className={`${inputCls} w-auto`}
+          <SearchSelect
+            options={dpEvents.map((e) => ({
+              value: e.id,
+              label: `Durga Pujo ${e.year}`,
+              hint: e.isActive ? 'Active' : undefined,
+            }))}
             value={selected.id}
-            onChange={(e) => setParams({ event: e.target.value })}
-            aria-label="Durga Pujo year"
-          >
-            {dpEvents.map((e) => (
-              <option key={e.id} value={e.id}>
-                Durga Pujo {e.year}
-              </option>
-            ))}
-          </select>
+            onChange={(v) => setParams({ event: v })}
+            ariaLabel="Durga Pujo year"
+          />
         )}
       </div>
 

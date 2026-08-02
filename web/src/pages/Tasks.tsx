@@ -5,6 +5,7 @@ import { ArrowDown, CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, S
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -80,18 +81,18 @@ export function Tasks() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Task Distribution</h1>
-        <select
-          className={`${inputCls} w-auto`}
-          value={year ?? ''}
-          onChange={(e) => setYear(Number(e.target.value))}
-          aria-label="Year"
-        >
-          {years.map((y) => (
-            <option key={y} value={y}>
-              Durga Pujo {y}
-            </option>
-          ))}
-        </select>
+        <SearchSelect
+          options={years.map((y) => ({
+            value: String(y),
+            label: `Durga Pujo ${y}`,
+            hint: (events ?? []).some((e) => e.kind === 'durga-pujo' && e.year === y && e.isActive)
+              ? 'Active'
+              : undefined,
+          }))}
+          value={year ? String(year) : null}
+          onChange={(v) => setYear(Number(v))}
+          ariaLabel="Durga Pujo year"
+        />
       </div>
 
       {canEdit &&
