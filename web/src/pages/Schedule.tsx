@@ -34,9 +34,11 @@ export function Schedule() {
     queryFn: () => api<PujoEvent[]>('/api/public/events'),
   })
 
-  const dpEvents = (events.data ?? [])
-    .filter((e) => e.kind === 'durga-pujo' && e.year >= 2025)
-    .sort((a, b) => a.year - b.year)
+  // 2025 (the site's first documented year) up to the active season — future
+  // years join the dropdown automatically as they become active.
+  const allDp = (events.data ?? []).filter((e) => e.kind === 'durga-pujo')
+  const activeYear = allDp.find((e) => e.isActive)?.year ?? new Date().getFullYear()
+  const dpEvents = allDp.filter((e) => e.year >= 2025 && e.year <= activeYear).sort((a, b) => a.year - b.year)
   const selected = dpEvents.find((e) => e.id === eventId) ?? dpEvents.find((e) => e.isActive) ?? dpEvents[dpEvents.length - 1] ?? null
 
   const timetable = useQuery({
