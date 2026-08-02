@@ -5,85 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1785046050590,
-      "tag": "0000_careful_mimic",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1785604274491,
-      "tag": "0001_add-family-person",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1785604284636,
-      "tag": "0002_drop-member",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1785604823984,
-      "tag": "0003_join-request",
-      "breakpoints": true
-    },
-    {
-      "idx": 4,
-      "version": "6",
-      "when": 1785641102051,
-      "tag": "0004_person-centric-membership",
-      "breakpoints": true
-    },
-    {
-      "idx": 5,
-      "version": "6",
-      "when": 1785649739055,
-      "tag": "0005_task-distribution",
-      "breakpoints": true
-    },
-    {
-      "idx": 6,
-      "version": "6",
-      "when": 1785650591640,
-      "tag": "0006_drop-old-task-tables",
-      "breakpoints": true
-    },
-    {
-      "idx": 7,
-      "version": "6",
-      "when": 1785650591959,
-      "tag": "0007_durgapuja-task-catalog",
-      "breakpoints": true
-    },
-    {
-      "idx": 8,
-      "version": "6",
-      "when": 1785650929164,
-      "tag": "0008_phase-todo",
-      "breakpoints": true
-    },
-    {
-      "idx": 9,
-      "version": "6",
-      "when": 1785651122089,
-      "tag": "0009_task-year-skip",
-      "breakpoints": true
-    },
-    {
-      "idx": 10,
-      "version": "6",
-      "when": 1785651960696,
-      "tag": "0010_task-sort-order",
-      "breakpoints": true
-    },
-    {
-      "idx": 11,
-      "version": "6",
-      "when": 1785652741972,
-      "tag": "0011_task-year-notes",
+      "when": 1785653471916,
+      "tag": "0000_init",
       "breakpoints": true
     }
   ]

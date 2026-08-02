@@ -1,1 +1,0 @@
-ALTER TABLE `task_year` ADD `notes` text;

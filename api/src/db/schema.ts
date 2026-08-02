@@ -1,8 +1,10 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
-// ── better-auth tables ──────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Auth (better-auth managed tables)
 // Standard better-auth shapes. If a better-auth upgrade changes them, regenerate
 // with `npx @better-auth/cli generate` and diff against this file.
+// ─────────────────────────────────────────────────────────────────────────────
 
 export const user = sqliteTable('user', {
   id: text('id').primaryKey(),
@@ -54,17 +56,16 @@ export const verification = sqliteTable('verification', {
   updatedAt: integer('updated_at', { mode: 'timestamp' }),
 })
 
-// ── App tables ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Membership
+// Per person: each individual carries their own tier (promoted by an admin,
+// core typically after the Durga Pujo subscription), eligibility and location.
+// `family` is a thin optional grouping admins curate — it gates nothing.
+// Signing in creates a `user` row; member content is served only when a
+// matching (by email) active person with tier != non_member exists. People
+// without email are full members on the rolls who simply don't use the site.
+// ─────────────────────────────────────────────────────────────────────────────
 
-/**
- * Membership is per person: each individual carries their own tier (promoted
- * by an admin, core typically after the Durga Pujo subscription), eligibility
- * and location. `family` is only a thin manual grouping admins curate — it
- * gates nothing. Signing in creates a `user` row; member content is served
- * only when a matching (by email) active person with tier != non_member
- * exists. People without email are full members on the rolls who simply
- * don't use the site.
- */
 export const family = sqliteTable('family', {
   id: text('id').primaryKey(),
   name: text('name').notNull(), // "Sudeshna & Mousum" style family name
@@ -88,22 +89,25 @@ export const person = sqliteTable('person', {
   tier: text('tier', { enum: ['non_member', 'member', 'core'] })
     .notNull()
     .default('non_member'),
-  phone: text('phone'),
+  phone: text('phone'), // labelled WhatsApp number in the UI
   gender: text('gender'), // e.g. mahila-volunteer scheduling
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 
-/**
- * Task distribution (the Core Members feature). `durgapuja_task` is the
- * year-independent master catalog (category/title/details, curated over
- * time); `task_year` carries one row per task per year (phase + the three
- * checkdates with progress notes); `task_assignment` links people per year
- * as owner (max 5, app-enforced) or volunteer. Soft deletes via is_active.
- */
+// ─────────────────────────────────────────────────────────────────────────────
+// Task distribution (the Core Members feature)
+// `durgapuja_task` is the year-independent master catalog (curated over time,
+// seeded from the samiti's 2020–2025 archives — see seed-tasks.sql).
+// `task_year` carries one row per task per year: phase, the three checkdates
+// with progress notes, free-form notes, and the per-year skip (is_active).
+// `task_assignment` links people per year as owner (max 5, app-enforced) or
+// volunteer. Soft deletes everywhere via is_active.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const durgapujaTask = sqliteTable('durgapuja_task', {
   id: text('id').primaryKey(), // stable slug, e.g. "idol-transport-in"
   category: text('category').notNull(), // e.g. "Murti / Idol", "Permissions"
@@ -146,20 +150,27 @@ export const taskAssignment = sqliteTable('task_assignment', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Events & public content
+// Events are first-class: notices, timetable rows and gallery items tag one.
+// The samiti year runs Poila Baishakh (April) → Saraswati Pujo (next Jan/Feb);
+// seed.sql carries the 2020–2035 calendar.
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const event = sqliteTable('event', {
   id: text('id').primaryKey(), // "durga-pujo-2026"
-  kind: text('kind').notNull(),
+  kind: text('kind').notNull(), // EVENT_KINDS in shared
   year: integer('year').notNull(),
   nameBn: text('name_bn').notNull(),
   nameEn: text('name_en').notNull(),
-  startsOn: text('starts_on').notNull(),
+  startsOn: text('starts_on').notNull(), // ISO date
   endsOn: text('ends_on').notNull(),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
 })
 
 export const notice = sqliteTable('notice', {
   id: text('id').primaryKey(),
-  eventId: text('event_id').references(() => event.id),
+  eventId: text('event_id').references(() => event.id), // NULL = samiti-wide
   title: text('title').notNull(),
   body: text('body').notNull(), // markdown
   pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
@@ -188,6 +199,10 @@ export const galleryItem = sqliteTable('gallery_item', {
   sortOrder: integer('sort_order').notNull().default(0),
 })
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Event operations
+// ─────────────────────────────────────────────────────────────────────────────
+
 export const budgetLine = sqliteTable('budget_line', {
   id: text('id').primaryKey(),
   eventId: text('event_id')
@@ -195,7 +210,7 @@ export const budgetLine = sqliteTable('budget_line', {
     .references(() => event.id),
   category: text('category').notNull(), // "Pandal", "Protima", "Bhog", "Music"...
   item: text('item').notNull(),
-  budgeted: integer('budgeted').notNull(), // paise-free: whole rupees
+  budgeted: integer('budgeted').notNull(), // whole rupees
   actual: integer('actual'),
   notes: text('notes'),
 })

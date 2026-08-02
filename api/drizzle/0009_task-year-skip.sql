@@ -1,1 +1,0 @@
-ALTER TABLE `task_year` ADD `is_active` integer DEFAULT true NOT NULL;
