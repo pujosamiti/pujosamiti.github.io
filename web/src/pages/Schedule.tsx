@@ -116,7 +116,7 @@ export function Schedule() {
           )}
 
           {days.map((day) => (
-            <Card key={day.date}>
+            <Card key={`${day.date}|${day.labelEn}`}>
               <CardHeader>
                 <CardTitle className="text-base">
                   {day.labelBn} <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
