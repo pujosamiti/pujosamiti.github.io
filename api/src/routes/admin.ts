@@ -24,9 +24,13 @@ function ok<T>(data: T): ApiResult<T> {
 
 const TIERS: FamilyTier[] = ['non_member', 'member', 'core']
 
-type Vars = { adminPersonId: string }
+type Vars = { adminPersonId: string; isAdmin: boolean }
 
-/** Admin-only: membership management. Gate = active person with is_admin. */
+/**
+ * Samiti administration. Gate = active CORE member (or admin): core members
+ * can view everything here; every mutating route additionally requires
+ * is_admin via requireAdmin().
+ */
 export const adminRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 
 adminRoutes.use('*', async (c, next) => {
@@ -36,15 +40,22 @@ adminRoutes.use('*', async (c, next) => {
 
   const db = drizzle(c.env.DB, { schema })
   const [p] = await db
-    .select({ id: schema.person.id, isAdmin: schema.person.isAdmin, isActive: schema.person.isActive })
+    .select({ id: schema.person.id, tier: schema.person.tier, isAdmin: schema.person.isAdmin, isActive: schema.person.isActive })
     .from(schema.person)
     .where(eq(schema.person.email, session.user.email))
     .limit(1)
-  if (!p?.isAdmin || !p.isActive) return c.json({ ok: false, error: 'not an admin' }, 403)
+  if (!p || !p.isActive || (p.tier !== 'core' && !p.isAdmin))
+    return c.json({ ok: false, error: 'core members only' }, 403)
 
   c.set('adminPersonId', p.id)
+  c.set('isAdmin', p.isAdmin)
   await next()
 })
+
+/** Returns an error response for non-admins, null when allowed to write. */
+function requireAdmin(c: { get: (k: 'isAdmin') => boolean; json: (b: unknown, s: number) => Response }) {
+  return c.get('isAdmin') ? null : c.json({ ok: false, error: 'admins only' }, 403)
+}
 
 function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string | null): AdminPerson {
   return {
@@ -102,6 +113,8 @@ adminRoutes.get('/people', async (c) => {
 })
 
 adminRoutes.post('/people', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminPersonInput
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -116,6 +129,8 @@ adminRoutes.post('/people', async (c) => {
 })
 
 adminRoutes.post('/people/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminPersonInput
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -138,6 +153,8 @@ adminRoutes.post('/people/:id', async (c) => {
 })
 
 adminRoutes.post('/people/:id/tier', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const tier = ((await c.req.json()) as { tier: FamilyTier }).tier
   if (!TIERS.includes(tier)) return c.json({ ok: false, error: 'invalid tier' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -149,6 +166,8 @@ adminRoutes.post('/people/:id/tier', async (c) => {
 })
 
 adminRoutes.delete('/people/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const id = c.req.param('id')
   if (id === c.get('adminPersonId')) return c.json({ ok: false, error: 'you cannot delete yourself' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -166,6 +185,8 @@ adminRoutes.get('/families', async (c) => {
 })
 
 adminRoutes.post('/families', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminFamilyInput
   if (!body.name?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -181,6 +202,8 @@ adminRoutes.post('/families', async (c) => {
 })
 
 adminRoutes.post('/families/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminFamilyInput
   if (!body.name?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -215,6 +238,8 @@ adminRoutes.get('/events', async (c) => {
 })
 
 adminRoutes.post('/events', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminEventInput
   if (!EVENT_KINDS.includes(body.kind)) return c.json({ ok: false, error: 'invalid kind' }, 400)
   if (!Number.isInteger(body.year)) return c.json({ ok: false, error: 'year is required' }, 400)
@@ -229,6 +254,8 @@ adminRoutes.post('/events', async (c) => {
 })
 
 adminRoutes.post('/events/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminEventInput
   if (!body.nameBn?.trim() || !body.nameEn?.trim() || !body.startsOn)
     return c.json({ ok: false, error: 'names and start date are required' }, 400)
@@ -242,6 +269,8 @@ adminRoutes.post('/events/:id', async (c) => {
 })
 
 adminRoutes.delete('/events/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const db = drizzle(c.env.DB, { schema })
   const id = c.req.param('id')
   const [ev] = await db.select({ id: schema.event.id }).from(schema.event).where(eq(schema.event.id, id)).limit(1)
@@ -274,6 +303,8 @@ function timetableValues(body: AdminTimetableInput) {
 }
 
 adminRoutes.post('/timetable', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminTimetableInput
   if (!body.eventId || !body.dayDate || !body.dayLabelBn?.trim() || !body.dayLabelEn?.trim() || !body.titleBn?.trim() || !body.titleEn?.trim())
     return c.json({ ok: false, error: 'day, labels and ritual names are required' }, 400)
@@ -288,6 +319,8 @@ adminRoutes.post('/timetable', async (c) => {
 })
 
 adminRoutes.post('/timetable/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const body = (await c.req.json()) as AdminTimetableInput
   if (!body.dayDate || !body.dayLabelBn?.trim() || !body.dayLabelEn?.trim() || !body.titleBn?.trim() || !body.titleEn?.trim())
     return c.json({ ok: false, error: 'day, labels and ritual names are required' }, 400)
@@ -300,6 +333,8 @@ adminRoutes.post('/timetable/:id', async (c) => {
 })
 
 adminRoutes.delete('/timetable/:id', async (c) => {
+  const guard = requireAdmin(c)
+  if (guard) return guard
   const db = drizzle(c.env.DB, { schema })
   const id = c.req.param('id')
   await db.delete(schema.timetableEntry).where(eq(schema.timetableEntry.id, id))

@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { BookOpen, FileText, Landmark, LogIn, LogOut, RefreshCw, ScrollText, Wallet } from 'lucide-react'
+import { BookOpen, CalendarDays, Clock, FileText, Landmark, LogIn, LogOut, RefreshCw, ScrollText, Users, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -15,6 +15,9 @@ const memberSections = [
   { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status', gate: 'Core members only' },
   { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation', gate: 'Core members only' },
   { icon: BookOpen, title: 'Core Members', desc: 'Task distribution', gate: 'Members only', to: '/tasks' },
+  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true },
+  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true },
+  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true },
 ]
 
 export function MembersOnly() {
@@ -47,11 +50,6 @@ export function MembersOnly() {
               <Button size="sm" variant="outline" asChild>
                 <Link to="/profile">Profile</Link>
               </Button>
-              {me.role === 'admin' && (
-                <Button size="sm" asChild>
-                  <Link to="/admin">Admin</Link>
-                </Button>
-              )}
               <Button variant="outline" size="sm" onClick={endSession}>
                 <LogOut /> Sign out
               </Button>
@@ -116,18 +114,20 @@ export function MembersOnly() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {memberSections.map(({ icon: Icon, title, desc, gate, to }) => {
+        {memberSections.map(({ icon: Icon, title, desc, gate, to, coreOnly }) => {
+          const unlocked = !!me && !!to && (!coreOnly || me.role !== 'member')
+          const suffix = !me ? ` — ${gate}` : unlocked ? '' : coreOnly ? ' — Core members only' : ' — coming soon'
           const card = (
-            <Card className={me ? (to ? 'h-full transition-colors hover:bg-accent' : undefined) : 'opacity-70'}>
+            <Card className={unlocked ? 'h-full transition-colors hover:bg-accent' : 'opacity-70'}>
               <CardHeader>
                 <Icon className="size-5 text-matir" aria-hidden="true" />
                 <CardTitle>{title}</CardTitle>
-                <CardDescription>{me ? (to ? desc : `${desc} — coming soon`) : `${desc} — ${gate}`}</CardDescription>
+                <CardDescription>{`${desc}${suffix}`}</CardDescription>
               </CardHeader>
             </Card>
           )
-          return me && to ? (
-            <Link key={title} to={to}>
+          return unlocked ? (
+            <Link key={title} to={to!}>
               {card}
             </Link>
           ) : (

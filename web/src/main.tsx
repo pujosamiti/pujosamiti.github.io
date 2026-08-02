@@ -1,14 +1,16 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
+import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
-import { Admin } from '@/pages/Admin'
+import { Events } from '@/pages/Events'
 import { Gallery } from '@/pages/Gallery'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
+import { Membership } from '@/pages/Membership'
+import { Nirghanto } from '@/pages/Nirghanto'
 import { Notices } from '@/pages/Notices'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
@@ -42,14 +44,15 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="schedule" element={<Schedule />} />
-            <Route path="events" element={<Navigate to="/schedule" replace />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="notices" element={<Notices />} />
             <Route path="membersonly" element={<MembersOnly />} />
             <Route path="login" element={<Login />} />
             <Route path="profile" element={<Profile />} />
             <Route path="tasks" element={<Tasks />} />
-            <Route path="admin" element={<Admin />} />
+            <Route path="membership" element={<Membership />} />
+            <Route path="events" element={<Events />} />
+            <Route path="nirghanto" element={<Nirghanto />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>
