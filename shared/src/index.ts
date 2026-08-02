@@ -92,12 +92,60 @@ export type MemberRole = 'member' | 'coremember' | 'admin';
 
 export interface Me {
   id: string;
+  /** The person row backing this login — used e.g. for volunteering on tasks */
+  personId: string;
   name: string;
   email: string;
   image: string | null;
   role: MemberRole;
   /** Portfolio, if held by a core member — e.g. "Treasurer", "Cultural Secretary" */
   portfolio: string | null;
+}
+
+// ── Task distribution (Core Members feature) ────────────────────────────────
+
+export type TaskPhase = 'initiated' | 'in_progress' | 'completed';
+
+export const TASK_MAX_OWNERS = 5;
+
+/** One of the three fixed checkdates/milestones. */
+export interface TaskCheck {
+  date: string | null; // ISO date
+  notes: string | null;
+}
+
+export interface TaskPersonRef {
+  id: string;
+  name: string;
+}
+
+export interface TaskView {
+  id: string;
+  eventId: EventId;
+  title: string;
+  /** Free text outlining scope / subtasks (a few lines) */
+  details: string | null;
+  phase: TaskPhase;
+  checks: [TaskCheck, TaskCheck, TaskCheck];
+  owners: TaskPersonRef[]; // max 5
+  volunteers: TaskPersonRef[];
+}
+
+export interface TaskInput {
+  eventId: EventId;
+  title: string;
+  details: string | null;
+  phase: TaskPhase;
+  checks: [TaskCheck, TaskCheck, TaskCheck];
+  ownerIds: string[]; // max TASK_MAX_OWNERS
+  volunteerIds: string[];
+}
+
+/** Light person entry for owner/volunteer pickers. */
+export interface MemberLite {
+  id: string;
+  name: string;
+  tier: FamilyTier;
 }
 
 // ── Onboarding & membership admin ───────────────────────────────────────────

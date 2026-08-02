@@ -36,6 +36,13 @@
       "when": 1785641102051,
       "tag": "0004_person-centric-membership",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785649739055,
+      "tag": "0005_task-distribution",
+      "breakpoints": true
     }
   ]
 }

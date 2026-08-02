@@ -14,7 +14,7 @@ const memberSections = [
   { icon: Landmark, title: 'Budget', desc: 'Event budgets vs actuals', gate: 'Members only' },
   { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status', gate: 'Core members only' },
   { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation', gate: 'Core members only' },
-  { icon: BookOpen, title: 'Core Members', desc: 'Portfolio distribution', gate: 'Members only' },
+  { icon: BookOpen, title: 'Core Members', desc: 'Task distribution', gate: 'Members only', to: '/tasks' },
 ]
 
 export function MembersOnly() {
@@ -116,15 +116,24 @@ export function MembersOnly() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {memberSections.map(({ icon: Icon, title, desc, gate }) => (
-          <Card key={title} className={me ? undefined : 'opacity-70'}>
-            <CardHeader>
-              <Icon className="size-5 text-matir" aria-hidden="true" />
-              <CardTitle>{title}</CardTitle>
-              <CardDescription>{me ? `${desc} — coming soon` : `${desc} — ${gate}`}</CardDescription>
-            </CardHeader>
-          </Card>
-        ))}
+        {memberSections.map(({ icon: Icon, title, desc, gate, to }) => {
+          const card = (
+            <Card className={me ? (to ? 'h-full transition-colors hover:bg-accent' : undefined) : 'opacity-70'}>
+              <CardHeader>
+                <Icon className="size-5 text-matir" aria-hidden="true" />
+                <CardTitle>{title}</CardTitle>
+                <CardDescription>{me ? (to ? desc : `${desc} — coming soon`) : `${desc} — ${gate}`}</CardDescription>
+              </CardHeader>
+            </Card>
+          )
+          return me && to ? (
+            <Link key={title} to={to}>
+              {card}
+            </Link>
+          ) : (
+            <div key={title}>{card}</div>
+          )
+        })}
       </div>
     </div>
   )

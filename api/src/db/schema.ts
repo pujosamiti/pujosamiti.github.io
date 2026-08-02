@@ -97,6 +97,42 @@ export const person = sqliteTable('person', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 
+/**
+ * Task distribution (the Core Members feature): event-scoped tasks with up to
+ * 5 primary owners, unlimited volunteers, three phases and three fixed
+ * checkdates/milestones (date + progress notes each). `details` is a free
+ * textarea outlining scope/subtasks.
+ */
+export const task = sqliteTable('task', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id),
+  title: text('title').notNull(),
+  details: text('details'), // scope / subtasks outline
+  phase: text('phase', { enum: ['initiated', 'in_progress', 'completed'] })
+    .notNull()
+    .default('initiated'),
+  check1Date: text('check1_date'),
+  check1Notes: text('check1_notes'),
+  check2Date: text('check2_date'),
+  check2Notes: text('check2_notes'),
+  check3Date: text('check3_date'),
+  check3Notes: text('check3_notes'),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const taskAssignment = sqliteTable('task_assignment', {
+  id: text('id').primaryKey(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => task.id, { onDelete: 'cascade' }),
+  personId: text('person_id')
+    .notNull()
+    .references(() => person.id),
+  role: text('role', { enum: ['owner', 'volunteer'] }).notNull(),
+})
+
 export const event = sqliteTable('event', {
   id: text('id').primaryKey(), // "durga-pujo-2026"
   kind: text('kind').notNull(),

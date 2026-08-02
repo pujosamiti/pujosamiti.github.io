@@ -12,6 +12,7 @@ import { MembersOnly } from '@/pages/MembersOnly'
 import { Notices } from '@/pages/Notices'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
+import { Tasks } from '@/pages/Tasks'
 
 import './index.css'
 
@@ -47,6 +48,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="membersonly" element={<MembersOnly />} />
             <Route path="login" element={<Login />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="tasks" element={<Tasks />} />
             <Route path="admin" element={<Admin />} />
             <Route path="*" element={<Home />} />
           </Route>

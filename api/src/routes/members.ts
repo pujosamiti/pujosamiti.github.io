@@ -1,4 +1,4 @@
-import type { AccountsSummary, ApiResult, CollectorWallet, Me } from '@pujosamiti/shared'
+import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite } from '@pujosamiti/shared'
 import { eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -7,6 +7,7 @@ import { createAuth } from '../auth'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { readSheetRange } from '../lib/google'
+import { taskRoutes } from './tasks'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -37,6 +38,7 @@ memberRoutes.use('*', async (c, next) => {
 
   c.set('me', {
     id: session.user.id,
+    personId: p.id,
     name: p.displayName,
     email: session.user.email,
     image: session.user.image ?? null,
@@ -47,6 +49,19 @@ memberRoutes.use('*', async (c, next) => {
 })
 
 memberRoutes.get('/me', (c) => c.json(ok(c.get('me'))))
+
+/** Light people list for owner/volunteer pickers (active members only). */
+memberRoutes.get('/people', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db
+    .select({ id: schema.person.id, name: schema.person.displayName, tier: schema.person.tier })
+    .from(schema.person)
+    .where(eq(schema.person.isActive, true))
+    .orderBy(schema.person.displayName)
+  return c.json(ok(rows as MemberLite[]))
+})
+
+memberRoutes.route('/tasks', taskRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.
