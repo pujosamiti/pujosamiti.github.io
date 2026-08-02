@@ -68,6 +68,7 @@ taskRoutes.get('/', async (c) => {
         title: t.title,
         details: t.details,
         isActive: t.isActive,
+        skipped: y ? !y.isActive : false,
         phase: y?.phase ?? 'todo',
         checks: [
           { date: y?.check1Date ?? null, notes: y?.check1Notes ?? null },
@@ -190,6 +191,25 @@ taskRoutes.post('/:id/year', async (c) => {
     }
   }
   return c.json(ok({ id, year: body.year }))
+})
+
+/** Skip / restore a task for one year (core). */
+taskRoutes.post('/:id/skip', async (c) => {
+  if (!canEdit(c.get('me'))) return c.json({ ok: false, error: 'core members only' }, 403)
+  const { year, skipped } = (await c.req.json()) as { year: number; skipped: boolean }
+  if (!Number.isInteger(year)) return c.json({ ok: false, error: 'year is required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [t] = await db.select({ id: schema.durgapujaTask.id }).from(schema.durgapujaTask).where(eq(schema.durgapujaTask.id, id)).limit(1)
+  if (!t) return c.json({ ok: false, error: 'task not found' }, 404)
+  const [existing] = await db
+    .select({ id: schema.taskYear.id })
+    .from(schema.taskYear)
+    .where(and(eq(schema.taskYear.taskId, id), eq(schema.taskYear.year, year)))
+    .limit(1)
+  if (existing) await db.update(schema.taskYear).set({ isActive: !skipped }).where(eq(schema.taskYear.id, existing.id))
+  else await db.insert(schema.taskYear).values({ id: crypto.randomUUID(), taskId: id, year, isActive: !skipped })
+  return c.json(ok({ id, year, skipped: !!skipped }))
 })
 
 /** Any member can volunteer themselves for a year (or withdraw). */

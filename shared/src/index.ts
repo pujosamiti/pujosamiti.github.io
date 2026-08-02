@@ -128,6 +128,7 @@ export interface TaskView {
   details: string | null;
   isActive: boolean;
   /** Year-scoped execution state (defaults when the year has no row yet) */
+  skipped: boolean; // not taken up this year
   phase: TaskPhase;
   checks: [TaskCheck, TaskCheck, TaskCheck];
   owners: TaskPersonRef[]; // max 5

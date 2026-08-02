@@ -119,6 +119,7 @@ export const taskYear = sqliteTable('task_year', {
     .notNull()
     .references(() => durgapujaTask.id, { onDelete: 'cascade' }),
   year: integer('year').notNull(), // e.g. 2026
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = skipped this year
   phase: text('phase', { enum: ['todo', 'in_progress', 'completed'] })
     .notNull()
     .default('todo'),

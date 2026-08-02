@@ -1,7 +1,7 @@
 import type { MemberLite, TaskCheck, TaskPhase, TaskView } from '@pujosamiti/shared'
 import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCheck, HandHelping, Loader2, Pencil, Plus, Search } from 'lucide-react'
+import { CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -12,6 +12,7 @@ import { useMemberState } from '@/lib/member'
 import {
   createMasterTask,
   saveTaskYear,
+  setTaskSkipped,
   setVolunteering,
   updateMasterTask,
   useEvents,
@@ -71,7 +72,9 @@ export function Tasks() {
   }
 
   const canEdit = me.role !== 'member'
-  const categories = [...new Set((tasks ?? []).map((t) => t.category))]
+  const active = (tasks ?? []).filter((t) => !t.skipped)
+  const skipped = (tasks ?? []).filter((t) => t.skipped)
+  const categories = [...new Set(active.map((t) => t.category))]
 
   return (
     <div className="flex flex-col gap-4">
@@ -105,24 +108,27 @@ export function Tasks() {
       {tasksPending || !year ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
-        categories.map((cat) => (
-          <section key={cat} className="flex flex-col gap-3">
-            <h2 className="font-serif text-lg font-bold">{cat}</h2>
-            {tasks
-              ?.filter((t) => t.category === cat)
-              .map((t) => (
-                <TaskCard
-                  key={t.id}
-                  task={t}
-                  year={year}
-                  canEdit={canEdit}
-                  myPersonId={me.personId}
-                  people={people ?? []}
-                  categories={categories}
-                />
-              ))}
-          </section>
-        ))
+        <>
+          {categories.map((cat) => (
+            <section key={cat} className="flex flex-col gap-3">
+              <h2 className="font-serif text-lg font-bold">{cat}</h2>
+              {active
+                .filter((t) => t.category === cat)
+                .map((t) => (
+                  <TaskCard
+                    key={t.id}
+                    task={t}
+                    year={year}
+                    canEdit={canEdit}
+                    myPersonId={me.personId}
+                    people={people ?? []}
+                    categories={categories}
+                  />
+                ))}
+            </section>
+          ))}
+          {canEdit && skipped.length > 0 && <SkippedList tasks={skipped} year={year} />}
+        </>
       )}
     </div>
   )
@@ -166,6 +172,10 @@ function TaskCard({
     mutationFn: (join: boolean) => setVolunteering(t.id, year, join),
     onSuccess: invalidate,
   })
+  const skipMut = useMutation({
+    mutationFn: () => setTaskSkipped(t.id, year, true),
+    onSuccess: invalidate,
+  })
 
   if (editing)
     return (
@@ -197,6 +207,20 @@ function TaskCard({
             {(canEdit || isOwner) && (
               <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${t.title}`}>
                 <Pencil />
+              </Button>
+            )}
+            {canEdit && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  if (confirm(`Skip "${t.title}" for ${year}? It stays in the catalog for other years.`)) skipMut.mutate()
+                }}
+                disabled={skipMut.isPending}
+                aria-label={`Skip ${t.title} this year`}
+                title="Skip this year"
+              >
+                <EyeOff />
               </Button>
             )}
           </div>
@@ -464,5 +488,30 @@ function TaskForm({
         </form>
       </CardContent>
     </Card>
+  )
+}
+
+
+function SkippedList({ tasks, year }: { tasks: TaskView[]; year: number }) {
+  const queryClient = useQueryClient()
+  const restore = useMutation({
+    mutationFn: (id: string) => setTaskSkipped(id, year, false),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+  })
+  return (
+    <section className="flex flex-col gap-2">
+      <h2 className="font-serif text-lg font-bold text-muted-foreground">Skipped this year ({tasks.length})</h2>
+      {tasks.map((t) => (
+        <div key={t.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 opacity-70">
+          <span className="text-sm">
+            <span className="font-medium">{t.title}</span>
+            <span className="text-muted-foreground"> · {t.category}</span>
+          </span>
+          <Button size="sm" variant="outline" onClick={() => restore.mutate(t.id)} disabled={restore.isPending}>
+            <Undo2 /> Restore
+          </Button>
+        </div>
+      ))}
+    </section>
   )
 }

@@ -35,5 +35,7 @@ const post = (path: string, body: unknown) =>
 export const createMasterTask = (input: TaskMasterInput) => post('/api/members/tasks', input) as Promise<{ id: string }>
 export const updateMasterTask = (id: string, input: TaskMasterInput) => post(`/api/members/tasks/${id}`, input)
 export const saveTaskYear = (id: string, input: TaskYearInput) => post(`/api/members/tasks/${id}/year`, input)
+export const setTaskSkipped = (id: string, year: number, skipped: boolean) =>
+  post(`/api/members/tasks/${id}/skip`, { year, skipped })
 export const setVolunteering = (id: string, year: number, join: boolean) =>
   post(`/api/members/tasks/${id}/volunteer`, { year, join })
