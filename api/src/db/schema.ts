@@ -57,19 +57,30 @@ export const verification = sqliteTable('verification', {
 // ── App tables ──────────────────────────────────────────────────────────────
 
 /**
- * Membership is family-first: the family holds the tier (bought with the
- * Durga Pujo subscription — core at ≥ the shared threshold), people belong to
- * a family. Signing in with Google/Facebook creates a `user` row, but member
- * content is served only when a matching (by email) person exists in a family
- * whose tier isn't non_member. People without email are full members on the
- * rolls who simply don't use the site.
+ * Membership is per person: each individual carries their own tier (promoted
+ * by an admin, core typically after the Durga Pujo subscription), eligibility
+ * and location. `family` is only a thin manual grouping admins curate — it
+ * gates nothing. Signing in creates a `user` row; member content is served
+ * only when a matching (by email) active person with tier != non_member
+ * exists. People without email are full members on the rolls who simply
+ * don't use the site.
  */
 export const family = sqliteTable('family', {
   id: text('id').primaryKey(),
   name: text('name').notNull(), // "Sudeshna & Mousum" style family name
+  notes: text('notes'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const person = sqliteTable('person', {
+  id: text('id').primaryKey(),
+  familyId: text('family_id').references(() => family.id), // optional grouping
+  displayName: text('display_name').notNull(),
+  email: text('email').unique(), // login match key; NULL = no-Google member
   society: text('society'), // from shared locations list, or free text
   residenceDetail: text('residence_detail'), // flat no
-  workplace: text('workplace'), // tower, for works-in-MGP families
+  workplace: text('workplace'), // tower, for works-in-MGP people
   workplaceDetail: text('workplace_detail'), // company name
   eligibility: text('eligibility', { enum: ['resident', 'works_in_mgp'] })
     .notNull()
@@ -78,45 +89,11 @@ export const family = sqliteTable('family', {
     .notNull()
     .default('non_member'),
   phone: text('phone'),
-  notes: text('notes'), // e.g. "including parents from both sides"
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-})
-
-export const person = sqliteTable('person', {
-  id: text('id').primaryKey(),
-  familyId: text('family_id')
-    .notNull()
-    .references(() => family.id),
-  displayName: text('display_name').notNull(),
-  email: text('email').unique(), // login match key; NULL = no-Google member
-  phone: text('phone'),
   gender: text('gender'), // e.g. mahila-volunteer scheduling
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   notes: text('notes'),
-  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
-})
-
-
-/**
- * Self-service "join an existing family" requests from first-time sign-ins.
- * Creating a person from one requires admin approval — otherwise anyone could
- * attach themselves to a core family and inherit member access.
- */
-export const joinRequest = sqliteTable('join_request', {
-  id: text('id').primaryKey(),
-  familyId: text('family_id')
-    .notNull()
-    .references(() => family.id),
-  email: text('email').notNull(),
-  displayName: text('display_name').notNull(),
-  note: text('note'),
-  status: text('status', { enum: ['pending', 'approved', 'rejected'] })
-    .notNull()
-    .default('pending'),
-  decidedBy: text('decided_by'), // person id of the admin
-  decidedAt: integer('decided_at', { mode: 'timestamp' }),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 

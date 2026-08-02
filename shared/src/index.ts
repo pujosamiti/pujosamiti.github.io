@@ -105,45 +105,58 @@ export interface Me {
 export type FamilyTier = 'non_member' | 'member' | 'core';
 export type FamilyEligibility = 'resident' | 'works_in_mgp';
 
-/** Where a signed-in (but not-yet-member) user stands in the funnel. */
+/** Where a signed-in user stands: member, registered-but-waiting, or new. */
 export type OnboardingState =
   | { state: 'member' }
-  | { state: 'awaiting_activation'; familyName: string }
-  | { state: 'request_pending'; familyName: string }
+  | { state: 'awaiting_activation' }
   | { state: 'no_person' };
 
-export interface FamilySearchResult {
-  id: string;
-  name: string;
-  society: string | null;
-}
-
-export interface CreateFamilyInput {
-  familyName: string;
+/** Self-service profile — creates (or completes) the signed-in user's person. */
+export interface ProfileInput {
+  displayName: string;
   eligibility: FamilyEligibility;
   society: string | null;
   residenceDetail: string | null;
   workplace: string | null;
   workplaceDetail: string | null;
-  familyPhone: string | null;
-  displayName: string;
   phone: string | null;
   gender: string | null;
-}
-
-export interface JoinFamilyInput {
-  familyId: string;
-  displayName: string;
-  note: string | null;
 }
 
 export interface AdminPerson {
   id: string;
+  familyId: string | null;
+  familyName: string | null;
   displayName: string;
   email: string | null;
+  society: string | null;
+  residenceDetail: string | null;
+  workplace: string | null;
+  workplaceDetail: string | null;
+  eligibility: FamilyEligibility;
+  tier: FamilyTier;
   phone: string | null;
   gender: string | null;
   isAdmin: boolean;
+  isActive: boolean;
+  portfolio: string | null;
+  notes: string | null;
+}
+
+/** Admin person payload. Email nullable = manual/no-Google member. */
+export interface AdminPersonInput {
+  familyId: string | null;
+  displayName: string;
+  email: string | null;
+  society: string | null;
+  residenceDetail: string | null;
+  workplace: string | null;
+  workplaceDetail: string | null;
+  eligibility: FamilyEligibility;
+  phone: string | null;
+  gender: string | null;
+  isAdmin: boolean;
+  isActive: boolean;
   portfolio: string | null;
   notes: string | null;
 }
@@ -151,49 +164,14 @@ export interface AdminPerson {
 export interface AdminFamily {
   id: string;
   name: string;
-  society: string | null;
-  residenceDetail: string | null;
-  workplace: string | null;
-  workplaceDetail: string | null;
-  eligibility: FamilyEligibility;
-  tier: FamilyTier;
-  isActive: boolean;
-  phone: string | null;
   notes: string | null;
-  people: AdminPerson[];
+  isActive: boolean;
 }
 
-/** Admin edit payloads. Email nullable on person = manual/no-Google member. */
-export interface AdminFamilyUpdate {
+export interface AdminFamilyInput {
   name: string;
-  society: string | null;
-  residenceDetail: string | null;
-  workplace: string | null;
-  workplaceDetail: string | null;
-  eligibility: FamilyEligibility;
-  phone: string | null;
   notes: string | null;
   isActive: boolean;
-}
-
-export interface AdminPersonInput {
-  displayName: string;
-  email: string | null;
-  phone: string | null;
-  gender: string | null;
-  isAdmin: boolean;
-  portfolio: string | null;
-  notes: string | null;
-}
-
-export interface JoinRequestView {
-  id: string;
-  familyId: string;
-  familyName: string;
-  email: string;
-  displayName: string;
-  note: string | null;
-  createdAt: string;
 }
 
 // ── Accounting (Sheets is source of truth; Worker reads via service account) ─

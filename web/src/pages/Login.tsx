@@ -3,7 +3,7 @@ import { AlertTriangle, CheckCircle2, Hourglass, Loader2, LogOut } from 'lucide-
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
 
-import { Onboarding } from '@/components/Onboarding'
+import { ProfileForm } from '@/components/Onboarding'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -26,7 +26,7 @@ function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => 
   if (ob.state === 'no_person') {
     return (
       <>
-        <Onboarding email={email} />
+        <ProfileForm email={email} />
         <Button variant="outline" className="self-start" onClick={onSignOut}>
           <LogOut /> Sign out
         </Button>
@@ -34,28 +34,20 @@ function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => 
     )
   }
 
-  const copy =
-    ob.state === 'request_pending'
-      ? {
-          title: 'Request sent',
-          body: `Your request to join the ${ob.familyName} family is with the committee admins. You'll get access as soon as it's approved — check back here.`,
-        }
-      : {
-          title: 'Registration received',
-          body: `Your family (${'familyName' in ob ? ob.familyName : ''}) is registered but membership isn't active yet. A committee admin confirms membership (usually after the subscription) — then everything unlocks here.`,
-        }
-
   return (
     <Card>
       <CardHeader>
         <Hourglass className="size-6 text-shiuli" aria-hidden="true" />
-        <CardTitle>{copy.title}</CardTitle>
+        <CardTitle>Registration received</CardTitle>
         <CardDescription>
           Signed in as <span className="font-medium">{email}</span>
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <p className="text-sm text-muted-foreground">{copy.body}</p>
+        <p className="text-sm text-muted-foreground">
+          Your profile is registered but membership isn't active yet. A committee admin confirms
+          membership (usually after the subscription) — then everything unlocks here.
+        </p>
         <Button variant="outline" className="self-start" onClick={onSignOut}>
           <LogOut /> Sign out
         </Button>

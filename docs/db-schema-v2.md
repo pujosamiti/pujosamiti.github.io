@@ -25,31 +25,32 @@ Settled decisions:
 
 ### Membership
 
-✅ **Implemented** (migrations `0001_add-family-person`, `0002_drop-member`):
+✅ **Implemented** (migrations 0001–0004; final shape is person-centric —
+membership, tier, eligibility and location all live on the individual;
+`family` is only an optional manual grouping and gates nothing):
 
 ```
-family
-  id, name, society, residence_detail,
-  workplace, workplace_detail,           -- for works-in-MGP families
-  eligibility  enum: resident | works_in_mgp   (default resident)
-  tier         enum: non_member | member | core   (default non_member; cached,
-                                          -- derived from Durga Pujo subscription)
-  phone, notes, is_active, created_at
-
-person                                   -- replaced `member`
-  id, family_id FK, display_name,
+person                                   -- the membership unit
+  id, family_id FK NULL,                 -- optional grouping, admin-curated
+  display_name,
   email UNIQUE NULL,                     -- login key; NULL = no-Google member
-  phone, gender NULL,                    -- mahila-volunteer scheduling
-  is_admin bool,
-  portfolio TEXT NULL,                   -- free text
-  notes, created_at
+  society, residence_detail,             -- residents
+  workplace, workplace_detail,           -- works-in-MGP people
+  eligibility  enum: resident | works_in_mgp   (default resident)
+  tier         enum: non_member | member | core   (default non_member;
+                                          -- promoted per person by an admin)
+  phone, gender NULL, is_admin bool, is_active bool,
+  portfolio TEXT NULL, notes, created_at
+
+family                                   -- thin grouping only
+  id, name, notes, is_active, created_at
 ```
 
-Access rule as implemented: session email → person (family joined); denied
-unless family `is_active` and tier ≠ `non_member`. Role in the API contract:
-`admin` if `person.is_admin`, else `committee` for core-tier families, else
-`member`. Wallet-holders are not flagged on person — collector attribution
-lives on future money tables.
+Access rule: session email → person; denied unless `is_active` and tier ≠
+`non_member`. Role: `admin` if `is_admin`, else `committee` for core tier,
+else `member`. Onboarding = self-service profile completion (creates the
+person at non_member); admins promote per person. Contributions/ledger will
+reference persons individually.
 
 ### Money
 

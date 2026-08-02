@@ -17,10 +17,9 @@ type Vars = { me: Me }
 export const memberRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 
 /**
- * Signing in is not enough: the account's email must belong to a person in a
- * family whose membership is current (tier member/core, family active).
- * Enforcement lives here on the server — hiding routes in the React bundle
- * protects nothing.
+ * Signing in is not enough: the account's email must belong to an active
+ * person whose tier isn't non_member. Enforcement lives here on the server —
+ * hiding routes in the React bundle protects nothing.
  */
 memberRoutes.use('*', async (c, next) => {
   const auth = createAuth(c.env)
@@ -28,22 +27,21 @@ memberRoutes.use('*', async (c, next) => {
   if (!session) return c.json({ ok: false, error: 'not signed in' }, 401)
 
   const db = drizzle(c.env.DB, { schema })
-  const [row] = await db
-    .select({ person: schema.person, family: schema.family })
+  const [p] = await db
+    .select()
     .from(schema.person)
-    .innerJoin(schema.family, eq(schema.person.familyId, schema.family.id))
     .where(eq(schema.person.email, session.user.email))
     .limit(1)
-  if (!row || !row.family.isActive || row.family.tier === 'non_member')
+  if (!p || !p.isActive || p.tier === 'non_member')
     return c.json({ ok: false, error: 'not a samiti member' }, 403)
 
   c.set('me', {
     id: session.user.id,
-    name: row.person.displayName,
+    name: p.displayName,
     email: session.user.email,
     image: session.user.image ?? null,
-    role: row.person.isAdmin ? 'admin' : row.family.tier === 'core' ? 'committee' : 'member',
-    portfolio: row.person.portfolio,
+    role: p.isAdmin ? 'admin' : p.tier === 'core' ? 'committee' : 'member',
+    portfolio: p.portfolio,
   })
   await next()
 })

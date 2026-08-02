@@ -1,14 +1,13 @@
 import type {
   AdminFamily,
-  AdminFamilyUpdate,
+  AdminFamilyInput,
   AdminPerson,
   AdminPersonInput,
   FamilyTier,
-  JoinRequestView,
 } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Loader2, Pencil, Plus, ShieldCheck, Trash2, X } from 'lucide-react'
+import { Loader2, Pencil, Plus, ShieldCheck, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -55,180 +54,159 @@ export function Admin() {
         <ShieldCheck className="size-6 text-primary" aria-hidden="true" />
         <h1 className="text-2xl font-bold">Membership admin</h1>
       </div>
-      <JoinRequests />
+      <People />
       <Families />
     </div>
   )
 }
 
-function JoinRequests() {
-  const queryClient = useQueryClient()
-  const { data: requests, isPending } = useQuery({
-    queryKey: ['admin-join-requests'],
-    queryFn: () => api<JoinRequestView[]>('/api/admin/join-requests'),
+function People() {
+  const { data: people, isPending, error } = useQuery({
+    queryKey: ['admin-people'],
+    queryFn: () => api<AdminPerson[]>('/api/admin/people'),
   })
-  const decide = useMutation({
-    mutationFn: ({ id, action }: { id: string; action: 'approve' | 'reject' }) =>
-      post(`/api/admin/join-requests/${id}/decide`, { action }),
-    onSuccess: () => queryClient.invalidateQueries(),
-  })
-
-  return (
-    <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Join requests</h2>
-      {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
-      ) : !requests?.length ? (
-        <p className="text-sm text-muted-foreground">No pending requests.</p>
-      ) : (
-        requests.map((r) => (
-          <Card key={r.id}>
-            <CardContent className="flex flex-wrap items-center justify-between gap-3 pt-4">
-              <div className="min-w-0">
-                <p className="text-sm font-medium">
-                  {r.displayName} <span className="text-muted-foreground">({r.email})</span>
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  wants to join <span className="font-medium text-foreground">{r.familyName}</span>
-                  {r.note && <> — “{r.note}”</>}
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button size="sm" onClick={() => decide.mutate({ id: r.id, action: 'approve' })} disabled={decide.isPending}>
-                  <Check /> Approve
-                </Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => decide.mutate({ id: r.id, action: 'reject' })}
-                  disabled={decide.isPending}
-                >
-                  <X /> Reject
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ))
-      )}
-    </section>
-  )
-}
-
-function Families() {
-  const { data: families, isPending } = useQuery({
+  const { data: families } = useQuery({
     queryKey: ['admin-families'],
     queryFn: () => api<AdminFamily[]>('/api/admin/families'),
   })
+  const [adding, setAdding] = useState(false)
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-lg font-semibold">Families</h2>
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">People ({people?.length ?? '…'})</h2>
+        {!adding && (
+          <Button size="sm" onClick={() => setAdding(true)}>
+            <Plus /> Add person
+          </Button>
+        )}
+      </div>
+      {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
+      {adding && <PersonForm families={families ?? []} onClose={() => setAdding(false)} />}
       {isPending ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
-        families?.map((f) => <FamilyCard key={f.id} family={f} />)
+        people?.map((p) => <PersonCard key={p.id} person={p} families={families ?? []} />)
       )}
     </section>
   )
 }
 
-function FamilyCard({ family: f }: { family: AdminFamily }) {
+function PersonCard({ person: p, families }: { person: AdminPerson; families: AdminFamily[] }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
-  const [addingPerson, setAddingPerson] = useState(false)
   const setTier = useMutation({
-    mutationFn: (tier: FamilyTier) => post(`/api/admin/families/${f.id}/tier`, { tier }),
+    mutationFn: (tier: FamilyTier) => post(`/api/admin/people/${p.id}/tier`, { tier }),
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+  const remove = useMutation({
+    mutationFn: () => api(`/api/admin/people/${p.id}`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries(),
   })
 
+  if (editing) return <PersonForm person={p} families={families} onClose={() => setEditing(false)} />
+
+  const where = p.eligibility === 'resident' ? [p.society, p.residenceDetail] : [p.workplace, p.workplaceDetail]
+
   return (
-    <Card className={f.isActive ? undefined : 'opacity-60'}>
-      <CardHeader>
+    <Card className={p.isActive ? undefined : 'opacity-60'}>
+      <CardContent className="flex flex-col gap-2 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base">
-            {f.name}
-            <span className="ml-2 text-sm font-normal text-muted-foreground">
-              {[f.society ?? f.workplace, f.residenceDetail ?? f.workplaceDetail].filter(Boolean).join(' · ')}
-            </span>
-            {!f.isActive && (
-              <Badge variant="outline" className="ml-2 align-middle">
-                inactive
-              </Badge>
-            )}
-          </CardTitle>
-          <div className="flex gap-1">
+          <div className="min-w-0">
+            <p className="text-sm font-medium">
+              {p.displayName}
+              {p.isAdmin && (
+                <Badge variant="outline" className="ml-1 align-middle">
+                  admin
+                </Badge>
+              )}
+              {p.portfolio && (
+                <Badge variant="genda" className="ml-1 align-middle">
+                  {p.portfolio}
+                </Badge>
+              )}
+              {!p.isActive && (
+                <Badge variant="outline" className="ml-1 align-middle">
+                  inactive
+                </Badge>
+              )}
+            </p>
+            <p className="truncate text-sm text-muted-foreground">
+              {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.familyName && `family: ${p.familyName}`]
+                .filter(Boolean)
+                .join(' · ')}
+            </p>
+          </div>
+          <div className="flex items-center gap-1">
             {TIERS.map((t) => (
               <Button
                 key={t}
                 size="sm"
-                variant={f.tier === t ? (t === 'core' ? 'default' : 'secondary') : 'outline'}
-                onClick={() => f.tier !== t && setTier.mutate(t)}
+                variant={p.tier === t ? (t === 'core' ? 'default' : 'secondary') : 'outline'}
+                onClick={() => p.tier !== t && setTier.mutate(t)}
                 disabled={setTier.isPending}
               >
                 {TIER_LABEL[t]}
               </Button>
             ))}
+            <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${p.displayName}`}>
+              <Pencil />
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                if (confirm(`Remove ${p.displayName}?`)) remove.mutate()
+              }}
+              disabled={remove.isPending}
+              aria-label={`Remove ${p.displayName}`}
+            >
+              <Trash2 className="text-destructive" />
+            </Button>
           </div>
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {editing ? (
-          <FamilyForm family={f} onClose={() => setEditing(false)} />
-        ) : (
-          <>
-            {(f.phone || f.notes) && (
-              <p className="text-sm text-muted-foreground">
-                {[f.phone, f.notes].filter(Boolean).join(' · ')}
-              </p>
-            )}
-            <ul className="flex flex-col gap-1">
-              {f.people.map((p) => (
-                <PersonRow key={p.id} person={p} />
-              ))}
-              {!f.people.length && <li className="text-sm text-muted-foreground">No people yet.</li>}
-            </ul>
-            {addingPerson ? (
-              <PersonForm familyId={f.id} onClose={() => setAddingPerson(false)} />
-            ) : (
-              <div className="flex gap-2">
-                <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
-                  <Pencil /> Edit family
-                </Button>
-                <Button size="sm" variant="outline" onClick={() => setAddingPerson(true)}>
-                  <Plus /> Add person
-                </Button>
-              </div>
-            )}
-          </>
-        )}
       </CardContent>
     </Card>
   )
 }
 
-function FamilyForm({ family: f, onClose }: { family: AdminFamily; onClose: () => void }) {
+function PersonForm({
+  person,
+  families,
+  onClose,
+}: {
+  person?: AdminPerson
+  families: AdminFamily[]
+  onClose: () => void
+}) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<AdminFamilyUpdate>({
-    name: f.name,
-    society: f.society,
-    residenceDetail: f.residenceDetail,
-    workplace: f.workplace,
-    workplaceDetail: f.workplaceDetail,
-    eligibility: f.eligibility,
-    phone: f.phone,
-    notes: f.notes,
-    isActive: f.isActive,
+  const [form, setForm] = useState<AdminPersonInput>({
+    familyId: person?.familyId ?? null,
+    displayName: person?.displayName ?? '',
+    email: person?.email ?? null,
+    society: person?.society ?? null,
+    residenceDetail: person?.residenceDetail ?? null,
+    workplace: person?.workplace ?? null,
+    workplaceDetail: person?.workplaceDetail ?? null,
+    eligibility: person?.eligibility ?? 'resident',
+    phone: person?.phone ?? null,
+    gender: person?.gender ?? null,
+    isAdmin: person?.isAdmin ?? false,
+    isActive: person?.isActive ?? true,
+    portfolio: person?.portfolio ?? null,
+    notes: person?.notes ?? null,
   })
   const [error, setError] = useState<string | null>(null)
   const save = useMutation({
-    mutationFn: () => post(`/api/admin/families/${f.id}`, form),
+    mutationFn: () => (person ? post(`/api/admin/people/${person.id}`, form) : post('/api/admin/people', form)),
     onSuccess: async () => {
       await queryClient.invalidateQueries()
       onClose()
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'failed'),
   })
-  const set = (patch: Partial<AdminFamilyUpdate>) => setForm((prev) => ({ ...prev, ...patch }))
+  const set = (patch: Partial<AdminPersonInput>) => setForm((prev) => ({ ...prev, ...patch }))
+
   const resident = form.eligibility === 'resident'
   const location = resident ? form.society : form.workplace
   const knownLocation =
@@ -238,223 +216,247 @@ function FamilyForm({ family: f, onClose }: { family: AdminFamily; onClose: () =
       : MAGARPATTA_WORKPLACE_GROUPS.some((g) => (g.options as readonly string[]).includes(location)))
 
   return (
-    <form
-      className="flex flex-col gap-3"
-      onSubmit={(e) => {
-        e.preventDefault()
-        save.mutate()
-      }}
-    >
-      <Field label="Family name *">
-        <input className={inputCls} value={form.name} onChange={(e) => set({ name: e.target.value })} required />
-      </Field>
-      <Field label="Eligibility">
-        <select
-          className={inputCls}
-          value={form.eligibility}
-          onChange={(e) => set({ eligibility: e.target.value as AdminFamilyUpdate['eligibility'] })}
-        >
-          <option value="resident">Resident</option>
-          <option value="works_in_mgp">Works in Magarpatta</option>
-        </select>
-      </Field>
-      <Field label={resident ? 'Society' : 'Tower / building'}>
-        <select
-          className={inputCls}
-          value={knownLocation ? (location ?? '') : LOCATION_OTHER}
-          onChange={(e) => {
-            const v = e.target.value === LOCATION_OTHER ? '' : e.target.value || null
-            set(resident ? { society: v } : { workplace: v })
+    <Card>
+      <CardContent className="pt-4">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            save.mutate()
           }}
         >
-          <option value="">—</option>
-          {resident
-            ? MAGARPATTA_SOCIETIES.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))
-            : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
-                <optgroup key={g.group} label={g.group}>
-                  {g.options.map((o) => (
-                    <option key={o} value={o}>
-                      {o}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-          <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
-        </select>
-      </Field>
-      {!knownLocation && (
-        <Field label={resident ? 'Society name' : 'Building name'}>
-          <input
-            className={inputCls}
-            value={location ?? ''}
-            onChange={(e) => set(resident ? { society: e.target.value || null } : { workplace: e.target.value || null })}
-          />
-        </Field>
-      )}
-      <Field label={resident ? 'Flat number' : 'Office / company'}>
-        <input
-          className={inputCls}
-          value={(resident ? form.residenceDetail : form.workplaceDetail) ?? ''}
-          onChange={(e) =>
-            set(resident ? { residenceDetail: e.target.value || null } : { workplaceDetail: e.target.value || null })
-          }
-        />
-      </Field>
-      <Field label="Phone">
-        <input className={inputCls} value={form.phone ?? ''} onChange={(e) => set({ phone: e.target.value || null })} inputMode="tel" />
-      </Field>
-      <Field label="Notes">
-        <input className={inputCls} value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value || null })} />
-      </Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />
-        Active
-      </label>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={save.isPending}>
-          {save.isPending && <Loader2 className="animate-spin" />} Save
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Name *">
+              <input className={inputCls} value={form.displayName} onChange={(e) => set({ displayName: e.target.value })} required />
+            </Field>
+            <Field label="Email (empty = no site login)">
+              <input className={inputCls} type="email" value={form.email ?? ''} onChange={(e) => set({ email: e.target.value || null })} />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Eligibility">
+              <select
+                className={inputCls}
+                value={form.eligibility}
+                onChange={(e) => set({ eligibility: e.target.value as AdminPersonInput['eligibility'] })}
+              >
+                <option value="resident">Resident</option>
+                <option value="works_in_mgp">Works in Magarpatta</option>
+              </select>
+            </Field>
+            <Field label="Family (optional group)">
+              <select className={inputCls} value={form.familyId ?? ''} onChange={(e) => set({ familyId: e.target.value || null })}>
+                <option value="">—</option>
+                {families.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
+                ))}
+              </select>
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={resident ? 'Society' : 'Tower / building'}>
+              <select
+                className={inputCls}
+                value={knownLocation ? (location ?? '') : LOCATION_OTHER}
+                onChange={(e) => {
+                  const v = e.target.value === LOCATION_OTHER ? '' : e.target.value || null
+                  set(resident ? { society: v } : { workplace: v })
+                }}
+              >
+                <option value="">—</option>
+                {resident
+                  ? MAGARPATTA_SOCIETIES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))
+                  : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
+                      <optgroup key={g.group} label={g.group}>
+                        {g.options.map((o) => (
+                          <option key={o} value={o}>
+                            {o}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ))}
+                <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
+              </select>
+            </Field>
+            <Field label={resident ? 'Flat number' : 'Office / company'}>
+              <input
+                className={inputCls}
+                value={(resident ? form.residenceDetail : form.workplaceDetail) ?? ''}
+                onChange={(e) =>
+                  set(resident ? { residenceDetail: e.target.value || null } : { workplaceDetail: e.target.value || null })
+                }
+              />
+            </Field>
+          </div>
+          {!knownLocation && (
+            <Field label={resident ? 'Society name' : 'Building name'}>
+              <input
+                className={inputCls}
+                value={location ?? ''}
+                onChange={(e) => set(resident ? { society: e.target.value || null } : { workplace: e.target.value || null })}
+              />
+            </Field>
+          )}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Phone">
+              <input className={inputCls} value={form.phone ?? ''} onChange={(e) => set({ phone: e.target.value || null })} inputMode="tel" />
+            </Field>
+            <Field label="Gender">
+              <select className={inputCls} value={form.gender ?? ''} onChange={(e) => set({ gender: e.target.value || null })}>
+                <option value="">—</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </select>
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Portfolio (e.g. Treasurer)">
+              <input className={inputCls} value={form.portfolio ?? ''} onChange={(e) => set({ portfolio: e.target.value || null })} />
+            </Field>
+            <Field label="Notes">
+              <input className={inputCls} value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value || null })} />
+            </Field>
+          </div>
+          <div className="flex gap-4">
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.isAdmin} onChange={(e) => set({ isAdmin: e.target.checked })} />
+              Committee admin
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />
+              Active
+            </label>
+          </div>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending && <Loader2 className="animate-spin" />} Save
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
 
-function PersonRow({ person: p }: { person: AdminPerson }) {
-  const queryClient = useQueryClient()
-  const [editing, setEditing] = useState(false)
-  const remove = useMutation({
-    mutationFn: () => api(`/api/admin/people/${p.id}`, { method: 'DELETE' }),
-    onSuccess: () => queryClient.invalidateQueries(),
+function Families() {
+  const { data: families, isPending, error } = useQuery({
+    queryKey: ['admin-families'],
+    queryFn: () => api<AdminFamily[]>('/api/admin/families'),
   })
-
-  if (editing) return <PersonForm person={p} onClose={() => setEditing(false)} />
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
 
   return (
-    <li className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
-      <span className="min-w-0 truncate">
-        <span className="font-medium">{p.displayName}</span>
-        {p.isAdmin && (
-          <Badge variant="outline" className="ml-1 align-middle">
-            admin
-          </Badge>
+    <section className="flex flex-col gap-3">
+      <div className="flex items-center justify-between">
+        <h2 className="text-lg font-semibold">Families (optional grouping)</h2>
+        {!adding && (
+          <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+            <Plus /> Add family
+          </Button>
         )}
-        {p.portfolio && (
-          <Badge variant="genda" className="ml-1 align-middle">
-            {p.portfolio}
-          </Badge>
-        )}
-        <span className="ml-2 text-muted-foreground">{p.email ?? 'no login'}</span>
-      </span>
-      <span className="flex shrink-0 gap-1">
-        <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${p.displayName}`}>
-          <Pencil />
-        </Button>
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={() => {
-            if (confirm(`Remove ${p.displayName} from this family?`)) remove.mutate()
-          }}
-          disabled={remove.isPending}
-          aria-label={`Remove ${p.displayName}`}
-        >
-          <Trash2 className="text-destructive" />
-        </Button>
-      </span>
-    </li>
+      </div>
+      {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
+      {adding && <FamilyForm onClose={() => setAdding(false)} />}
+      {isPending ? (
+        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+      ) : (
+        families?.map((f) =>
+          editingId === f.id ? (
+            <FamilyForm key={f.id} family={f} onClose={() => setEditingId(null)} />
+          ) : (
+            <Card key={f.id} className={f.isActive ? undefined : 'opacity-60'}>
+              <CardContent className="flex items-center justify-between gap-2 pt-4">
+                <p className="text-sm">
+                  <span className="font-medium">{f.name}</span>
+                  {f.notes && <span className="text-muted-foreground"> · {f.notes}</span>}
+                </p>
+                <Button size="sm" variant="ghost" onClick={() => setEditingId(f.id)} aria-label={`Edit ${f.name}`}>
+                  <Pencil />
+                </Button>
+              </CardContent>
+            </Card>
+          ),
+        )
+      )}
+    </section>
   )
 }
 
-function PersonForm({
-  person,
-  familyId,
-  onClose,
-}: {
-  person?: AdminPerson
-  familyId?: string
-  onClose: () => void
-}) {
+function FamilyForm({ family, onClose }: { family?: AdminFamily; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [form, setForm] = useState<AdminPersonInput>({
-    displayName: person?.displayName ?? '',
-    email: person?.email ?? null,
-    phone: person?.phone ?? null,
-    gender: person?.gender ?? null,
-    isAdmin: person?.isAdmin ?? false,
-    portfolio: person?.portfolio ?? null,
-    notes: person?.notes ?? null,
+  const [form, setForm] = useState<AdminFamilyInput>({
+    name: family?.name ?? '',
+    notes: family?.notes ?? null,
+    isActive: family?.isActive ?? true,
   })
   const [error, setError] = useState<string | null>(null)
   const save = useMutation({
-    mutationFn: () =>
-      person ? post(`/api/admin/people/${person.id}`, form) : post(`/api/admin/families/${familyId}/people`, form),
+    mutationFn: () => (family ? post(`/api/admin/families/${family.id}`, form) : post('/api/admin/families', form)),
     onSuccess: async () => {
       await queryClient.invalidateQueries()
       onClose()
     },
     onError: (e) => setError(e instanceof Error ? e.message : 'failed'),
   })
-  const set = (patch: Partial<AdminPersonInput>) => setForm((prev) => ({ ...prev, ...patch }))
 
   return (
-    <form
-      className="flex flex-col gap-3 rounded-md border p-3"
-      onSubmit={(e) => {
-        e.preventDefault()
-        save.mutate()
-      }}
-    >
-      <Field label="Name *">
-        <input className={inputCls} value={form.displayName} onChange={(e) => set({ displayName: e.target.value })} required />
-      </Field>
-      <Field label="Email (empty = member without site login)">
-        <input
-          className={inputCls}
-          type="email"
-          value={form.email ?? ''}
-          onChange={(e) => set({ email: e.target.value || null })}
-        />
-      </Field>
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Phone">
-          <input className={inputCls} value={form.phone ?? ''} onChange={(e) => set({ phone: e.target.value || null })} inputMode="tel" />
-        </Field>
-        <Field label="Gender">
-          <select className={inputCls} value={form.gender ?? ''} onChange={(e) => set({ gender: e.target.value || null })}>
-            <option value="">—</option>
-            <option value="female">Female</option>
-            <option value="male">Male</option>
-            <option value="other">Other</option>
-          </select>
-        </Field>
-      </div>
-      <Field label="Portfolio (e.g. Treasurer)">
-        <input className={inputCls} value={form.portfolio ?? ''} onChange={(e) => set({ portfolio: e.target.value || null })} />
-      </Field>
-      <Field label="Notes">
-        <input className={inputCls} value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value || null })} />
-      </Field>
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" checked={form.isAdmin} onChange={(e) => set({ isAdmin: e.target.checked })} />
-        Committee admin (can manage membership)
-      </label>
-      {error && <p className="text-sm text-destructive">{error}</p>}
-      <div className="flex gap-2">
-        <Button type="submit" size="sm" disabled={save.isPending}>
-          {save.isPending && <Loader2 className="animate-spin" />} Save
-        </Button>
-        <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
-          Cancel
-        </Button>
-      </div>
-    </form>
+    <Card>
+      <CardContent className="pt-4">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            save.mutate()
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Family name *">
+              <input
+                className={inputCls}
+                value={form.name}
+                onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                required
+              />
+            </Field>
+            <Field label="Notes">
+              <input
+                className={inputCls}
+                value={form.notes ?? ''}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value || null }))}
+              />
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={form.isActive}
+              onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
+            />
+            Active
+          </label>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending && <Loader2 className="animate-spin" />} Save
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
   )
 }
