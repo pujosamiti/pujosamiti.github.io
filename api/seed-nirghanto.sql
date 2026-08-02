@@ -27,18 +27,21 @@ INSERT OR IGNORE INTO timetable_entry (id, event_id, day_date, day_label_bn, day
 ('tt26-051', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'মায়ের ভোগ নিবেদন', 'Maa''er Bhog Nibedan', NULL, NULL, NULL, 51),
 ('tt26-052', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'অষ্টমী পুষ্পাঞ্জলি', 'Ashtami Pushpanjali', NULL, NULL, NULL, 52),
 ('tt26-053', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'সন্ধি পূজা', 'Sandhi Puja', NULL, NULL, NULL, 53),
-('tt26-054', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'ধুনুচি নাচ', 'Dhunuchi Naach', NULL, NULL, NULL, 54),
-('tt26-055', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'মায়ের শীতলি ভোগ, সন্ধ্যা আরতি', 'Maa''er Shitali Bhog O Shandhya Aarati', NULL, NULL, NULL, 55),
+('tt26-054', 'durga-pujo-2026', '2026-10-19', 'মহা অষ্টমী', 'Maha Ashtami', 'মায়ের শীতলি ভোগ, সন্ধ্যা আরতি', 'Maa''er Shitali Bhog O Shandhya Aarati', NULL, NULL, NULL, 54),
 -- Maha Nabami
 ('tt26-060', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'মহা নবমী পূজা', 'Maha Nabami Puja', NULL, NULL, NULL, 60),
-('tt26-061', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'পুষ্পাঞ্জলি', 'Pushpanjali', NULL, NULL, NULL, 61),
-('tt26-062', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'মায়ের ভোগ আরতি / নিবেদন', 'Maa''er Bhog Aarati / Nibedan', NULL, NULL, NULL, 62),
-('tt26-063', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'নবমী হোম / যজ্ঞ', 'Nabami Hom / Yagnya', NULL, NULL, NULL, 63),
-('tt26-064', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'মায়ের শীতলি ভোগ, সন্ধ্যা আরতি', 'Maa''er Shitali Bhog O Shandhya Aarati', NULL, NULL, NULL, 64),
--- Maha Dashami
-('tt26-070', 'durga-pujo-2026', '2026-10-21', 'মহা দশমী', 'Maha Dashami', 'দশমী পূজা ও দর্পণ বিসর্জন', 'Dashami Puja O Darpan Bisarjan', NULL, NULL, NULL, 70),
-('tt26-071', 'durga-pujo-2026', '2026-10-21', 'মহা দশমী', 'Maha Dashami', 'সিঁদুর খেলা', 'Sindur Khela', NULL, NULL, NULL, 71),
-('tt26-072', 'durga-pujo-2026', '2026-10-21', 'মহা দশমী', 'Maha Dashami', 'ঠাকুর বরণ ও বিসর্জন', 'Thakur Baran O Bisarjan', NULL, NULL, NULL, 72);
+('tt26-061', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'মায়ের ভোগ আরতি / নিবেদন', 'Maa''er Bhog Aarati / Nibedan', NULL, NULL, NULL, 61),
+('tt26-062', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'পুষ্পাঞ্জলি', 'Pushpanjali', NULL, NULL, NULL, 62),
+('tt26-063', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'চন্ডীপাঠ', 'Chandipaath', NULL, NULL, NULL, 63),
+('tt26-064', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'নবমী হোম', 'Nabami Hom', NULL, NULL, NULL, 64),
+('tt26-065', 'durga-pujo-2026', '2026-10-20', 'মহা নবমী', 'Maha Nabami', 'মায়ের শীতলি ভোগ, সন্ধ্যা আরতি', 'Maa''er Shitali Bhog O Shandhya Aarati', NULL, NULL, NULL, 65),
+-- Bijaya Dashami
+('tt26-070', 'durga-pujo-2026', '2026-10-21', 'বিজয়া দশমী', 'Bijaya Dashami', 'দশমী পূজা', 'Dashami Puja', NULL, NULL, NULL, 70),
+('tt26-071', 'durga-pujo-2026', '2026-10-21', 'বিজয়া দশমী', 'Bijaya Dashami', 'দধিকর্মা, পুষ্পাঞ্জলি', 'Dadhikarma, Pushpanjali', NULL, NULL, NULL, 71),
+('tt26-072', 'durga-pujo-2026', '2026-10-21', 'বিজয়া দশমী', 'Bijaya Dashami', 'অপরাজিতা পূজা', 'Aparajita Puja', NULL, NULL, NULL, 72),
+('tt26-073', 'durga-pujo-2026', '2026-10-21', 'বিজয়া দশমী', 'Bijaya Dashami', 'বরণ / সিঁদুর খেলা', 'Baran / Sindur Khela', NULL, NULL, NULL, 73),
+-- Lakshmi Puja (the nirghanto closes with Kojagari, per the samiti's format)
+('tt26-080', 'durga-pujo-2026', '2026-10-25', 'লক্ষী পূজা', 'Lakshmi Puja', 'কোজাগরি লক্ষ্মী পূজা, পুষ্পাঞ্জলি', 'Kojagari Lakshmi Puja, Pushpanjali', NULL, NULL, NULL, 80);
 
 -- Durga Pujo 2025 — the actual nirghanto (Purohit: Dilip Ghoshal / Dhruba Roy)
 UPDATE event SET purohit_name = 'Dilip Ghoshal / Dhruba Roy' WHERE id = 'durga-pujo-2025' AND purohit_name IS NULL;
@@ -70,4 +73,5 @@ INSERT OR IGNORE INTO timetable_entry (id, event_id, day_date, day_label_bn, day
 ('tt25-070', 'durga-pujo-2025', '2025-10-02', 'বিজয়া দশমী', 'Bijaya Dashami', 'দশমী পূজা', 'Dashami Puja', '08:00', NULL, NULL, 70),
 ('tt25-071', 'durga-pujo-2025', '2025-10-02', 'বিজয়া দশমী', 'Bijaya Dashami', 'দধিকর্মা, পুষ্পাঞ্জলি', 'Dadhikarma, Pushpanjali', '08:45', NULL, NULL, 71),
 ('tt25-072', 'durga-pujo-2025', '2025-10-02', 'বিজয়া দশমী', 'Bijaya Dashami', 'অপরাজিতা পূজা', 'Aparajita Puja', '09:15', NULL, NULL, 72),
-('tt25-073', 'durga-pujo-2025', '2025-10-02', 'বিজয়া দশমী', 'Bijaya Dashami', 'বরণ / সিঁদুর খেলা', 'Baran / Sindur Khela', '10:45', NULL, NULL, 73);
+('tt25-073', 'durga-pujo-2025', '2025-10-02', 'বিজয়া দশমী', 'Bijaya Dashami', 'বরণ / সিঁদুর খেলা', 'Baran / Sindur Khela', '10:45', NULL, NULL, 73),
+('tt25-080', 'durga-pujo-2025', '2025-10-06', 'লক্ষী পূজা', 'Lakshmi Puja', 'কোজাগরি লক্ষ্মী পূজা, পুষ্পাঞ্জলি', 'Kojagari Lakshmi Puja, Pushpanjali', NULL, NULL, NULL, 80);
