@@ -278,17 +278,25 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
  */
 function MergePanel({ survivor, onClose }: { survivor: AdminPerson; onClose: () => void }) {
   const queryClient = useQueryClient()
-  const [sourceId, setSourceId] = useState('')
+  const [q, setQ] = useState('')
+  const [dq, setDq] = useState('')
+  const [source, setSource] = useState<AdminPerson | null>(null)
   const [error, setError] = useState<string | null>(null)
-  const { data: everyone } = useQuery({
-    queryKey: ['admin-people', ''],
-    queryFn: () => api<AdminPerson[]>('/api/admin/people?q='),
+
+  useEffect(() => {
+    const t = setTimeout(() => setDq(q.trim()), 300)
+    return () => clearTimeout(t)
+  }, [q])
+
+  const { data: results } = useQuery({
+    queryKey: ['admin-people', dq],
+    queryFn: () => api<AdminPerson[]>(`/api/admin/people?q=${encodeURIComponent(dq)}`),
+    enabled: !source && dq.length >= 2,
   })
-  const options = (everyone ?? []).filter((x) => x.id !== survivor.id)
-  const source = options.find((x) => x.id === sourceId)
+  const options = (results ?? []).filter((x) => x.id !== survivor.id).slice(0, 8)
 
   const merge = useMutation({
-    mutationFn: () => post(`/api/admin/people/${survivor.id}/merge`, { sourceId }),
+    mutationFn: () => post(`/api/admin/people/${survivor.id}/merge`, { sourceId: source!.id }),
     onSuccess: async () => {
       await queryClient.invalidateQueries()
       onClose()
@@ -303,20 +311,53 @@ function MergePanel({ survivor, onClose }: { survivor: AdminPerson; onClose: () 
         record (and its history) survives; the absorbed record's newer details override, and the
         duplicate is deleted.
       </p>
-      <select className={inputCls} value={sourceId} onChange={(e) => setSourceId(e.target.value)}>
-        <option value="">Pick the duplicate to absorb…</option>
-        {options.map((x) => (
-          <option key={x.id} value={x.id}>
-            {x.displayName}
-            {x.email ? ` · ${x.email}` : ''} · {TIER_LABEL[x.tier]}
-          </option>
-        ))}
-      </select>
+      {source ? (
+        <p className="text-sm">
+          Absorbing: <span className="font-medium">{source.displayName}</span>
+          {source.email && <span className="text-muted-foreground"> · {source.email}</span>}{' '}
+          <span className="text-muted-foreground">· {TIER_LABEL[source.tier]}</span>{' '}
+          <button type="button" className="underline" onClick={() => setSource(null)}>
+            change
+          </button>
+        </p>
+      ) : (
+        <>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
+            <input
+              className={`${inputCls} pl-8`}
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+              placeholder="Search the duplicate by name, email, society or number…"
+            />
+          </div>
+          {options.length > 0 && (
+            <ul className="flex flex-col gap-1">
+              {options.map((x) => (
+                <li key={x.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSource(x)}
+                    className="w-full rounded-md border bg-card px-3 py-2 text-left text-sm hover:bg-accent"
+                  >
+                    <span className="font-medium">{x.displayName}</span>
+                    {x.email && <span className="text-muted-foreground"> · {x.email}</span>}
+                    <span className="text-muted-foreground"> · {TIER_LABEL[x.tier]}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {dq.length >= 2 && results && !options.length && (
+            <p className="text-sm text-muted-foreground">No matches.</p>
+          )}
+        </>
+      )}
       {error && <p className="text-sm text-destructive">{error}</p>}
       <div className="flex gap-2">
         <Button
           size="sm"
-          disabled={!sourceId || merge.isPending}
+          disabled={!source || merge.isPending}
           onClick={() => {
             if (source && confirm(`Merge "${source.displayName}" into "${survivor.displayName}"? The duplicate will be deleted.`))
               merge.mutate()
