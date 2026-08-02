@@ -2,7 +2,7 @@ import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, Fami
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
 import { Badge } from '@/components/ui/badge'
@@ -21,25 +21,6 @@ const TIER_LABEL: Record<FamilyTier, string> = {
 const post = (path: string, body: unknown) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-/** Search across name, email, society/tower, detail, family — and digits against phone. */
-function personMatches(p: AdminPerson, q: string): boolean {
-  if (!q) return true
-  const needle = q.toLowerCase()
-  const haystacks = [
-    p.displayName,
-    p.email,
-    p.society,
-    p.workplace,
-    p.residenceDetail,
-    p.workplaceDetail,
-    p.familyName,
-    p.portfolio,
-  ]
-  if (haystacks.some((h) => h?.toLowerCase().includes(needle))) return true
-  const digits = q.replace(/\D/g, '')
-  return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
-}
-
 type View = 'members' | 'pending' | 'families'
 
 /** Membership roll. Core members view; admins manage. */
@@ -48,13 +29,19 @@ export function Membership() {
   const me = memberState?.status === 'member' ? memberState.me : null
   const [view, setView] = useState<View>('members')
   const [q, setQ] = useState('')
+  const [dq, setDq] = useState('') // debounced — search runs server-side
+
+  useEffect(() => {
+    const t = setTimeout(() => setDq(q.trim()), 300)
+    return () => clearTimeout(t)
+  }, [q])
 
   const allowed = me && me.role !== 'member'
   const canEdit = me?.role === 'admin'
 
   const { data: people, isPending: peoplePending, error } = useQuery({
-    queryKey: ['admin-people'],
-    queryFn: () => api<AdminPerson[]>('/api/admin/people'),
+    queryKey: ['admin-people', view === 'families' ? '' : dq],
+    queryFn: () => api<AdminPerson[]>(`/api/admin/people?q=${encodeURIComponent(view === 'families' ? '' : dq)}`),
     enabled: !!allowed,
   })
   const { data: families } = useQuery({
@@ -158,7 +145,7 @@ function PeopleView({
   canEdit: boolean
 }) {
   const [adding, setAdding] = useState(false)
-  const shown = people.filter((p) => personMatches(p, q.trim()))
+  const shown = people // search happens server-side
 
   if (loading) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
 
@@ -226,11 +213,13 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
                 </Badge>
               )}
             </p>
-            <p className="truncate text-sm text-muted-foreground">
-              {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.phone, p.familyName && `family: ${p.familyName}`]
-                .filter(Boolean)
-                .join(' · ')}
-            </p>
+            {canEdit && (
+              <p className="truncate text-sm text-muted-foreground">
+                {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.phone, p.familyName && `family: ${p.familyName}`]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            )}
           </div>
           <div className="flex items-center gap-1">
             {canEdit ? (

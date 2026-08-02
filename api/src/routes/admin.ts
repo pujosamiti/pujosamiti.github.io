@@ -102,14 +102,42 @@ function personValues(body: AdminPersonInput) {
   }
 }
 
+/**
+ * People list with server-side search. Core members may SEARCH across
+ * personal fields (name, society, email, WhatsApp…) but receive REDACTED
+ * rows — names and samiti statuses only. Admins receive everything.
+ */
 adminRoutes.get('/people', async (c) => {
   const db = drizzle(c.env.DB, { schema })
+  const q = (c.req.query('q') ?? '').trim().toLowerCase()
+  const digits = q.replace(/\D/g, '')
   const rows = await db
     .select({ p: schema.person, familyName: schema.family.name })
     .from(schema.person)
     .leftJoin(schema.family, eq(schema.person.familyId, schema.family.id))
     .orderBy(schema.person.displayName)
-  return c.json(ok(rows.map(({ p, familyName }) => toAdminPerson(p, familyName))))
+  const matches = ({ p, familyName }: (typeof rows)[number]) => {
+    if (!q) return true
+    const haystacks = [
+      p.displayName, p.email, p.society, p.workplace,
+      p.residenceDetail, p.workplaceDetail, familyName, p.portfolio,
+    ]
+    if (haystacks.some((h) => h?.toLowerCase().includes(q))) return true
+    return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
+  }
+  const isAdmin = c.get('isAdmin')
+  const out = rows.filter(matches).map(({ p, familyName }) => {
+    const full = toAdminPerson(p, familyName)
+    if (isAdmin) return full
+    // names and samiti statuses only — no personal data leaves the server
+    return {
+      ...full,
+      email: null, phone: null, gender: null, notes: null,
+      society: null, residenceDetail: null, workplace: null, workplaceDetail: null,
+      familyId: null, familyName: null,
+    }
+  })
+  return c.json(ok(out))
 })
 
 adminRoutes.post('/people', async (c) => {
@@ -179,8 +207,14 @@ adminRoutes.delete('/people/:id', async (c) => {
 
 adminRoutes.get('/families', async (c) => {
   const db = drizzle(c.env.DB, { schema })
+  const isAdmin = c.get('isAdmin')
   const rows = await db.select().from(schema.family).orderBy(schema.family.name)
-  const out: AdminFamily[] = rows.map((f) => ({ id: f.id, name: f.name, notes: f.notes, isActive: f.isActive }))
+  const out: AdminFamily[] = rows.map((f) => ({
+    id: f.id,
+    name: f.name,
+    notes: isAdmin ? f.notes : null, // notes may hold personal context
+    isActive: f.isActive,
+  }))
   return c.json(ok(out))
 })
 
