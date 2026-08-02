@@ -1,12 +1,15 @@
 import type {
+  AdminEventInput,
   AdminFamily,
   AdminFamilyInput,
   AdminPerson,
   AdminPersonInput,
   ApiResult,
   FamilyTier,
+  PujoEvent,
 } from '@pujosamiti/shared'
-import { and, eq, ne } from 'drizzle-orm'
+import { EVENT_KINDS } from '@pujosamiti/shared'
+import { and, desc, eq, ne } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -187,5 +190,66 @@ adminRoutes.post('/families/:id', async (c) => {
     .update(schema.family)
     .set({ name: body.name.trim(), notes: body.notes?.trim() || null, isActive: !!body.isActive })
     .where(eq(schema.family.id, id))
+  return c.json(ok({ id }))
+})
+
+// ── Events CRUD ─────────────────────────────────────────────────────────────
+
+function eventValues(body: AdminEventInput) {
+  return {
+    nameBn: body.nameBn.trim(),
+    nameEn: body.nameEn.trim(),
+    startsOn: body.startsOn,
+    endsOn: body.endsOn || body.startsOn,
+    isActive: !!body.isActive,
+  }
+}
+
+adminRoutes.get('/events', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db.select().from(schema.event).orderBy(desc(schema.event.startsOn))
+  return c.json(ok(rows as unknown as PujoEvent[]))
+})
+
+adminRoutes.post('/events', async (c) => {
+  const body = (await c.req.json()) as AdminEventInput
+  if (!EVENT_KINDS.includes(body.kind)) return c.json({ ok: false, error: 'invalid kind' }, 400)
+  if (!Number.isInteger(body.year)) return c.json({ ok: false, error: 'year is required' }, 400)
+  if (!body.nameBn?.trim() || !body.nameEn?.trim() || !body.startsOn)
+    return c.json({ ok: false, error: 'names and start date are required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = `${body.kind}-${body.year}`
+  const [dup] = await db.select({ id: schema.event.id }).from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (dup) return c.json({ ok: false, error: `${id} already exists` }, 409)
+  await db.insert(schema.event).values({ id, kind: body.kind, year: body.year, ...eventValues(body) })
+  return c.json(ok({ id }))
+})
+
+adminRoutes.post('/events/:id', async (c) => {
+  const body = (await c.req.json()) as AdminEventInput
+  if (!body.nameBn?.trim() || !body.nameEn?.trim() || !body.startsOn)
+    return c.json({ ok: false, error: 'names and start date are required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [ev] = await db.select({ id: schema.event.id }).from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  // kind and year are immutable — they form the id other tables reference
+  await db.update(schema.event).set(eventValues(body)).where(eq(schema.event.id, id))
+  return c.json(ok({ id }))
+})
+
+adminRoutes.delete('/events/:id', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [ev] = await db.select({ id: schema.event.id }).from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  try {
+    await db.delete(schema.event).where(eq(schema.event.id, id))
+  } catch {
+    return c.json(
+      { ok: false, error: 'this event is referenced by notices/timetable/gallery or other records — remove those first' },
+      409,
+    )
+  }
   return c.json(ok({ id }))
 })

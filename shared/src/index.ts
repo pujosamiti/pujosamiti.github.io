@@ -238,6 +238,17 @@ export interface AdminFamilyInput {
   isActive: boolean;
 }
 
+/** Admin event payload. kind+year form the id and are immutable after create. */
+export interface AdminEventInput {
+  kind: EventKind;
+  year: number;
+  nameBn: string;
+  nameEn: string;
+  startsOn: string; // ISO date
+  endsOn: string;
+  isActive: boolean;
+}
+
 // ── Accounting (Sheets is source of truth; Worker reads via service account) ─
 
 export interface CollectorWallet {

@@ -1,13 +1,16 @@
 import type {
+  AdminEventInput,
   AdminFamily,
   AdminFamilyInput,
   AdminPerson,
   AdminPersonInput,
+  EventKind,
   FamilyTier,
+  PujoEvent,
 } from '@pujosamiti/shared'
-import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
+import { EVENT_KINDS, LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { CalendarDays, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -46,7 +49,7 @@ function personMatches(p: AdminPerson, q: string): boolean {
   return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
 }
 
-type View = 'members' | 'pending' | 'families'
+type View = 'members' | 'pending' | 'families' | 'events'
 
 export function Admin() {
   const { memberState, memberPending, sessionPending } = useMemberState()
@@ -62,6 +65,11 @@ export function Admin() {
   const { data: families } = useQuery({
     queryKey: ['admin-families'],
     queryFn: () => api<AdminFamily[]>('/api/admin/families'),
+    enabled: me?.role === 'admin',
+  })
+  const { data: events } = useQuery({
+    queryKey: ['admin-events'],
+    queryFn: () => api<PujoEvent[]>('/api/admin/events'),
     enabled: me?.role === 'admin',
   })
 
@@ -90,6 +98,7 @@ export function Admin() {
     { key: 'members', label: 'Members', icon: ShieldCheck, count: members.length },
     { key: 'pending', label: 'Pending activation', icon: Hourglass, count: pending.length },
     { key: 'families', label: 'Families', icon: Users, count: families?.length ?? 0 },
+    { key: 'events', label: 'Events', icon: CalendarDays, count: events?.length ?? 0 },
   ]
 
   return (
@@ -118,14 +127,18 @@ export function Admin() {
           placeholder={
             view === 'families'
               ? 'Search families by name or notes…'
-              : 'Search by name, society, email or WhatsApp number…'
+              : view === 'events'
+                ? 'Search events by name, kind or year…'
+                : 'Search by name, society, email or WhatsApp number…'
           }
         />
       </div>
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
 
-      {view === 'families' ? (
+      {view === 'events' ? (
+        <EventsView events={events} q={q} />
+      ) : view === 'families' ? (
         <FamiliesView families={families} q={q} />
       ) : (
         <PeopleView
@@ -540,6 +553,185 @@ function FamilyForm({ family, onClose }: { family?: AdminFamily; onClose: () => 
               onChange={(e) => setForm((p) => ({ ...p, isActive: e.target.checked }))}
             />
             Active
+          </label>
+          {error && <p className="text-sm text-destructive">{error}</p>}
+          <div className="flex gap-2">
+            <Button type="submit" size="sm" disabled={save.isPending}>
+              {save.isPending && <Loader2 className="animate-spin" />} Save
+            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+
+const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
+  'durga-pujo': { bn: 'দুর্গাপূজা', en: 'Durga Pujo' },
+  'kojagari-lakshmi-pujo': { bn: 'কোজাগরী লক্ষ্মীপূজা', en: 'Kojagari Lakshmi Puja' },
+  'bijoya-sammelani': { bn: 'বিজয়া সম্মিলনী', en: 'Bijoya Sammelani' },
+  'saraswati-pujo': { bn: 'সরস্বতী পূজা', en: 'Saraswati Puja' },
+  'poila-baishakh': { bn: 'পয়লা বৈশাখ', en: 'Poila Baishakh' },
+}
+
+function EventsView({ events, q }: { events: PujoEvent[] | undefined; q: string }) {
+  const queryClient = useQueryClient()
+  const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const remove = useMutation({
+    mutationFn: (id: string) => api(`/api/admin/events/${id}`, { method: 'DELETE' }),
+    onSuccess: () => queryClient.invalidateQueries(),
+  })
+  const [removeError, setRemoveError] = useState<string | null>(null)
+  const needle = q.trim().toLowerCase()
+  const shown = (events ?? []).filter(
+    (e) => !needle || e.nameEn.toLowerCase().includes(needle) || e.kind.includes(needle) || String(e.year).includes(needle),
+  )
+
+  return (
+    <section className="flex flex-col gap-3">
+      {adding ? (
+        <EventForm onClose={() => setAdding(false)} />
+      ) : (
+        <Button size="sm" className="self-start" onClick={() => setAdding(true)}>
+          <Plus /> Add event
+        </Button>
+      )}
+      {removeError && <p className="text-sm text-destructive">{removeError}</p>}
+      {shown.map((e) =>
+        editingId === e.id ? (
+          <EventForm key={e.id} event={e} onClose={() => setEditingId(null)} />
+        ) : (
+          <Card key={e.id}>
+            <CardContent className="flex flex-wrap items-center justify-between gap-2 pt-4">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">
+                  {e.nameBn} · {e.nameEn} {e.year}
+                  {e.isActive && (
+                    <Badge className="ml-2 align-middle">active</Badge>
+                  )}
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {e.startsOn === e.endsOn ? e.startsOn : `${e.startsOn} → ${e.endsOn}`} · {e.id}
+                </p>
+              </div>
+              <div className="flex gap-1">
+                <Button size="sm" variant="ghost" onClick={() => setEditingId(e.id)} aria-label={`Edit ${e.id}`}>
+                  <Pencil />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    if (confirm(`Delete ${e.nameEn} ${e.year}?`)) {
+                      setRemoveError(null)
+                      remove.mutate(e.id, { onError: (err) => setRemoveError(err instanceof Error ? err.message : 'failed') })
+                    }
+                  }}
+                  disabled={remove.isPending}
+                  aria-label={`Delete ${e.id}`}
+                >
+                  <Trash2 className="text-destructive" />
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ),
+      )}
+      {!shown.length && <p className="text-sm text-muted-foreground">{q ? 'No matches.' : 'No events.'}</p>}
+    </section>
+  )
+}
+
+function EventForm({ event, onClose }: { event?: PujoEvent; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const [form, setForm] = useState<AdminEventInput>({
+    kind: event?.kind ?? 'durga-pujo',
+    year: event?.year ?? new Date().getFullYear() + 1,
+    nameBn: event?.nameBn ?? KIND_NAMES['durga-pujo'].bn,
+    nameEn: event?.nameEn ?? KIND_NAMES['durga-pujo'].en,
+    startsOn: event?.startsOn ?? '',
+    endsOn: event?.endsOn ?? '',
+    isActive: event?.isActive ?? false,
+  })
+  const [error, setError] = useState<string | null>(null)
+  const set = (patch: Partial<AdminEventInput>) => setForm((prev) => ({ ...prev, ...patch }))
+  const save = useMutation({
+    mutationFn: () =>
+      api(event ? `/api/admin/events/${event.id}` : '/api/admin/events', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(form),
+      }),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries()
+      onClose()
+    },
+    onError: (e) => setError(e instanceof Error ? e.message : 'failed'),
+  })
+
+  return (
+    <Card>
+      <CardContent className="pt-4">
+        <form
+          className="flex flex-col gap-3"
+          onSubmit={(e) => {
+            e.preventDefault()
+            save.mutate()
+          }}
+        >
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label={event ? 'Kind (fixed)' : 'Kind'}>
+              <select
+                className={inputCls}
+                value={form.kind}
+                disabled={!!event}
+                onChange={(e) => {
+                  const kind = e.target.value as EventKind
+                  set({ kind, nameBn: KIND_NAMES[kind].bn, nameEn: KIND_NAMES[kind].en })
+                }}
+              >
+                {EVENT_KINDS.map((k) => (
+                  <option key={k} value={k}>
+                    {KIND_NAMES[k].en}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <Field label={event ? 'Year (fixed)' : 'Year'}>
+              <input
+                type="number"
+                className={inputCls}
+                value={form.year}
+                disabled={!!event}
+                onChange={(e) => set({ year: Number(e.target.value) })}
+                required
+              />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Name (Bengali) *">
+              <input className={inputCls} value={form.nameBn} onChange={(e) => set({ nameBn: e.target.value })} required />
+            </Field>
+            <Field label="Name (English) *">
+              <input className={inputCls} value={form.nameEn} onChange={(e) => set({ nameEn: e.target.value })} required />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Starts on *">
+              <input type="date" className={inputCls} value={form.startsOn} onChange={(e) => set({ startsOn: e.target.value })} required />
+            </Field>
+            <Field label="Ends on (empty = same day)">
+              <input type="date" className={inputCls} value={form.endsOn} onChange={(e) => set({ endsOn: e.target.value })} />
+            </Field>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />
+            Active (the current season's event)
           </label>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
