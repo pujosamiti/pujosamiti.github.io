@@ -300,6 +300,7 @@ function PersonForm({
                     onChange={(e) =>
                       set(resident ? { residenceDetail: e.target.value || null } : { workplaceDetail: e.target.value || null })
                     }
+                    placeholder={resident ? 'e.g. A-302' : undefined}
                   />
                 </Field>
               </div>
@@ -315,7 +316,7 @@ function PersonForm({
             </>
           )}
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Phone">
+            <Field label="WhatsApp number">
               <input className={inputCls} value={form.phone ?? ''} onChange={(e) => set({ phone: e.target.value || null })} inputMode="tel" />
             </Field>
             <Field label="Gender">

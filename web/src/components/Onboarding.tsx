@@ -12,6 +12,7 @@ import { useState } from 'react'
 import { Field, inputCls } from '@/components/form'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { useSession } from '@/lib/auth'
 import { saveProfile } from '@/lib/onboarding'
 
 /**
@@ -21,8 +22,10 @@ import { saveProfile } from '@/lib/onboarding'
  */
 export function ProfileForm({ email }: { email: string }) {
   const queryClient = useQueryClient()
+  const { data: session } = useSession()
   const [eligibility, setEligibility] = useState<FamilyEligibility>('resident')
-  const [displayName, setDisplayName] = useState('')
+  // Google already told us their name — pre-fill, keep editable
+  const [displayName, setDisplayName] = useState(session?.user.name ?? '')
   const [location, setLocation] = useState('')
   const [locationOther, setLocationOther] = useState('')
   const [detail, setDetail] = useState('')
@@ -136,12 +139,23 @@ export function ProfileForm({ email }: { email: string }) {
                 </Field>
               )}
               <Field label={resident ? 'Flat number' : 'Office / company name'}>
-                <input className={inputCls} value={detail} onChange={(e) => setDetail(e.target.value)} />
+                <input
+                  className={inputCls}
+                  value={detail}
+                  onChange={(e) => setDetail(e.target.value)}
+                  placeholder={resident ? 'e.g. A-302' : 'e.g. Principal Global Services'}
+                />
               </Field>
             </>
           )}
-          <Field label="Phone">
-            <input className={inputCls} value={phone} onChange={(e) => setPhone(e.target.value)} inputMode="tel" />
+          <Field label="WhatsApp number">
+            <input
+              className={inputCls}
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              inputMode="tel"
+              placeholder="e.g. 98345 73012"
+            />
           </Field>
           <Field label="Gender (optional — helps schedule some rituals)">
             <select className={inputCls} value={gender} onChange={(e) => setGender(e.target.value)}>
