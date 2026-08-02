@@ -67,6 +67,9 @@ export function More() {
                 </Link>{' '}
                 to register with the samiti.
               </CardDescription>
+              <Button variant="outline" size="sm" className="mt-2 self-start" onClick={endSession}>
+                <LogOut /> Sign out
+              </Button>
             </CardHeader>
           </Card>
         ) : (
@@ -78,6 +81,9 @@ export function More() {
                 activates membership (usually after the subscription) — everything below unlocks
                 then.
               </CardDescription>
+              <Button variant="outline" size="sm" className="mt-2 self-start" onClick={endSession}>
+                <LogOut /> Sign out
+              </Button>
             </CardHeader>
           </Card>
         )
