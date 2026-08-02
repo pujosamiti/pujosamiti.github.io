@@ -50,7 +50,7 @@ taskRoutes.get('/', async (c) => {
   const tasks = await db
     .select()
     .from(schema.durgapujaTask)
-    .orderBy(asc(schema.durgapujaTask.category), asc(schema.durgapujaTask.title))
+    .orderBy(asc(schema.durgapujaTask.sortOrder), asc(schema.durgapujaTask.title))
   const years = await db.select().from(schema.taskYear).where(eq(schema.taskYear.year, year))
   const assignments = await db
     .select({ a: schema.taskAssignment, name: schema.person.displayName })
@@ -67,6 +67,7 @@ taskRoutes.get('/', async (c) => {
         category: t.category,
         title: t.title,
         details: t.details,
+        sortOrder: t.sortOrder,
         isActive: t.isActive,
         skipped: y ? !y.isActive : false,
         phase: y?.phase ?? 'todo',
@@ -99,6 +100,7 @@ taskRoutes.post('/', async (c) => {
     category: body.category.trim(),
     title: body.title.trim(),
     details: body.details?.trim() || null,
+    sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
     createdAt: new Date(),
   })
   return c.json(ok({ id }))
@@ -120,6 +122,7 @@ taskRoutes.post('/:id', async (c) => {
       category: body.category.trim(),
       title: body.title.trim(),
       details: body.details?.trim() || null,
+      sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
       isActive: body.isActive !== false,
     })
     .where(eq(schema.durgapujaTask.id, id))

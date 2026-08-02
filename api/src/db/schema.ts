@@ -109,6 +109,7 @@ export const durgapujaTask = sqliteTable('durgapuja_task', {
   category: text('category').notNull(), // e.g. "Murti / Idol", "Permissions"
   title: text('title').notNull(),
   details: text('details'), // scope / subtasks outline
+  sortOrder: integer('sort_order').notNull().default(1000), // drives task AND category ordering
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })

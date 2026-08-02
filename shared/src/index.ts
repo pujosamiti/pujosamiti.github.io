@@ -126,6 +126,7 @@ export interface TaskView {
   title: string;
   /** Free text outlining scope / subtasks (a few lines) */
   details: string | null;
+  sortOrder: number;
   isActive: boolean;
   /** Year-scoped execution state (defaults when the year has no row yet) */
   skipped: boolean; // not taken up this year
@@ -140,6 +141,7 @@ export interface TaskMasterInput {
   category: string;
   title: string;
   details: string | null;
+  sortOrder: number;
   isActive: boolean;
 }
 

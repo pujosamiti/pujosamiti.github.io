@@ -363,6 +363,7 @@ function TaskForm({
   const [title, setTitle] = useState(task?.title ?? '')
   const [details, setDetails] = useState(task?.details ?? '')
   const [isActive, setIsActive] = useState(task?.isActive ?? true)
+  const [sortOrder, setSortOrder] = useState<number>(task?.sortOrder ?? 1000)
   const [phase, setPhase] = useState<TaskPhase>(task?.phase ?? 'todo')
   const [checks, setChecks] = useState<[TaskCheck, TaskCheck, TaskCheck]>(task?.checks ?? EMPTY_CHECKS)
   const [ownerIds, setOwnerIds] = useState<string[]>(task?.owners.map((o) => o.id) ?? [])
@@ -373,7 +374,7 @@ function TaskForm({
     mutationFn: async () => {
       let id = task?.id
       if (masterEditable) {
-        const master = { category, title, details: details || null, isActive }
+        const master = { category, title, details: details || null, sortOrder, isActive }
         if (id) await updateMasterTask(id, master)
         else id = (await createMasterTask(master)).id
       }
@@ -433,10 +434,20 @@ function TaskForm({
                   placeholder={'e.g. Finalize truck + 6 labour for baran and bisarjan.\nBook the vendor well before pujo.'}
                 />
               </Field>
-              <label className="flex items-center gap-2 text-sm">
-                <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
-                Active (untick to retire this task from the catalog)
-              </label>
+              <div className="flex flex-wrap items-end gap-4">
+                <Field label="Sort order (lower = earlier)">
+                  <input
+                    type="number"
+                    className={`${inputCls} w-32`}
+                    value={sortOrder}
+                    onChange={(e) => setSortOrder(Number(e.target.value))}
+                  />
+                </Field>
+                <label className="flex items-center gap-2 pb-2 text-sm">
+                  <input type="checkbox" checked={isActive} onChange={(e) => setIsActive(e.target.checked)} />
+                  Active (untick to retire this task from the catalog)
+                </label>
+              </div>
               <hr className="border-border" />
             </>
           )}
