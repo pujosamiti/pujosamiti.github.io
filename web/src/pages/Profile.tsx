@@ -6,7 +6,7 @@ import { Navigate, useNavigate } from 'react-router'
 import { ProfileForm } from '@/components/Onboarding'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { useSession } from '@/lib/auth'
+import { signOut, useSession } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { leavePortal, useMyProfile } from '@/lib/onboarding'
 
@@ -58,6 +58,7 @@ function LeaveCard() {
     setError(null)
     try {
       await leavePortal()
+      await signOut() // leaving also ends the session
       await queryClient.invalidateQueries()
       navigate('/')
     } catch (err) {
