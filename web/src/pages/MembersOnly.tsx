@@ -44,6 +44,9 @@ export function MembersOnly() {
               {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
             </div>
             <div className="flex gap-2">
+              <Button size="sm" variant="outline" asChild>
+                <Link to="/profile">Profile</Link>
+              </Button>
               {me.role === 'admin' && (
                 <Button size="sm" asChild>
                   <Link to="/admin">Admin</Link>
@@ -81,9 +84,14 @@ export function MembersOnly() {
                 activates membership (usually after the subscription) — everything below unlocks
                 then.
               </CardDescription>
-              <Button variant="outline" size="sm" className="mt-2 self-start" onClick={endSession}>
-                <LogOut /> Sign out
-              </Button>
+              <div className="mt-2 flex gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/profile">Edit profile</Link>
+                </Button>
+                <Button variant="outline" size="sm" onClick={endSession}>
+                  <LogOut /> Sign out
+                </Button>
+              </div>
             </CardHeader>
           </Card>
         )

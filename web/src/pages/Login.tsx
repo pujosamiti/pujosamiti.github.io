@@ -9,13 +9,15 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signInWithGoogle, signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
-import { useOnboardingState } from '@/lib/onboarding'
+import { useMyProfile, useOnboardingState } from '@/lib/onboarding'
 
 /** Signed-in but not a member: route to the right funnel stage. */
 function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => void }) {
   const { data: ob, isPending } = useOnboardingState()
+  // Someone who left and is rejoining still has their old profile — pre-fill it
+  const { data: oldProfile, isPending: profilePending } = useMyProfile(ob?.state === 'no_person')
 
-  if (isPending || !ob) {
+  if (isPending || !ob || (ob.state === 'no_person' && profilePending)) {
     return (
       <div className="flex justify-center py-16">
         <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -26,7 +28,7 @@ function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => 
   if (ob.state === 'no_person') {
     return (
       <>
-        <ProfileForm email={email} />
+        <ProfileForm email={email} initial={oldProfile} />
         <Button variant="outline" className="self-start" onClick={onSignOut}>
           <LogOut /> Sign out
         </Button>

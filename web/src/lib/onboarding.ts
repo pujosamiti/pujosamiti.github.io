@@ -21,3 +21,17 @@ export function saveProfile(input: ProfileInput) {
     body: JSON.stringify(input),
   })
 }
+
+/** Own profile (null if never registered) — for pre-filling forms. */
+export function useMyProfile(enabled = true) {
+  const { data: session } = useSession()
+  return useQuery({
+    queryKey: ['my-profile', session?.user.id],
+    queryFn: () => api<ProfileInput | null>('/api/onboarding/me'),
+    enabled: enabled && !!session,
+  })
+}
+
+export function leavePortal() {
+  return api<{ left: true }>('/api/onboarding/leave', { method: 'POST' })
+}

@@ -10,6 +10,7 @@ import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
 import { Notices } from '@/pages/Notices'
+import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 
 import './index.css'
@@ -45,6 +46,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="notices" element={<Notices />} />
             <Route path="membersonly" element={<MembersOnly />} />
             <Route path="login" element={<Login />} />
+            <Route path="profile" element={<Profile />} />
             <Route path="admin" element={<Admin />} />
             <Route path="*" element={<Home />} />
           </Route>

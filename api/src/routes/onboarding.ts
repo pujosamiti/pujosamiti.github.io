@@ -36,12 +36,57 @@ onboardingRoutes.get('/status', async (c) => {
     .from(schema.person)
     .where(eq(schema.person.email, c.get('email')))
     .limit(1)
-  const state: OnboardingState = !p
+  // Inactive = left the portal: they re-register (profile form) like a new user.
+  const state: OnboardingState = !p || !p.isActive
     ? { state: 'no_person' }
-    : p.isActive && p.tier !== 'non_member'
+    : p.tier !== 'non_member'
       ? { state: 'member' }
       : { state: 'awaiting_activation' }
   return c.json(ok(state))
+})
+
+/** Own profile for pre-filling forms; null if never registered. */
+onboardingRoutes.get('/me', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const [p] = await db
+    .select()
+    .from(schema.person)
+    .where(eq(schema.person.email, c.get('email')))
+    .limit(1)
+  if (!p) return c.json(ok<ProfileInput | null>(null))
+  return c.json(
+    ok<ProfileInput>({
+      displayName: p.displayName,
+      eligibility: p.eligibility,
+      society: p.society,
+      residenceDetail: p.residenceDetail,
+      workplace: p.workplace,
+      workplaceDetail: p.workplaceDetail,
+      phone: p.phone,
+      gender: p.gender,
+    }),
+  )
+})
+
+/**
+ * Leave the portal: soft delete — deactivate and drop to non_member. Signing
+ * in later re-registers through the normal flow (admin re-activates tier).
+ */
+onboardingRoutes.post('/leave', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const [p] = await db
+    .select({ id: schema.person.id, isAdmin: schema.person.isAdmin })
+    .from(schema.person)
+    .where(eq(schema.person.email, c.get('email')))
+    .limit(1)
+  if (!p) return c.json({ ok: false, error: 'not registered' }, 404)
+  if (p.isAdmin)
+    return c.json({ ok: false, error: 'admins must hand over admin access before leaving' }, 400)
+  await db
+    .update(schema.person)
+    .set({ isActive: false, tier: 'non_member' })
+    .where(eq(schema.person.id, p.id))
+  return c.json(ok({ left: true }))
 })
 
 onboardingRoutes.post('/profile', async (c) => {
@@ -73,9 +118,14 @@ onboardingRoutes.post('/profile', async (c) => {
     .where(eq(schema.person.email, email))
     .limit(1)
   if (existing) {
-    // Profile completion/update for an already-registered person (self-service
-    // only touches profile fields — never tier/admin/active).
-    await db.update(schema.person).set(values).where(eq(schema.person.id, existing.id))
+    // Profile completion/update for an already-registered person. Self-service
+    // never touches tier/admin; isActive flips true so someone who left and
+    // signs back in re-registers through this same path (tier stays
+    // non_member until an admin re-activates membership).
+    await db
+      .update(schema.person)
+      .set({ ...values, isActive: true })
+      .where(eq(schema.person.id, existing.id))
     return c.json(ok({ id: existing.id }))
   }
 

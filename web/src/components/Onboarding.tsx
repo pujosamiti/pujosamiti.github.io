@@ -16,23 +16,50 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useSession } from '@/lib/auth'
 import { saveProfile } from '@/lib/onboarding'
 
+const KNOWN_SOCIETIES = MAGARPATTA_SOCIETIES as readonly string[]
+const KNOWN_WORKPLACES = MAGARPATTA_WORKPLACE_GROUPS.flatMap((g) => g.options as readonly string[])
+
 /**
- * First sign-in: complete your profile. Creates the person at tier
- * non_member; a committee admin promotes to member/core after the
- * subscription. Membership is per person — families are grouped by admins.
+ * Profile form — first registration AND later edits (pass `initial`).
+ * Creates/updates the person; tier stays whatever it is (non_member on first
+ * registration; a committee admin promotes after the subscription).
  */
-export function ProfileForm({ email }: { email: string }) {
+export function ProfileForm({
+  email,
+  initial,
+  title = 'Welcome! Complete your profile',
+  description,
+  submitLabel = 'Save profile',
+}: {
+  email: string
+  initial?: ProfileInput | null
+  title?: string
+  description?: string
+  submitLabel?: string
+}) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { data: session } = useSession()
-  const [eligibility, setEligibility] = useState<FamilyEligibility>('resident')
+  const initialLocation = initial
+    ? initial.eligibility === 'resident'
+      ? initial.society
+      : initial.workplace
+    : null
+  const locationKnown =
+    !initialLocation ||
+    (initial?.eligibility === 'resident'
+      ? KNOWN_SOCIETIES.includes(initialLocation)
+      : KNOWN_WORKPLACES.includes(initialLocation))
+  const [eligibility, setEligibility] = useState<FamilyEligibility>(initial?.eligibility ?? 'resident')
   // Google already told us their name — pre-fill, keep editable
-  const [displayName, setDisplayName] = useState(session?.user.name ?? '')
-  const [location, setLocation] = useState('')
-  const [locationOther, setLocationOther] = useState('')
-  const [detail, setDetail] = useState('')
-  const [phone, setPhone] = useState('')
-  const [gender, setGender] = useState('')
+  const [displayName, setDisplayName] = useState(initial?.displayName ?? session?.user.name ?? '')
+  const [location, setLocation] = useState(initialLocation ? (locationKnown ? initialLocation : LOCATION_OTHER) : '')
+  const [locationOther, setLocationOther] = useState(initialLocation && !locationKnown ? initialLocation : '')
+  const [detail, setDetail] = useState(
+    (initial?.eligibility === 'resident' ? initial?.residenceDetail : initial?.workplaceDetail) ?? '',
+  )
+  const [phone, setPhone] = useState(initial?.phone ?? '')
+  const [gender, setGender] = useState(initial?.gender ?? '')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -68,11 +95,15 @@ export function ProfileForm({ email }: { email: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Welcome! Complete your profile</CardTitle>
+        <CardTitle>{title}</CardTitle>
         <CardDescription>
-          You're signed in as <span className="font-medium">{email}</span>. Tell the samiti who
-          you are — membership is open to people living in Magarpatta City or working in its
-          towers. A committee admin activates membership after this.
+          {description ?? (
+            <>
+              You're signed in as <span className="font-medium">{email}</span>. Tell the samiti
+              who you are — membership is open to people living in Magarpatta City or working in
+              its towers. A committee admin activates membership after this.
+            </>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -171,7 +202,7 @@ export function ProfileForm({ email }: { email: string }) {
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <Button type="submit" disabled={busy} className="self-start">
-            {busy && <Loader2 className="animate-spin" />} Save profile
+            {busy && <Loader2 className="animate-spin" />} {submitLabel}
           </Button>
         </form>
       </CardContent>
