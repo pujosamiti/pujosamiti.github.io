@@ -8,7 +8,7 @@ import { Admin } from '@/pages/Admin'
 import { Gallery } from '@/pages/Gallery'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
-import { More } from '@/pages/More'
+import { MembersOnly } from '@/pages/MembersOnly'
 import { Notices } from '@/pages/Notices'
 import { Schedule } from '@/pages/Schedule'
 
@@ -43,7 +43,8 @@ createRoot(document.getElementById('root')!).render(
             <Route path="events" element={<Navigate to="/schedule" replace />} />
             <Route path="gallery" element={<Gallery />} />
             <Route path="notices" element={<Notices />} />
-            <Route path="more" element={<More />} />
+            <Route path="membersonly" element={<MembersOnly />} />
+            <Route path="more" element={<Navigate to="/membersonly" replace />} />
             <Route path="login" element={<Login />} />
             <Route path="admin" element={<Admin />} />
             <Route path="*" element={<Home />} />

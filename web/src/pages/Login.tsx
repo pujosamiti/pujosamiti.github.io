@@ -140,7 +140,7 @@ export function Login() {
             </div>
             <div className="flex gap-2">
               <Button asChild>
-                <Link to="/more">Member area</Link>
+                <Link to="/membersonly">Member area</Link>
               </Button>
               <Button variant="outline" onClick={endSession}>
                 <LogOut /> Sign out

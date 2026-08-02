@@ -9,7 +9,7 @@ const desktopNav = [
   { to: '/schedule', label: 'Schedule', end: false },
   { to: '/gallery', label: 'Gallery', end: false },
   { to: '/notices', label: 'Notices', end: false },
-  { to: '/more', label: 'More', end: false },
+  { to: '/membersonly', label: 'Members Only', end: false },
 ]
 
 export function AppLayout() {

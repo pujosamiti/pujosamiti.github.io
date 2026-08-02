@@ -58,7 +58,7 @@ export function ProfileForm({ email }: { email: string }) {
       await saveProfile(input)
       await queryClient.invalidateQueries()
       // Land on More: the pending banner shows there, with the rest of the site around it
-      navigate('/more')
+      navigate('/membersonly')
     } catch (err) {
       setError(err instanceof Error ? err.message : 'something went wrong')
       setBusy(false)

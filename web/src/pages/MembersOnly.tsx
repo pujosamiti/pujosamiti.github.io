@@ -10,14 +10,14 @@ import { useMemberState } from '@/lib/member'
 import { useOnboardingState } from '@/lib/onboarding'
 
 const memberSections = [
-  { icon: Wallet, title: 'Collections & expenses', desc: 'Collector wallets, accounts summary' },
-  { icon: Landmark, title: 'Budget', desc: 'Event budgets vs actuals' },
-  { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status' },
-  { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation' },
-  { icon: BookOpen, title: 'Committee', desc: 'Portfolio distribution' },
+  { icon: Wallet, title: 'Collections & expenses', desc: 'Collector wallets, accounts summary', gate: 'Members only' },
+  { icon: Landmark, title: 'Budget', desc: 'Event budgets vs actuals', gate: 'Members only' },
+  { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status', gate: 'Core members only' },
+  { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation', gate: 'Core members only' },
+  { icon: BookOpen, title: 'Committee', desc: 'Portfolio distribution', gate: 'Members only' },
 ]
 
-export function More() {
+export function MembersOnly() {
   const queryClient = useQueryClient()
   const { session, memberState } = useMemberState()
   const { data: onboarding } = useOnboardingState()
@@ -30,7 +30,7 @@ export function More() {
 
   return (
     <div className="flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">More</h1>
+      <h1 className="text-2xl font-bold">Members Only</h1>
 
       {me ? (
         <Card>
@@ -105,12 +105,12 @@ export function More() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {memberSections.map(({ icon: Icon, title, desc }) => (
+        {memberSections.map(({ icon: Icon, title, desc, gate }) => (
           <Card key={title} className={me ? undefined : 'opacity-70'}>
             <CardHeader>
               <Icon className="size-5 text-matir" aria-hidden="true" />
               <CardTitle>{title}</CardTitle>
-              <CardDescription>{me ? `${desc} — coming soon` : `${desc} — after sign in`}</CardDescription>
+              <CardDescription>{me ? `${desc} — coming soon` : `${desc} — ${gate}`}</CardDescription>
             </CardHeader>
           </Card>
         ))}
