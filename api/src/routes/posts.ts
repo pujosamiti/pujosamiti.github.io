@@ -6,7 +6,7 @@ import { listDriveFolder, readDriveFile } from '../lib/google'
 
 /**
  * Blogs and magazine articles are markdown files in the content Drive folder —
- * committee members drop a file in, the site picks it up. File-name convention:
+ * core members drop a file in, the site picks it up. File-name convention:
  *   blog--durga-pujo-2026--amar-pujo-smriti.md
  *   magazine--sharad-sonkha-2026.md
  * Frontmatter (--- key: value ---) supplies title/author/date; the file name

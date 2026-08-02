@@ -80,7 +80,7 @@ export function Admin() {
       <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>Admins only</CardTitle>
-          <CardDescription>This area is for committee admins.</CardDescription>
+          <CardDescription>This area is for samiti admins.</CardDescription>
         </CardHeader>
       </Card>
     )
@@ -428,7 +428,7 @@ function PersonForm({
           <div className="flex gap-4">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isAdmin} onChange={(e) => set({ isAdmin: e.target.checked })} />
-              Committee admin
+              Admin (can manage membership)
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />

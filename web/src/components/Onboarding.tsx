@@ -22,7 +22,7 @@ const KNOWN_WORKPLACES = MAGARPATTA_WORKPLACE_GROUPS.flatMap((g) => g.options as
 /**
  * Profile form — first registration AND later edits (pass `initial`).
  * Creates/updates the person; tier stays whatever it is (non_member on first
- * registration; a committee admin promotes after the subscription).
+ * registration; an admin promotes after the subscription).
  */
 export function ProfileForm({
   email,
@@ -103,7 +103,7 @@ export function ProfileForm({
             <>
               You're signed in as <span className="font-medium">{email}</span>. Tell the samiti
               who you are — membership is open to people living in Magarpatta City or working in
-              its towers. A committee admin activates membership after this.
+              its towers. An admin activates membership after this.
             </>
           )}
         </CardDescription>

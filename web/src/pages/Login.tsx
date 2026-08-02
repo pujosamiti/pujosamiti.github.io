@@ -49,7 +49,7 @@ function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => 
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <p className="text-sm text-muted-foreground">
-          Your profile is registered but membership isn't active yet. A committee admin confirms
+          Your profile is registered but membership isn't active yet. An admin confirms
           membership (usually after the subscription) — then everything unlocks here.
         </p>
         <div className="flex gap-2">

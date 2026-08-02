@@ -99,7 +99,7 @@ export interface DriveFile {
   modifiedTime: string
 }
 
-/** List the markdown drop-zone: committee members add .md files, the site shows them. */
+/** List the markdown drop-zone: core members add .md files, the site shows them. */
 export async function listDriveFolder(env: Env, folderId: string): Promise<DriveFile[]> {
   const q = encodeURIComponent(`'${folderId}' in parents and trashed = false`)
   const data = await googleGet<{ files: DriveFile[] }>(

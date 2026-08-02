@@ -14,7 +14,7 @@ const memberSections = [
   { icon: Landmark, title: 'Budget', desc: 'Event budgets vs actuals', gate: 'Members only' },
   { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status', gate: 'Core members only' },
   { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation', gate: 'Core members only' },
-  { icon: BookOpen, title: 'Committee', desc: 'Portfolio distribution', gate: 'Members only' },
+  { icon: BookOpen, title: 'Core Members', desc: 'Portfolio distribution', gate: 'Members only' },
 ]
 
 export function MembersOnly() {
@@ -80,7 +80,7 @@ export function MembersOnly() {
             <CardHeader>
               <CardTitle>Registration received — membership pending</CardTitle>
               <CardDescription>
-                Thanks, {session.user.email}! Your profile is registered. A committee admin
+                Thanks, {session.user.email}! Your profile is registered. An admin
                 activates membership (usually after the subscription) — everything below unlocks
                 then.
               </CardDescription>
@@ -101,7 +101,7 @@ export function MembersOnly() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Committee members</CardTitle>
+            <CardTitle>Core Members</CardTitle>
             <CardDescription>
               Sign in to see budgets, accounts, procurement and paperwork. Access is limited to
               samiti members.

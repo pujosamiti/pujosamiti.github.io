@@ -88,7 +88,7 @@ export interface Post extends PostSummary {
 
 // ── Members & auth ──────────────────────────────────────────────────────────
 
-export type MemberRole = 'member' | 'committee' | 'admin';
+export type MemberRole = 'member' | 'coremember' | 'admin';
 
 export interface Me {
   id: string;
@@ -96,7 +96,7 @@ export interface Me {
   email: string;
   image: string | null;
   role: MemberRole;
-  /** Portfolio, if part of the committee — e.g. "Treasurer", "Cultural Secretary" */
+  /** Portfolio, if held by a core member — e.g. "Treasurer", "Cultural Secretary" */
   portfolio: string | null;
 }
 
