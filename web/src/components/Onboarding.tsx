@@ -30,12 +30,14 @@ export function ProfileForm({
   title = 'Welcome! Complete your profile',
   description,
   submitLabel = 'Save profile',
+  onSkip,
 }: {
   email: string
   initial?: ProfileInput | null
   title?: string
   description?: string
   submitLabel?: string
+  onSkip?: () => void
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
@@ -201,9 +203,16 @@ export function ProfileForm({
             </select>
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
-          <Button type="submit" disabled={busy} className="self-start">
-            {busy && <Loader2 className="animate-spin" />} {submitLabel}
-          </Button>
+          <div className="flex gap-2">
+            <Button type="submit" disabled={busy}>
+              {busy && <Loader2 className="animate-spin" />} {submitLabel}
+            </Button>
+            {onSkip && (
+              <Button type="button" variant="outline" onClick={onSkip} disabled={busy}>
+                Skip
+              </Button>
+            )}
+          </div>
         </form>
       </CardContent>
     </Card>

@@ -12,6 +12,7 @@ import { leavePortal, useMyProfile } from '@/lib/onboarding'
 
 /** Self-service profile: any registered signed-in person, member or pending. */
 export function Profile() {
+  const navigate = useNavigate()
   const { data: session, isPending: sessionPending } = useSession()
   const { data: profile, isPending: profilePending } = useMyProfile()
   const { memberState } = useMemberState()
@@ -35,6 +36,7 @@ export function Profile() {
         title="Your profile"
         description="Kept up to date, this is how the samiti reaches you."
         submitLabel="Save changes"
+        onSkip={() => navigate('/membersonly')}
       />
       {!isAdmin && <LeaveCard />}
     </div>
