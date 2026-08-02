@@ -5,6 +5,7 @@ import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { BackLink } from '@/components/BackLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -54,6 +55,7 @@ export function Events() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BackLink />
       <h1 className="text-2xl font-bold">Events</h1>
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
@@ -104,7 +106,7 @@ function EventsView({ events, q, canEdit }: { events: PujoEvent[] | undefined; q
               <div className="min-w-0">
                 <p className="text-sm font-medium">
                   {e.nameBn} · {e.nameEn} {e.year}
-                  {e.isActive && <Badge className="ml-2 align-middle">active</Badge>}
+                  {e.isActive && <Badge variant="palash" className="ml-2 align-middle">active</Badge>}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {e.startsOn === e.endsOn ? e.startsOn : `${e.startsOn} → ${e.endsOn}`} · {e.id}

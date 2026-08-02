@@ -117,7 +117,8 @@ export function Schedule() {
             <Card key={`${day.date}|${day.labelEn}`}>
               <CardHeader>
                 <CardTitle className="text-base">
-                  {day.labelBn} <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
+                  <span className="text-shiuli">{day.labelBn}</span>{' '}
+                  <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
                 </CardTitle>
                 <p className="text-sm text-muted-foreground">{formatDay(day.date)}</p>
               </CardHeader>
@@ -132,7 +133,7 @@ export function Schedule() {
                           <span className="font-medium">{t.titleBn}</span>{' '}
                           <span className="text-muted-foreground">{t.titleEn}</span>
                         </span>
-                        <span className="whitespace-nowrap text-matir">
+                        <span className="whitespace-nowrap font-medium text-sharat">
                           {from ? (to ? `${from} – ${to}` : from) : '—'}
                         </span>
                       </div>

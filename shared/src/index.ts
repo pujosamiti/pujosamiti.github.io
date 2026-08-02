@@ -306,3 +306,180 @@ export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
 
 // Magarpatta location reference data (societies, towers) for pickers
 export * from './locations';
+
+// ── Ledger & sponsorship (docs/tmp/ledger-schema.md) ────────────────────────
+
+export type BookId = 'pujo-ledger' | 'poila-baishakh-ledger';
+export type LedgerKind = 'contribution' | 'expense' | 'transfer';
+export type ContributionCategory = 'subscription' | 'sponsorship' | 'donation' | 'misc_income';
+export type PledgeStatus = 'pledged' | 'paid' | 'cancelled';
+export type ClaimStatus = 'requested' | 'settled' | 'rejected' | 'cancelled';
+
+export const BOOKS: { id: BookId; name: string }[] = [
+  { id: 'pujo-ledger', name: 'Durga Pujo · Kojagari · Bijoy Sammelani · Saraswati' },
+  { id: 'poila-baishakh-ledger', name: 'Poila Baishakh' },
+];
+
+export const CONTRIBUTION_CATEGORIES: ContributionCategory[] = [
+  'subscription',
+  'sponsorship',
+  'donation',
+  'misc_income',
+];
+
+/** sub_category suggestions per contribution category */
+export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
+  subscription: ['core', 'non-core'],
+  sponsorship: [], // auto-filled from the pledged item's catalog category
+  donation: ['small box', 'large box', 'others'],
+  misc_income: [],
+};
+
+/**
+ * Expense category → sub-categories, seeded from the 2024 workbook Expenses
+ * tab. Every category always also offers "Misc" (appended by the UI); both
+ * levels stay free text so a year can coin new ones.
+ */
+export const EXPENSE_TAXONOMY: Record<string, string[]> = {
+  Cultural: ['Badges', 'Baul + Dhol Baadak Fee', 'Rentals', 'Sound System', 'Stationery'],
+  Flowers: ['Flowers'],
+  Food: ['Bhog', 'Mishti Doi', 'Sandesh Prasad', 'Tea Coffee Snacks'],
+  Labour: ['Daily Fee', 'Fooding', 'Lodging'],
+  Murti: ['Pratima', 'Transport', 'Transport Labour', 'Karigar Tip', 'Bisarjan Ghat Tip'],
+  Pandal: ['Pandal', 'Kaash Phool', 'Fire Extinguisher', 'Plants'],
+  Procurement: [
+    'Daily Perishables',
+    'Dashakarma',
+    'Disposables',
+    'Pottery Items',
+    'Printing',
+    'Utensils',
+    'Govt. Fees',
+  ],
+  Purohit: ['Fee', 'Dhaki Fee', 'Dhaki Tip', 'Transport', 'Sankalpa'],
+  'Lakshmi Pujo': ['Samagri'],
+  'Saraswati Pujo': [],
+  Misc: [],
+};
+
+export interface LedgerEntry {
+  id: string;
+  bookId: BookId;
+  eventId: string | null;
+  entryDate: string; // "YYYY-MM-DD" IST
+  kind: LedgerKind;
+  category: string | null;
+  subCategory: string | null;
+  amount: number; // whole rupees, > 0
+  personId: string | null;
+  personName: string | null;
+  counterparty: string | null;
+  walletPersonId: string;
+  walletName: string;
+  toWalletPersonId: string | null;
+  toWalletName: string | null;
+  notes: string | null;
+  isActive: boolean;
+  createdByName: string;
+}
+
+export interface LedgerEntryInput {
+  bookId: BookId;
+  eventId: string | null;
+  entryDate: string;
+  kind: LedgerKind;
+  category: string | null;
+  subCategory: string | null;
+  amount: number;
+  personId: string | null;
+  counterparty: string | null;
+  walletPersonId: string;
+  toWalletPersonId: string | null;
+  notes: string | null;
+}
+
+export interface SponsorshipItemView {
+  id: string;
+  category: string;
+  title: string;
+  defaultAmount: number | null;
+  sortOrder: number;
+  /** master is_active */
+  retired: boolean;
+  /** this year's offering (null = no item_year row yet → offered at default) */
+  yearAmount: number | null;
+  offered: boolean;
+  yearNotes: string | null;
+  pledge: {
+    id: string;
+    personId: string;
+    personName: string;
+    amount: number;
+    status: PledgeStatus;
+    pledgedOn: string;
+  } | null;
+}
+
+export interface SponsorshipItemInput {
+  id?: string; // slug; derived from title when omitted
+  category: string;
+  title: string;
+  defaultAmount: number | null;
+  sortOrder?: number;
+}
+
+export interface ReimbursementClaim {
+  id: string;
+  bookId: BookId;
+  eventId: string | null;
+  personId: string;
+  personName: string;
+  expenseDate: string;
+  amount: number;
+  category: string;
+  subCategory: string | null;
+  counterparty: string;
+  details: string | null;
+  status: ClaimStatus;
+  assignedTo: string | null;
+  assignedToName: string | null;
+  assignedOn: string | null;
+  settledBy: string | null;
+  settledByName: string | null;
+  settledOn: string | null;
+  notes: string | null;
+}
+
+export interface ReimbursementClaimInput {
+  bookId: BookId;
+  eventId: string | null;
+  expenseDate: string;
+  amount: number;
+  category: string;
+  subCategory: string | null;
+  counterparty: string;
+  details: string | null;
+}
+
+export interface WalletBalance {
+  personId: string;
+  personName: string;
+  balance: number;
+  /** balance before 1 July of the snapshot year */
+  carriedForward: number;
+  collectedSince: number;
+  spentSince: number;
+  transfersInSince: number;
+  transfersOutSince: number;
+}
+
+export interface LedgerSummary {
+  /** snapshot season boundary, e.g. "2026-07-01" */
+  seasonStart: string;
+  totalBalance: number;
+  carriedForward: number;
+  collectedSince: number;
+  spentSince: number;
+  outstandingClaims: number; // Σ requested reimbursements (liability)
+  wallets: WalletBalance[];
+}

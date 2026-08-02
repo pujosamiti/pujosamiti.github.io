@@ -4,6 +4,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
+import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
@@ -79,6 +80,7 @@ export function Tasks() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Task Distribution</h1>
         <SearchSelect
@@ -210,7 +212,15 @@ function TaskCard({
               <Button
                 key={ph}
                 size="sm"
-                variant={t.phase === ph ? (ph === 'completed' ? 'default' : 'secondary') : 'outline'}
+                variant={
+                  t.phase === ph
+                    ? ph === 'completed'
+                      ? 'durba'
+                      : ph === 'in_progress'
+                        ? 'secondary'
+                        : 'default'
+                    : 'outline'
+                }
                 onClick={() => canPhase && t.phase !== ph && phaseMut.mutate(ph)}
                 disabled={!canPhase || phaseMut.isPending}
               >

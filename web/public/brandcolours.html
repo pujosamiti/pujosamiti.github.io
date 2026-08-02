@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pujosamiti — Bengali Visual Identity</title>
+<style>
+  :root {
+    --sindoor: #E10D11;
+    --rokto: #99090C;
+    --shada: #FFFFFF;
+    --kash: #FFFFFF;
+    --genda: #EFA51E;
+    --shiuli: #D96410;
+    --matir: #9A5732;
+    --ink: #2B1A10;
+    --ink-soft: #6B5340;
+    --sharat: #007CBE;
+    --line: #ECE3D4;
+    --band-fg: #FFFFFF;
+    --band-bg: #D70000;
+    --red-text: #D70000;
+    --jaba: #D70000;
+    --palash: #EB0000;
+    --aparajita: #3D5A9E;
+    --durba: #3A7D44;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --sindoor: #FF5A52;
+      --rokto: #FF928C;
+      --shada: #191008;
+      --kash: #241811;
+      --genda: #F2B440;
+      --shiuli: #E88A34;
+      --matir: #B97A4C;
+      --ink: #F2E6D0;
+      --ink-soft: #C4AE92;
+      --sharat: #4FA8D8;
+      --line: #3D2C1E;
+      --band-fg: #FFFFFF;
+      --band-bg: #99090C;
+      --red-text: #FF928C;
+      --jaba: #E5322C;
+      --palash: #FF4C42;
+      --aparajita: #8CA5E6;
+      --durba: #7FC08A;
+    }
+  }
+  :root[data-theme="dark"] {
+    --sindoor: #FF5A52; --rokto: #FF928C; --shada: #191008; --kash: #241811;
+    --genda: #F2B440; --shiuli: #E88A34; --matir: #B97A4C; --ink: #F2E6D0;
+    --ink-soft: #C4AE92; --sharat: #4FA8D8; --line: #3D2C1E; --band-fg: #FFFFFF;
+    --band-bg: #99090C; --red-text: #FF928C; --jaba: #E5322C; --palash: #FF4C42;
+    --aparajita: #8CA5E6; --durba: #7FC08A;
+  }
+  :root[data-theme="light"] {
+    --sindoor: #E10D11; --rokto: #99090C; --shada: #FFFFFF; --kash: #FFFFFF;
+    --genda: #EFA51E; --shiuli: #D96410; --matir: #9A5732; --ink: #2B1A10;
+    --ink-soft: #6B5340; --sharat: #007CBE; --line: #ECE3D4; --band-fg: #FFFFFF;
+    --band-bg: #D70000; --red-text: #D70000; --jaba: #D70000; --palash: #EB0000;
+    --aparajita: #3D5A9E; --durba: #3A7D44;
+  }
+
+  body {
+    background: var(--shada);
+    color: var(--ink);
+    font-family: "Hind Siliguri", "Noto Sans Bengali", -apple-system, "Segoe UI", sans-serif;
+    line-height: 1.6;
+    margin: 0;
+  }
+  .serif { font-family: "Noto Serif Bengali", Georgia, "Times New Roman", serif; }
+
+  .wrap { max-width: 880px; margin: 0 auto; padding: 0 20px 64px; }
+
+  /* ── Jaba band with alpona ── */
+  .band {
+    background: var(--band-bg);
+    color: var(--band-fg);
+    padding: 40px 20px 0;
+  }
+  .band-inner { max-width: 880px; margin: 0 auto; }
+  .eyebrow {
+    text-transform: uppercase; letter-spacing: .18em; font-size: 12px;
+    opacity: .85; margin: 0 0 10px;
+  }
+  h1 {
+    font-size: clamp(28px, 5vw, 42px); line-height: 1.15; margin: 0 0 6px;
+    text-wrap: balance; font-weight: 700;
+  }
+  .band p.sub { margin: 0 0 28px; max-width: 60ch; opacity: .92; }
+  .alpona-strip { display: block; width: 100%; height: 44px; }
+
+  h2 {
+    font-size: 22px; margin: 48px 0 6px; font-weight: 700;
+  }
+  h2 + p.lede { margin: 0 0 20px; color: var(--ink-soft); max-width: 65ch; }
+
+  /* ── Swatches ── */
+  .swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; }
+  .swatch { background: var(--kash); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .chip { height: 84px; }
+  .swatch .meta { padding: 10px 12px 12px; }
+  .swatch .name { font-weight: 600; font-size: 15px; }
+  .swatch .bn { color: var(--ink-soft); font-size: 13px; }
+  .swatch .hex {
+    font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+    color: var(--ink-soft); font-variant-numeric: tabular-nums;
+  }
+  .swatch .use { font-size: 13px; margin-top: 6px; }
+
+  /* ── Usage table ── */
+  .tablewrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--kash); }
+  table { border-collapse: collapse; width: 100%; min-width: 560px; font-size: 14.5px; }
+  th, td { text-align: left; padding: 10px 14px; border-top: 1px solid var(--line); vertical-align: top; }
+  thead th { border-top: none; font-size: 12px; text-transform: uppercase; letter-spacing: .08em; color: var(--ink-soft); }
+  td code { font-family: ui-monospace, Menlo, monospace; font-size: 13px; color: var(--matir); }
+  .dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; border: 1px solid rgba(0,0,0,.15); }
+
+  /* ── Phone mock ── */
+  .mockrow { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .phone {
+    width: 320px; border: 1px solid var(--line); border-radius: 28px;
+    background: var(--shada); overflow: hidden; flex: 0 0 auto;
+    box-shadow: 0 12px 32px rgba(43, 26, 16, .12);
+  }
+  .phone-head { background: var(--band-bg); color: var(--band-fg); padding: 18px 18px 0; }
+  .phone-head .title { font-size: 20px; font-weight: 700; margin: 0; }
+  .phone-head .loc { font-size: 12px; opacity: .85; margin: 2px 0 10px; }
+  .phone-alpona { display: block; width: 100%; height: 26px; }
+  .alp-bg { fill: var(--band-bg); }
+  .phone-body { padding: 14px 14px 8px; display: flex; flex-direction: column; gap: 12px; }
+  .chips { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+  .chip-ev {
+    flex: 0 0 auto; font-size: 12.5px; padding: 6px 12px; border-radius: 999px;
+    border: 1px solid var(--line); background: var(--kash); color: var(--ink); white-space: nowrap;
+  }
+  .chip-ev.active { background: var(--genda); border-color: var(--genda); color: #3A2504; font-weight: 600; }
+  .card {
+    background: var(--kash); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px;
+  }
+  .card .tag {
+    font-size: 11px; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--red-text); font-weight: 700;
+  }
+  .card h3 { margin: 4px 0 2px; font-size: 15.5px; }
+  .card p { margin: 0; font-size: 13px; color: var(--ink-soft); }
+  .card .when { font-size: 12.5px; color: var(--matir); margin-top: 6px; }
+  .btn {
+    display: inline-block; background: var(--jaba); color: #fff;
+    border-radius: 10px; padding: 11px 16px; font-weight: 600; font-size: 14px; text-align: center;
+  }
+  .navbar {
+    display: flex; border-top: 1px solid var(--line); background: var(--kash);
+    padding: 8px 6px calc(8px + 6px);
+  }
+  .nav-item { flex: 1; text-align: center; font-size: 10.5px; color: var(--ink-soft); }
+  .nav-item svg { display: block; margin: 0 auto 2px; }
+  .nav-item.active { color: var(--red-text); font-weight: 600; }
+
+  .notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+  .note { background: var(--kash); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 14px; }
+  .note b { display: block; margin-bottom: 4px; }
+
+  .motifs { background: var(--band-bg); border-radius: 12px; padding: 20px; }
+  .motifs figcaption { color: var(--band-fg); font-size: 13px; opacity: .85; margin-top: 10px; }
+  figure { margin: 0; }
+</style>
+</head>
+<body>
+<div class="band">
+  <div class="band-inner">
+    <p class="eyebrow">Pujosamiti · Visual Identity</p>
+    <h1 class="serif">লাল-পাড় সাদা — the palette of home</h1>
+    <p class="sub">A probasi bangali identity for Magarpatta City: pure-white grounds, a four-step red ramp anchored on jaba
+    #D70000, genda and shiuli accents, terracotta earth — with alpona drawn the authentic way,
+    white line-work on red.</p>
+  </div>
+  <svg class="alpona-strip" aria-hidden="true">
+    <defs>
+      <pattern id="alp-hero" width="55" height="44" patternUnits="userSpaceOnUse">
+        <line x1="0" y1="8" x2="55" y2="8" stroke="#FFFFFF" stroke-width="1" opacity=".6"/>
+        <path d="M0 40 Q 27.5 18 55 40" fill="none" stroke="#FFFFFF" stroke-width="1.6"/>
+        <circle cx="0" cy="26" r="2.2" fill="#FFFFFF"/>
+        <circle cx="55" cy="26" r="2.2" fill="#FFFFFF"/>
+      </pattern>
+    </defs>
+    <rect width="100%" height="100%" fill="url(#alp-hero)"/>
+  </svg>
+</div>
+
+<div class="wrap">
+
+  <h2 class="serif">The palette</h2>
+  <p class="lede">Every colour is named for what it is in the pujo world — that is also what keeps
+  usage honest. One bold red, warm grounds, festive accents in small doses.</p>
+
+  <div class="swatches">
+    <div class="swatch"><div class="chip" style="background:#D70000"></div>
+      <div class="meta"><div class="name">Jaba</div><div class="bn">জবা · hibiscus</div>
+      <div class="hex">#D70000 · dark #E5322C</div>
+      <div class="use">Primary. Buttons, active states, header bands, links.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#99090C"></div>
+      <div class="meta"><div class="name">Rokto</div><div class="bn">রক্ত · deep red</div>
+      <div class="hex">#99090C</div>
+      <div class="use">Deep red: destructive actions, darkest step of the ramp.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#E10D11"></div>
+      <div class="meta"><div class="name">Sindoor</div><div class="bn">সিঁদুর · vermillion</div>
+      <div class="hex">#E10D11 · dark #FF5A52</div>
+      <div class="use">Independent ritual red: hover/pressed primary, strong red emphasis.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#EB0000"></div>
+      <div class="meta"><div class="name">Palash</div><div class="bn">পলাশ · flame of the forest</div>
+      <div class="hex">#EB0000</div>
+      <div class="use">Vivid highlight: live badges, festive moments. Small doses.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#FFFFFF; border-bottom:1px solid var(--line)"></div>
+      <div class="meta"><div class="name">Shada</div><div class="bn">সাদা · pure white</div>
+      <div class="hex">#FFFFFF</div>
+      <div class="use">Page background — pure white.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#FFFFFF; border-bottom:1px solid var(--line)"></div>
+      <div class="meta"><div class="name">Kash</div><div class="bn">কাশ · card white</div>
+      <div class="hex">#FFFFFF</div>
+      <div class="use">Cards, sheets, surfaces raised off the ground.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#EFA51E"></div>
+      <div class="meta"><div class="name">Genda</div><div class="bn">গেঁদা · marigold</div>
+      <div class="hex">#EFA51E</div>
+      <div class="use">Festive accent: active event chip, highlights, garland motifs. Never text.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#D96410"></div>
+      <div class="meta"><div class="name">Shiuli</div><div class="bn">শিউলি · saffron</div>
+      <div class="hex">#D96410</div>
+      <div class="use">Secondary accent: badges, small emphasis, icon fills.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#9A5732"></div>
+      <div class="meta"><div class="name">Matir</div><div class="bn">মাটির · terracotta</div>
+      <div class="hex">#9A5732</div>
+      <div class="use">Earth support: borders, metadata text, dividers, illustration.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#2B1A10"></div>
+      <div class="meta"><div class="name">Kali</div><div class="bn">কালি · warm ink</div>
+      <div class="hex">#2B1A10</div>
+      <div class="use">Body text. Warm near-black, never pure #000.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#007CBE"></div>
+      <div class="meta"><div class="name">Sharat</div><div class="bn">শরৎ · autumn sky</div>
+      <div class="hex">#007CBE · dark #4FA8D8</div>
+      <div class="use">Info states and links inside dense admin tables only. Small doses.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#3D5A9E"></div>
+      <div class="meta"><div class="name">Aparajita</div><div class="bn">অপরাজিতা · butterfly pea</div>
+      <div class="hex">#3D5A9E · dark #8CA5E6</div>
+      <div class="use">Festive blue: selected states, info chips, shubho moments. Small doses.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#3A7D44"></div>
+      <div class="meta"><div class="name">Durba</div><div class="bn">দূর্বা · sacred grass</div>
+      <div class="hex">#3A7D44 · dark #7FC08A</div>
+      <div class="use">Success green: paid, settled, money-in. The only green voice.</div></div></div>
+  </div>
+
+  <h2 class="serif">Alpona, drawn the right way</h2>
+  <p class="lede">Alpona is white rice-paste line-work on a red or earthen ground — so on this site it
+  lives as thin white SVG strokes on jaba bands: the page header, section dividers, event page
+  mastheads. Motifs: podmo (lotus), kalka (paisley), maach (fish — shubho!), dhaner shish (paddy).</p>
+
+  <figure class="motifs">
+    <svg viewBox="0 0 800 90" style="display:block;width:100%" aria-label="Alpona motif samples">
+      <g fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round">
+        <!-- lotus -->
+        <g transform="translate(90,45)">
+          <circle r="7"/>
+          <path d="M0 -12 Q 8 -26 0 -38 Q -8 -26 0 -12"/>
+          <path d="M11 -6 Q 26 -13 34 -24 Q 20 -24 8 -14" transform="rotate(10)"/>
+          <path d="M-11 -6 Q -26 -13 -34 -24 Q -20 -24 -8 -14" transform="rotate(-10)"/>
+          <path d="M13 2 Q 30 2 40 -6 Q 26 -12 10 -6"/>
+          <path d="M-13 2 Q -30 2 -40 -6 Q -26 -12 -10 -6"/>
+        </g>
+        <!-- kalka / paisley -->
+        <g transform="translate(280,48)">
+          <path d="M0 20 Q -24 12 -22 -10 Q -20 -30 0 -32 Q 18 -33 16 -14 Q 22 -26 14 -36"/>
+          <circle cx="-4" cy="-8" r="4"/>
+          <circle cx="-4" cy="-8" r="9" opacity=".7"/>
+        </g>
+        <!-- fish -->
+        <g transform="translate(470,45)">
+          <path d="M-40 0 Q -10 -22 20 0 Q -10 22 -40 0 Z"/>
+          <path d="M20 0 L 38 -12 L 38 12 Z"/>
+          <circle cx="-24" cy="-3" r="2.4" fill="#FFFFFF" stroke="none"/>
+          <path d="M-8 -8 Q -4 0 -8 8" opacity=".8"/>
+          <path d="M2 -7 Q 6 0 2 7" opacity=".8"/>
+        </g>
+        <!-- paddy -->
+        <g transform="translate(660,50)">
+          <path d="M0 24 Q -2 -8 6 -34"/>
+          <path d="M4 -28 Q 14 -30 20 -38"/><path d="M2 -18 Q 12 -20 18 -28"/>
+          <path d="M0 -8 Q 10 -10 16 -18"/><path d="M5 -30 Q -4 -34 -10 -42"/>
+          <path d="M3 -20 Q -6 -24 -12 -32"/><path d="M1 -10 Q -8 -14 -14 -22"/>
+        </g>
+      </g>
+    </svg>
+    <figcaption>Podmo · Kalka · Maach · Dhaner shish — stroke-only, 2px, on jaba. These become a
+    reusable SVG sprite in the app.</figcaption>
+  </figure>
+
+  <h2 class="serif">On a phone, where it will live</h2>
+  <p class="lede">Jaba header with an alpona edge, genda for the active event, cards on kash
+  white, bottom tab bar. Toggle your theme to see the dhunuchi-night dark mode.</p>
+
+  <div class="mockrow">
+    <div class="phone">
+      <div class="phone-head">
+        <p class="title serif">পুজো সমিতি</p>
+        <p class="loc">Magarpatta City · Pune</p>
+      </div>
+      <svg class="phone-alpona" viewBox="0 0 320 26" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+        <rect width="320" height="26" class="alp-bg"/>
+        <path d="M0 24 Q 20 8 40 24 Q 60 8 80 24 Q 100 8 120 24 Q 140 8 160 24 Q 180 8 200 24 Q 220 8 240 24 Q 260 8 280 24 Q 300 8 320 24"
+          fill="none" stroke="#FFFFFF" stroke-width="1.4"/>
+        <g fill="#FFFFFF">
+          <circle cx="40" cy="14" r="1.8"/><circle cx="80" cy="14" r="1.8"/><circle cx="120" cy="14" r="1.8"/>
+          <circle cx="160" cy="14" r="1.8"/><circle cx="200" cy="14" r="1.8"/><circle cx="240" cy="14" r="1.8"/>
+          <circle cx="280" cy="14" r="1.8"/>
+        </g>
+      </svg>
+      <div class="phone-body">
+        <div class="chips">
+          <span class="chip-ev active">দুর্গাপূজা ২০২৬</span>
+          <span class="chip-ev">Lakshmi Puja</span>
+          <span class="chip-ev">Bijoya Sammelani</span>
+          <span class="chip-ev">Saraswati Puja</span>
+        </div>
+        <div class="card">
+          <span class="tag">Notice</span>
+          <h3>Khuti Pujo this Sunday</h3>
+          <p>Ceremonial start at the community lawn. All families are invited for the anjali and breakfast.</p>
+          <p class="when">Sun 2 Aug · 9:00 AM · Lawn 3</p>
+        </div>
+        <div class="card">
+          <span class="tag" style="color:var(--shiuli)">Time table</span>
+          <h3>Maha Sasthi — Bodhon</h3>
+          <p>Evening bodhon and unveiling of the protima, followed by dhunuchi naach.</p>
+          <p class="when">Evening · Pandal</p>
+        </div>
+        <span class="btn">অঞ্জলি দিন · View full schedule</span>
+      </div>
+      <div class="navbar">
+        <span class="nav-item active">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9.5 10 3l7 6.5V17h-4.5v-4h-5v4H3z"/></svg>
+          Home</span>
+        <span class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14M7 2v4M13 2v4"/></svg>
+          Events</span>
+        <span class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="14" height="14" rx="2"/><circle cx="7.5" cy="7.5" r="1.5"/><path d="M3 14l4-4 3 3 3-3 4 4"/></svg>
+          Gallery</span>
+        <span class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 3h12v14l-3-2-3 2-3-2-3 2z"/><path d="M7 7h6M7 10h6"/></svg>
+          Notices</span>
+        <span class="nav-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="10" cy="10" r="1.6"/><circle cx="4" cy="10" r="1.6"/><circle cx="16" cy="10" r="1.6"/></svg>
+          More</span>
+      </div>
+    </div>
+
+    <div style="flex:1; min-width: 260px;">
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>shadcn token</th><th>Light</th><th>Dark</th></tr></thead>
+          <tbody>
+            <tr><td><code>--background</code></td><td><span class="dot" style="background:#FFFFFF"></span>Shada #FFFFFF</td><td><span class="dot" style="background:#191008"></span>#191008</td></tr>
+            <tr><td><code>--card</code></td><td><span class="dot" style="background:#FFFFFF"></span>Kash #FFFFFF</td><td><span class="dot" style="background:#241811"></span>#241811</td></tr>
+            <tr><td><code>--primary</code></td><td><span class="dot" style="background:#D70000"></span>Jaba #D70000</td><td><span class="dot" style="background:#E5322C"></span>#E5322C</td></tr>
+            <tr><td><code>--secondary</code></td><td><span class="dot" style="background:#EFA51E"></span>Genda #EFA51E</td><td><span class="dot" style="background:#F2B440"></span>#F2B440</td></tr>
+            <tr><td><code>--sindoor</code></td><td><span class="dot" style="background:#E10D11"></span>Sindoor #E10D11</td><td><span class="dot" style="background:#FF5A52"></span>#FF5A52</td></tr>
+            <tr><td><code>--palash</code></td><td><span class="dot" style="background:#EB0000"></span>Palash #EB0000</td><td><span class="dot" style="background:#FF4C42"></span>#FF4C42</td></tr>
+            <tr><td><code>--accent</code></td><td><span class="dot" style="background:#D96410"></span>Shiuli #D96410</td><td><span class="dot" style="background:#E88A34"></span>#E88A34</td></tr>
+            <tr><td><code>--sharat</code></td><td><span class="dot" style="background:#007CBE"></span>Sharat #007CBE</td><td><span class="dot" style="background:#4FA8D8"></span>#4FA8D8</td></tr>
+            <tr><td><code>--aparajita</code></td><td><span class="dot" style="background:#3D5A9E"></span>Aparajita #3D5A9E</td><td><span class="dot" style="background:#8CA5E6"></span>#8CA5E6</td></tr>
+            <tr><td><code>--durba</code></td><td><span class="dot" style="background:#3A7D44"></span>Durba #3A7D44</td><td><span class="dot" style="background:#7FC08A"></span>#7FC08A</td></tr>
+            <tr><td><code>--muted-foreground</code></td><td><span class="dot" style="background:#6B5340"></span>#6B5340</td><td><span class="dot" style="background:#C4AE92"></span>#C4AE92</td></tr>
+            <tr><td><code>--border</code></td><td><span class="dot" style="background:#ECE3D4"></span>#ECE3D4</td><td><span class="dot" style="background:#3D2C1E"></span>#3D2C1E</td></tr>
+            <tr><td><code>--foreground</code></td><td><span class="dot" style="background:#2B1A10"></span>Kali #2B1A10</td><td><span class="dot" style="background:#F2E6D0"></span>#F2E6D0</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <h2 class="serif">Rules that keep it tasteful</h2>
+  <div class="notes">
+    <div class="note"><b>Red leads, alone.</b> Jaba is the only bold voice on a screen. Sindoor,
+    genda and shiuli appear in small doses — a hover, a chip, a garland motif — never as large
+    fills next to the primary red.</div>
+    <div class="note"><b>Yellow is never text.</b> Genda fails contrast on cream. It carries meaning
+    as a fill behind dark ink (like the active event chip), never as lettering.</div>
+    <div class="note"><b>Blue and green are workers, not decoration.</b> Durba green means one
+    thing everywhere: success — a paid pledge, a settled claim, money in. Aparajita blue marks
+    selection and information. Neither ever fills a hero or fights jaba for attention.</div>
+    <div class="note"><b>Alpona is placed, not sprinkled.</b> Header band, section dividers, event
+    mastheads, festive empty-states. Body screens stay quiet so the accounting tables stay readable.</div>
+    <div class="note"><b>Warm everywhere.</b> No pure black, no cool greys. Text is kali ink, borders
+    lean cream — the whole app sits in the laal-paar shada world.</div>
+    <div class="note"><b>Type carries both scripts.</b> Noto Serif Bengali for display headings
+    (আমাদের পূজা and “Time Table” alike), Hind Siliguri for UI and body. Both free on Google Fonts.
+    This preview approximates them with system faces.</div>
+    <div class="note"><b>Dark mode is dhunuchi night.</b> Smoky deep brown, brightened jaba and
+    genda, cream ink — festive at night, not a generic grey inversion.</div>
+  </div>
+</div>
+
+</body>
+</html>

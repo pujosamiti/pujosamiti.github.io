@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
   <!-- pradip: a lit clay lamp in the samiti palette -->
-  <rect width="64" height="64" rx="14" fill="#E10D11"/>
+  <rect width="64" height="64" rx="14" fill="#D70000"/>
   <path d="M32 14 C 38 22 40 27 36 32 C 34 34.5 30 34.5 28 32 C 24 27 26 22 32 14 Z" fill="#EFA51E"/>
   <path d="M14 40 Q 32 34 50 40 Q 46 52 32 52 Q 18 52 14 40 Z" fill="#FFFFFF"/>
-  <path d="M14 40 Q 32 46 50 40" fill="none" stroke="#E10D11" stroke-width="1.6"/>
+  <path d="M14 40 Q 32 46 50 40" fill="none" stroke="#D70000" stroke-width="1.6"/>
 </svg>

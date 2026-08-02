@@ -18,7 +18,7 @@ export function Notices() {
       <h1 className="text-2xl font-bold">Notice board</h1>
       {notices.isLoading && <p className="text-sm text-muted-foreground">Loading notices…</p>}
       {notices.data?.map((n) => (
-        <Card key={n.id}>
+        <Card key={n.id} className={n.pinned ? 'border-l-4 border-l-genda' : undefined}>
           <CardHeader>
             <div className="flex items-center gap-2">
               {n.pinned && <Badge variant="genda">Pinned</Badge>}

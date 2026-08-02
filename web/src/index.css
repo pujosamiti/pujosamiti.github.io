@@ -5,7 +5,7 @@
 
 /*
  * লাল-পাড় সাদা — the pujosamiti visual identity.
- * Light: white sari ground with sindoor red. Dark: dhunuchi night.
+ * Light: white sari ground with jaba red (sindoor rides hover). Dark: dhunuchi night.
  * Every colour is named for what it is in the pujo world; see docs/design.md.
  */
 :root {
@@ -18,7 +18,7 @@
   --card-foreground: #2b1a10;
   --popover: #ffffff;
   --popover-foreground: #2b1a10;
-  --primary: #e10d11; /* sindoor */
+  --primary: #d70000; /* jaba — the primary red */
   --primary-foreground: #ffffff;
   --secondary: #efa51e; /* genda — never used as text colour */
   --secondary-foreground: #3a2504;
@@ -30,17 +30,23 @@
   --destructive-foreground: #ffffff;
   --border: #ece3d4;
   --input: #ece3d4;
-  --ring: #e10d11;
+  --ring: #d70000;
 
   /* pujo-specific tokens */
   --genda: #efa51e;
   --shiuli: #d96410;
   --matir: #9a5732;
-  --sharat: #2e6e8e; /* info states in admin tables only */
-  --band: #e10d11; /* sindoor header bands carrying white alpona */
+  --sharat: #007cbe; /* autumn sky — info states in admin tables only */
+  --band: #d70000; /* jaba header bands carrying white alpona */
   --band-foreground: #ffffff;
-  --jaba: #d70000; /* hibiscus — hover/pressed red */
+  --jaba: #d70000; /* hibiscus — the primary red, by its pujo name */
+  --sindoor: #e10d11; /* vermillion — hover/pressed primary, ritual red */
   --palash: #eb0000; /* flame of the forest — vivid highlight, small doses */
+  --aparajita: #3d5a9e; /* butterfly pea — selection & info chips */
+  --aparajita-foreground: #ffffff;
+  --durba: #3a7d44; /* sacred grass — success: paid, settled, money in */
+  --durba-foreground: #ffffff;
+  --palash-foreground: #ffffff;
 }
 
 .dark {
@@ -50,8 +56,8 @@
   --card-foreground: #f2e6d0;
   --popover: #241811;
   --popover-foreground: #f2e6d0;
-  --primary: #ff5a52;
-  --primary-foreground: #2a0b06;
+  --primary: #e5322c; /* jaba, dhunuchi night */
+  --primary-foreground: #ffffff;
   --secondary: #f2b440;
   --secondary-foreground: #3a2504;
   --muted: #2b1d13;
@@ -62,16 +68,22 @@
   --destructive-foreground: #2a0b06;
   --border: #3d2c1e;
   --input: #3d2c1e;
-  --ring: #ff5a52;
+  --ring: #e5322c;
 
   --genda: #f2b440;
   --shiuli: #e88a34;
   --matir: #b97a4c;
-  --sharat: #6fa8c4;
+  --sharat: #4fa8d8;
   --band: #99090c;
   --band-foreground: #ffffff;
   --jaba: #e5322c;
+  --sindoor: #ff5a52;
   --palash: #ff4c42;
+  --aparajita: #8ca5e6;
+  --aparajita-foreground: #14203d;
+  --durba: #7fc08a;
+  --durba-foreground: #12240e;
+  --palash-foreground: #33100c;
 }
 
 @theme inline {
@@ -105,7 +117,13 @@
   --color-band: var(--band);
   --color-band-foreground: var(--band-foreground);
   --color-jaba: var(--jaba);
+  --color-sindoor: var(--sindoor);
   --color-palash: var(--palash);
+  --color-aparajita: var(--aparajita);
+  --color-aparajita-foreground: var(--aparajita-foreground);
+  --color-durba: var(--durba);
+  --color-durba-foreground: var(--durba-foreground);
+  --color-palash-foreground: var(--palash-foreground);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
@@ -119,6 +137,9 @@
   }
   body {
     @apply bg-background text-foreground font-sans antialiased;
+    /* native controls (checkboxes, radios, date inputs) follow the palette
+       instead of the browser's default blue */
+    accent-color: var(--sharat);
   }
   h1,
   h2,

@@ -5,6 +5,7 @@ import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { BackLink } from '@/components/BackLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -79,6 +80,7 @@ export function Membership() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BackLink />
       <h1 className="text-2xl font-bold">Membership</h1>
 
       <div className="flex flex-wrap gap-2">
@@ -261,7 +263,9 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
                 </Button>
               </>
             ) : (
-              <Badge variant={p.tier === 'core' ? 'default' : 'outline'}>{TIER_LABEL[p.tier]}</Badge>
+              <Badge variant={p.tier === 'core' ? 'default' : p.tier === 'member' ? 'aparajita' : 'outline'}>
+                {TIER_LABEL[p.tier]}
+              </Badge>
             )}
           </div>
         </div>

@@ -95,7 +95,7 @@ export function SearchSelect({
         aria-haspopup="listbox"
       >
         <span>{selected?.label ?? 'Select…'}</span>
-        <ChevronsUpDown className="size-4 shrink-0 text-muted-foreground" aria-hidden="true" />
+        <ChevronsUpDown className="size-4 shrink-0 text-shiuli" aria-hidden="true" />
       </button>
       {open && (
         <div
@@ -136,7 +136,7 @@ export function SearchSelect({
                     {o.label}
                     {o.hint && <Badge variant="genda">{o.hint}</Badge>}
                   </span>
-                  {o.value === value && <Check className="size-4 shrink-0" aria-hidden="true" />}
+                  {o.value === value && <Check className="size-4 shrink-0 text-aparajita" aria-hidden="true" />}
                 </button>
               </li>
             ))}

@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
+import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Button } from '@/components/ui/button'
@@ -41,6 +42,7 @@ export function Nirghanto() {
 
   return (
     <div className="flex flex-col gap-4">
+      <BackLink />
       <h1 className="text-2xl font-bold">Nirghanto</h1>
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />

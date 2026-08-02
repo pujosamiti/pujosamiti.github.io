@@ -10,6 +10,8 @@ import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
 import { Membership } from '@/pages/Membership'
+import { BrandColours } from '@/pages/BrandColours'
+import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Notices } from '@/pages/Notices'
 import { Profile } from '@/pages/Profile'
@@ -53,6 +55,11 @@ createRoot(document.getElementById('root')!).render(
             <Route path="membership" element={<Membership />} />
             <Route path="events" element={<Events />} />
             <Route path="nirghanto" element={<Nirghanto />} />
+            <Route path="ledger" element={<LedgerPage />} />
+            <Route path="wallets" element={<WalletsPage />} />
+            <Route path="sponsorship" element={<SponsorshipPage />} />
+            <Route path="reimbursements" element={<ReimbursementsPage />} />
+            <Route path="brandcolours" element={<BrandColours />} />
             <Route path="*" element={<Home />} />
           </Route>
         </Routes>

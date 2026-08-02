@@ -41,7 +41,7 @@ export function Home() {
             <Button asChild>
               <Link to="/schedule">Schedule</Link>
             </Button>
-            <Button variant="outline" asChild>
+            <Button variant="secondary" asChild>
               <Link to="/gallery">Gallery</Link>
             </Button>
           </div>
@@ -65,7 +65,7 @@ export function Home() {
           <p className="text-sm text-muted-foreground">No notices yet — check back soon.</p>
         )}
         {notices.data?.map((n) => (
-          <Card key={n.id}>
+          <Card key={n.id} className={n.pinned ? 'border-l-4 border-l-genda' : undefined}>
             <CardHeader>
               <div className="flex items-center gap-2">
                 {n.pinned && <Badge variant="genda">Pinned</Badge>}

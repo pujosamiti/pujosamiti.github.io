@@ -9,8 +9,9 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground hover:bg-jaba',
+        default: 'bg-primary text-primary-foreground hover:bg-sindoor',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/85',
+        durba: 'bg-durba text-durba-foreground hover:bg-durba/85',
         outline: 'border bg-card hover:bg-accent hover:text-accent-foreground',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',

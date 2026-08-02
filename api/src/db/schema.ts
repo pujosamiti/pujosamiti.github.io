@@ -239,3 +239,117 @@ export const procurementItem = sqliteTable('procurement_item', {
   assignee: text('assignee'),
   notes: text('notes'),
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Ledger & sponsorship
+// ONE money table (ledger_entry) + two PERPETUAL books. Sponsorship mirrors
+// the task catalog (item → item_year → pledge); pledges and reimbursement
+// claims move no money until paid/settled — then they link the ledger entry.
+// Wallets are emergent: anyone named as wallet_person_id holds samiti money.
+// Date columns are IST date strings "YYYY-MM-DD"; report year = substr(1,4).
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const book = sqliteTable('book', {
+  id: text('id').primaryKey(), // 'pujo-ledger' | 'poila-baishakh-ledger'
+  name: text('name').notNull(),
+  notes: text('notes'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const ledgerEntry = sqliteTable('ledger_entry', {
+  id: text('id').primaryKey(),
+  bookId: text('book_id')
+    .notNull()
+    .references(() => book.id),
+  eventId: text('event_id').references(() => event.id), // optional tag
+  entryDate: text('entry_date').notNull(), // "YYYY-MM-DD" IST
+  kind: text('kind', { enum: ['contribution', 'expense', 'transfer'] }).notNull(),
+  category: text('category'), // contribution: subscription|sponsorship|donation|misc_income; expense: taxonomy; transfer: NULL
+  subCategory: text('sub_category'),
+  amount: integer('amount').notNull(), // whole rupees, always > 0
+  personId: text('person_id').references(() => person.id), // contributor
+  counterparty: text('counterparty'), // vendor / "Hundi" when no person
+  walletPersonId: text('wallet_person_id')
+    .notNull()
+    .references(() => person.id), // received (contribution) / paid (expense) / source (transfer)
+  toWalletPersonId: text('to_wallet_person_id').references(() => person.id), // transfer target
+  notes: text('notes'),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = voided
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => person.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const sponsorshipItem = sqliteTable('sponsorship_item', {
+  id: text('id').primaryKey(), // unique slug: 'sandhi-puja-3', 'durga-idol'
+  category: text('category').notNull(), // Murti, Stage, Bhog, Puja, Dhak, Dakshina, Samagri…
+  title: text('title').notNull(),
+  defaultAmount: integer('default_amount'), // NULL = priced fresh each year
+  sortOrder: integer('sort_order').notNull().default(1000),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const sponsorshipItemYear = sqliteTable('sponsorship_item_year', {
+  id: text('id').primaryKey(), // 'siy-<item>-<year>'
+  itemId: text('item_id')
+    .notNull()
+    .references(() => sponsorshipItem.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  amount: integer('amount'), // NULL = master defaultAmount
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = not offered this year
+  notes: text('notes'),
+})
+
+export const sponsorshipPledge = sqliteTable('sponsorship_pledge', {
+  id: text('id').primaryKey(),
+  itemId: text('item_id')
+    .notNull()
+    .references(() => sponsorshipItem.id),
+  year: integer('year').notNull(),
+  personId: text('person_id')
+    .notNull()
+    .references(() => person.id),
+  amount: integer('amount').notNull(),
+  status: text('status', { enum: ['pledged', 'paid', 'cancelled'] })
+    .notNull()
+    .default('pledged'),
+  ledgerEntryId: text('ledger_entry_id').references(() => ledgerEntry.id), // set when paid
+  pledgedOn: text('pledged_on').notNull(), // "YYYY-MM-DD" IST
+  notes: text('notes'),
+})
+
+/**
+ * Money a core member spent from their own pocket, awaiting reimbursement by
+ * a wallet holder. Settlement writes the underlying VENDOR expense to the
+ * ledger (the claimant is a pass-through) and links it here. Self-claim
+ * assignment ("I'll pay this one") prevents two holders paying the same claim.
+ */
+export const expenseReimbursement = sqliteTable('expense_reimbursement', {
+  id: text('id').primaryKey(),
+  bookId: text('book_id')
+    .notNull()
+    .references(() => book.id),
+  eventId: text('event_id').references(() => event.id),
+  personId: text('person_id')
+    .notNull()
+    .references(() => person.id), // claimant
+  expenseDate: text('expense_date').notNull(), // when they paid the vendor
+  amount: integer('amount').notNull(),
+  category: text('category').notNull(),
+  subCategory: text('sub_category'),
+  counterparty: text('counterparty').notNull(), // the vendor they paid
+  details: text('details'),
+  status: text('status', { enum: ['requested', 'settled', 'rejected', 'cancelled'] })
+    .notNull()
+    .default('requested'),
+  assignedTo: text('assigned_to').references(() => person.id), // wallet holder who took it
+  assignedOn: text('assigned_on'),
+  ledgerEntryId: text('ledger_entry_id').references(() => ledgerEntry.id), // set on settlement
+  settledBy: text('settled_by').references(() => person.id),
+  settledOn: text('settled_on'),
+  notes: text('notes'), // reviewer remarks (esp. on reject)
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})

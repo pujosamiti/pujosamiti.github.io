@@ -1,23 +1,26 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { BookOpen, CalendarDays, Clock, FileText, Landmark, LogIn, LogOut, RefreshCw, ScrollText, Users, Wallet } from 'lucide-react'
+import { BookOpen, CalendarDays, Clock, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, Users, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { useOnboardingState } from '@/lib/onboarding'
 
+// tone = palette token washing the card background (icon wears it at full hue)
 const memberSections = [
-  { icon: Wallet, title: 'Collections & expenses', desc: 'Collector wallets, accounts summary', gate: 'Members only' },
-  { icon: Landmark, title: 'Budget', desc: 'Event budgets vs actuals', gate: 'Members only' },
-  { icon: ScrollText, title: 'Procurement', desc: 'Shopping lists and status', gate: 'Core members only' },
-  { icon: FileText, title: 'Paperwork', desc: 'Police permission, PMC intimation', gate: 'Core members only' },
-  { icon: BookOpen, title: 'Core Members', desc: 'Task distribution', gate: 'Members only', to: '/tasks' },
-  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true },
-  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true },
-  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true },
+  { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: 'durba' },
+  { icon: Wallet, title: 'Wallets', desc: 'Who holds what, season snapshot', gate: 'Core members only', to: '/wallets', coreOnly: true, tone: 'genda' },
+  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Core members only', to: '/sponsorship', coreOnly: true, tone: 'palash' },
+  { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
+  { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
+  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: 'aparajita' },
+  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: 'matir' },
+  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: 'sindoor' },
+  { icon: Palette, title: 'Brand Colours', desc: 'The laal-paar shada identity — palette & rules', gate: 'Members only', to: '/brandcolours', tone: 'jaba' },
 ]
 
 export function MembersOnly() {
@@ -114,13 +117,21 @@ export function MembersOnly() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {memberSections.map(({ icon: Icon, title, desc, gate, to, coreOnly }) => {
+        {memberSections.map(({ icon: Icon, title, desc, gate, to, coreOnly, tone }) => {
           const unlocked = !!me && !!to && (!coreOnly || me.role !== 'member')
           const suffix = !me ? ` — ${gate}` : unlocked ? '' : coreOnly ? ' — Core members only' : ' — coming soon'
           const card = (
-            <Card className={unlocked ? 'h-full transition-colors hover:bg-accent' : 'opacity-70'}>
+            <Card
+              style={{ '--tone': `var(--${tone})` } as React.CSSProperties}
+              className={cn(
+                '[background:color-mix(in_srgb,var(--tone)_9%,var(--card))]',
+                unlocked
+                  ? 'h-full transition-colors hover:[background:color-mix(in_srgb,var(--tone)_16%,var(--card))]'
+                  : 'opacity-70',
+              )}
+            >
               <CardHeader>
-                <Icon className="size-5 text-matir" aria-hidden="true" />
+                <Icon className="size-5" style={{ color: `var(--${tone})` }} aria-hidden="true" />
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{`${desc}${suffix}`}</CardDescription>
               </CardHeader>
