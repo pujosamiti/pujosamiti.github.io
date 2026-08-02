@@ -44,7 +44,6 @@ createRoot(document.getElementById('root')!).render(
             <Route path="gallery" element={<Gallery />} />
             <Route path="notices" element={<Notices />} />
             <Route path="membersonly" element={<MembersOnly />} />
-            <Route path="more" element={<Navigate to="/membersonly" replace />} />
             <Route path="login" element={<Login />} />
             <Route path="admin" element={<Admin />} />
             <Route path="*" element={<Home />} />
