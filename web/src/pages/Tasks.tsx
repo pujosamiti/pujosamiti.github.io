@@ -1,7 +1,7 @@
 import type { MemberLite, TaskCheck, TaskPhase, TaskView } from '@pujosamiti/shared'
 import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
+import { ArrowDown, CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -99,9 +99,20 @@ export function Tasks() {
         (adding ? (
           <TaskForm year={year} people={people ?? []} categories={categories} onClose={() => setAdding(false)} />
         ) : (
-          <Button size="sm" className="self-start" onClick={() => setAdding(true)}>
-            <Plus /> Add task
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={() => setAdding(true)}>
+              <Plus /> Add task
+            </Button>
+            {skipped.length > 0 && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => document.getElementById('skipped-tasks')?.scrollIntoView({ behavior: 'smooth' })}
+              >
+                <ArrowDown /> Skipped tasks ({skipped.length})
+              </Button>
+            )}
+          </div>
         ))}
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
@@ -499,7 +510,7 @@ function SkippedList({ tasks, year }: { tasks: TaskView[]; year: number }) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
   })
   return (
-    <section className="flex flex-col gap-2">
+    <section id="skipped-tasks" className="flex flex-col gap-2 scroll-mt-4">
       <h2 className="font-serif text-lg font-bold text-muted-foreground">Skipped this year ({tasks.length})</h2>
       {tasks.map((t) => (
         <div key={t.id} className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 opacity-70">
