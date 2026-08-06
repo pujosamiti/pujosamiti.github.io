@@ -341,12 +341,20 @@ export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
  * levels stay free text so a year can coin new ones.
  */
 export const EXPENSE_TAXONOMY: Record<string, string[]> = {
-  Cultural: ['Badges', 'Baul + Dhol Baadak Fee', 'Rentals', 'Sound System', 'Stationery'],
+  Cultural: ['Badges', 'External Artists', 'Rentals', 'Sound System', 'Stationery'],
   Flowers: ['Flowers'],
-  Food: ['Bhog', 'Mishti Doi', 'Sandesh Prasad', 'Tea Coffee Snacks'],
+  Food: ['Bhog', 'Mishti Doi', 'Prasad Pack/Sandesh/Sweet', 'Tea Coffee Snacks'],
   Labour: ['Daily Fee', 'Fooding', 'Lodging'],
-  Murti: ['Pratima', 'Transport', 'Transport Labour', 'Karigar Tip', 'Bisarjan Ghat Tip'],
-  Pandal: ['Pandal', 'Kaash Phool', 'Fire Extinguisher', 'Plants'],
+  Murti: [
+    'Pratima',
+    'Transport',
+    'Transport Labour',
+    'Karigar Tip',
+    'Bisarjan Ghat Tip',
+    'Bisarjan Ghat Boat',
+    'Bisarjan Ghat Expenses',
+  ],
+  Pandal: ['Pandal', 'Decoration Items', 'Fire Extinguisher', 'Plants'],
   Procurement: [
     'Daily Perishables',
     'Dashakarma',
