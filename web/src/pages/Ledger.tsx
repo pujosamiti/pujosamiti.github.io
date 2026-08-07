@@ -1277,7 +1277,13 @@ function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boole
     onSuccess: invalidate,
   })
 
-  const shown = (claims ?? []).filter((cl) => filter === 'all' || cl.status === filter)
+  // Claims assigned to me float to the top — they're my queue to pay.
+  const shown = (claims ?? [])
+    .filter((cl) => filter === 'all' || cl.status === filter)
+    .sort((a, b) => {
+      const rank = (cl: ReimbursementClaim) => (cl.status === 'requested' && cl.assignedTo === myPersonId ? 0 : 1)
+      return rank(a) - rank(b)
+    })
 
   return (
     <div className="flex flex-col gap-3">
@@ -1330,6 +1336,11 @@ function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boole
                   </span>
                 </span>
                 <span className="font-semibold">{rupees(cl.amount)}</span>
+                {cl.status === 'requested' && cl.assignedTo && (
+                  <Badge variant={cl.assignedTo === myPersonId ? 'genda' : 'aparajita'}>
+                    {cl.assignedTo === myPersonId ? 'you pay' : `${cl.assignedToName} pays`}
+                  </Badge>
+                )}
                 <Badge variant={cl.status === 'settled' ? 'durba' : cl.status === 'requested' ? 'default' : 'outline'}>
                   {cl.status}
                 </Badge>
