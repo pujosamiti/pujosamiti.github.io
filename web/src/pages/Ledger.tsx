@@ -12,8 +12,8 @@ import type {
 } from '@pujosamiti/shared'
 import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ban, HandCoins, Loader2, Plus, Undo2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
@@ -21,6 +21,7 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Dialog, DialogActions, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
 import { useEvents, useMembersLite } from '@/lib/tasks'
@@ -29,10 +30,17 @@ const post = <T,>(path: string, body?: unknown) =>
   api<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) })
 
 const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`
+/** Entries harden 48 h after creation — edit/void disappear, admin included. */
+const entryLocked = (e: LedgerEntry) => Date.now() - e.createdAt > 48 * 60 * 60 * 1000
 const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
 const yearOf = (d: string) => d.slice(0, 4)
 
-const useSummary = () => useQuery({ queryKey: ['ledger-summary'], queryFn: () => api<LedgerSummary>('/api/members/ledger/summary') })
+const useSummary = (seasonYear?: number | null) =>
+  useQuery({
+    queryKey: ['ledger-summary', seasonYear ?? 'current'],
+    queryFn: () =>
+      api<LedgerSummary>(`/api/members/ledger/summary${seasonYear ? `?year=${seasonYear}` : ''}`),
+  })
 const useEntries = () => useQuery({ queryKey: ['ledger-entries'], queryFn: () => api<LedgerEntry[]>('/api/members/ledger/entries') })
 const useClaims = () => useQuery({ queryKey: ['ledger-claims'], queryFn: () => api<ReimbursementClaim[]>('/api/members/ledger/claims') })
 const useSponsorship = (year: number | null) =>
@@ -95,18 +103,39 @@ export const ReimbursementsPage = () => (
 // ── Overview ────────────────────────────────────────────────────────────────
 
 function OverviewTab() {
-  const { data: s, isPending } = useSummary()
+  const [seasonYear, setSeasonYear] = useState<number | null>(null)
+  const { data: s, isPending } = useSummary(seasonYear)
   if (isPending || !s) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+  const isCurrent = s.seasonYear === s.currentSeasonYear
+  const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)}`
   const stats: [string, string, string][] = [
-    ['Total in hand', rupees(s.totalBalance), 'genda'],
-    [`Carried forward (before ${s.seasonStart})`, rupees(s.carriedForward), 'sharat'],
+    [isCurrent ? 'Total in hand' : `Closing balance (30 Jun ${s.seasonYear + 1})`, rupees(s.totalBalance), 'genda'],
+    [`Carried forward (before 1 Jul ${s.seasonYear})`, rupees(s.carriedForward), 'sharat'],
     ['Collected this season', rupees(s.collectedSince), 'durba'],
     ['Spent this season', rupees(s.spentSince), 'destructive'],
-    ['Owed to members (pending claims)', rupees(s.outstandingClaims), 'palash'],
-    ['Disposable (in hand − owed)', rupees(s.totalBalance - s.outstandingClaims), 'matir'],
+    ...(isCurrent
+      ? ([
+          ['Owed to members (pending claims)', rupees(s.outstandingClaims), 'palash'],
+          ['Disposable (in hand − owed)', rupees(s.totalBalance - s.outstandingClaims), 'matir'],
+        ] as [string, string, string][])
+      : []),
   ]
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2 self-start">
+        <span className="text-sm text-muted-foreground">Season</span>
+        <SearchSelect
+          ariaLabel="Season"
+          align="left"
+          value={String(s.seasonYear)}
+          options={s.seasons.map((y) => ({
+            value: String(y),
+            label: `${seasonLabel(y)} (Jul ${y} – Jun ${y + 1})`,
+            hint: y === s.currentSeasonYear ? 'Current' : undefined,
+          }))}
+          onChange={(v) => setSeasonYear(Number(v) === s.currentSeasonYear ? null : Number(v))}
+        />
+      </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
         {stats.map(([label, value, tone]) => (
           <Card key={label} style={{ background: `color-mix(in srgb, var(--${tone}) 9%, var(--card))` }}>
@@ -120,7 +149,11 @@ function OverviewTab() {
       <Card>
         <CardHeader>
           <CardTitle className="text-base">Wallets</CardTitle>
-          <CardDescription>Whoever holds samiti money right now — nobody is designated.</CardDescription>
+          <CardDescription>
+            {isCurrent
+              ? 'Whoever holds samiti money right now — nobody is designated.'
+              : `Wallet activity and closing balances for the ${seasonLabel(s.seasonYear)} season.`}
+          </CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
           {s.wallets.length === 0 ? (
@@ -163,6 +196,7 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
   const { data: entries, isPending } = useEntries()
   const invalidate = useLedgerInvalidate()
   const [adding, setAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [book, setBook] = useState<string>('all')
   const [year, setYear] = useState<string>('all')
   const [kind, setKind] = useState<string>('all')
@@ -224,7 +258,10 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
         <p className="text-sm text-muted-foreground">No entries yet.</p>
       ) : (
         <div className="flex flex-col gap-2">
-          {shown.map((e) => (
+          {shown.map((e) =>
+            editingId === e.id ? (
+              <EntryForm key={e.id} initial={e} onClose={() => setEditingId(null)} />
+            ) : (
             <Card key={e.id} className={e.isActive ? '' : 'opacity-50'}>
               <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 text-sm">
                 <span className="w-24 shrink-0 text-xs text-muted-foreground">{e.entryDate}</span>
@@ -247,24 +284,121 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
                   {!e.isActive && <Badge variant="outline">voided</Badge>}
                 </span>
                 <span className="font-semibold">{rupees(e.amount)}</span>
-                {isAdmin && e.isActive && (
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    aria-label="Void entry"
-                    onClick={() => {
-                      if (confirm('Void this entry? Linked pledge/claim will reopen.')) voidEntry.mutate(e.id)
-                    }}
-                  >
-                    <Ban className="size-4" />
-                  </Button>
+                {isAdmin && e.isActive && !entryLocked(e) && (
+                  <span className="flex shrink-0">
+                    <Button size="icon" variant="ghost" aria-label="Edit entry" onClick={() => setEditingId(e.id)}>
+                      <Pencil className="size-4" />
+                    </Button>
+                    <VoidEntryButton entry={e} onVoid={() => voidEntry.mutate(e.id)} />
+                  </span>
                 )}
               </CardContent>
             </Card>
-          ))}
+            ),
+          )}
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * Two-step confirmation for the admin-only book rewrites (edit and void):
+ * a plain confirm first, then a type-the-phrase gate.
+ */
+function ConfirmTwice({
+  open,
+  title,
+  description,
+  phrase,
+  actionLabel,
+  actionIcon,
+  onCancel,
+  onConfirm,
+}: {
+  open: boolean
+  title: string
+  description: React.ReactNode
+  phrase: string
+  actionLabel: string
+  actionIcon?: React.ReactNode
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const [step, setStep] = useState<1 | 2>(1)
+  const [typed, setTyped] = useState('')
+  useEffect(() => {
+    if (open) {
+      setStep(1)
+      setTyped('')
+    }
+  }, [open])
+  return (
+    <>
+      <Dialog open={open && step === 1} onClose={onCancel}>
+        <DialogTitle>{title}</DialogTitle>
+        <DialogDescription>{description}</DialogDescription>
+        <DialogActions>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setStep(2)}>
+            Continue
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Dialog open={open && step === 2} onClose={onCancel}>
+        <DialogTitle>Type to confirm</DialogTitle>
+        <DialogDescription>
+          To continue, type <span className="font-semibold text-destructive">{phrase}</span> below.
+        </DialogDescription>
+        <input
+          className={inputCls}
+          value={typed}
+          onChange={(e) => setTyped(e.target.value)}
+          placeholder={phrase}
+          autoFocus
+        />
+        <DialogActions>
+          <Button variant="outline" size="sm" onClick={onCancel}>
+            Cancel
+          </Button>
+          <Button variant="destructive" size="sm" disabled={typed.trim() !== phrase} onClick={onConfirm}>
+            {actionIcon} {actionLabel}
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </>
+  )
+}
+
+function VoidEntryButton({ entry, onVoid }: { entry: LedgerEntry; onVoid: () => void }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <Button size="icon" variant="ghost" aria-label="Void entry" onClick={() => setOpen(true)}>
+        <Ban className="size-4" />
+      </Button>
+      <ConfirmTwice
+        open={open}
+        title="Are you sure to delete?"
+        description={
+          <>
+            {entry.entryDate} · {entry.kind} · {rupees(entry.amount)} — the entry will be voided (struck off, kept
+            in the book), and any linked pledge or claim will reopen.
+          </>
+        }
+        phrase="Please soft delete this record"
+        actionLabel="Void entry"
+        actionIcon={<Ban />}
+        onCancel={() => setOpen(false)}
+        onConfirm={() => {
+          onVoid()
+          setOpen(false)
+        }}
+      />
+    </>
   )
 }
 
@@ -341,26 +475,44 @@ function CategoryFields({
   )
 }
 
-function EntryForm({ onClose }: { onClose: () => void }) {
+function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () => void }) {
   const invalidate = useLedgerInvalidate()
-  const [kind, setKind] = useState<LedgerKind>('contribution')
-  const [bookId, setBookId] = useState<BookId>('pujo-ledger')
-  const [entryDate, setEntryDate] = useState(todayIST())
-  const [category, setCategory] = useState('subscription')
-  const [subCategory, setSubCategory] = useState('')
-  const [amount, setAmount] = useState('')
-  const [personId, setPersonId] = useState<string | null>(null)
-  const [counterparty, setCounterparty] = useState('')
-  const [walletId, setWalletId] = useState<string | null>(null)
-  const [toWalletId, setToWalletId] = useState<string | null>(null)
-  const [notes, setNotes] = useState('')
+  const editing = !!initial
+  const [kind, setKind] = useState<LedgerKind>(initial?.kind ?? 'contribution')
+  const [bookId, setBookId] = useState<BookId>((initial?.bookId as BookId) ?? 'pujo-ledger')
+  const [entryDate, setEntryDate] = useState(initial?.entryDate ?? todayIST())
+  const [category, setCategory] = useState(initial?.category ?? 'subscription')
+  const [subCategory, setSubCategory] = useState(initial?.subCategory ?? '')
+  const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
+  const [personId, setPersonId] = useState<string | null>(initial?.personId ?? null)
+  const [counterparty, setCounterparty] = useState(initial?.counterparty ?? '')
+  const [walletId, setWalletId] = useState<string | null>(initial?.walletPersonId ?? null)
+  const [toWalletId, setToWalletId] = useState<string | null>(initial?.toWalletPersonId ?? null)
+  const [notes, setNotes] = useState(initial?.notes ?? '')
+  const [confirming, setConfirming] = useState(false)
 
   const save = useMutation({
-    mutationFn: (body: LedgerEntryInput) => post('/api/members/ledger/entries', body),
+    mutationFn: (body: LedgerEntryInput) =>
+      post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body),
     onSuccess: () => {
       invalidate()
       onClose()
     },
+  })
+
+  const buildBody = (): LedgerEntryInput => ({
+    bookId,
+    eventId: null,
+    entryDate,
+    kind,
+    category: kind === 'transfer' ? null : category,
+    subCategory: kind === 'transfer' ? null : subCategory || null,
+    amount: Number(amount),
+    personId,
+    counterparty: counterparty || null,
+    walletPersonId: walletId!,
+    toWalletPersonId: toWalletId,
+    notes: notes || null,
   })
 
   const switchKind = (k: LedgerKind) => {
@@ -372,12 +524,17 @@ function EntryForm({ onClose }: { onClose: () => void }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">New ledger entry</CardTitle>
+        <CardTitle className="text-base">{editing ? `Edit ledger entry · ${initial.entryDate}` : 'New ledger entry'}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Kind">
-            <select className={inputCls} value={kind} onChange={(e) => switchKind(e.target.value as LedgerKind)}>
+            <select
+              className={inputCls}
+              value={kind}
+              disabled={editing}
+              onChange={(e) => switchKind(e.target.value as LedgerKind)}
+            >
               <option value="contribution">Contribution (money in)</option>
               <option value="expense">Expense (money out)</option>
               <option value="transfer">Transfer between wallets</option>
@@ -438,29 +595,34 @@ function EntryForm({ onClose }: { onClose: () => void }) {
           <Button
             size="sm"
             disabled={save.isPending || !amount || !walletId}
-            onClick={() =>
-              save.mutate({
-                bookId,
-                eventId: null,
-                entryDate,
-                kind,
-                category: kind === 'transfer' ? null : category,
-                subCategory: kind === 'transfer' ? null : subCategory || null,
-                amount: Number(amount),
-                personId,
-                counterparty: counterparty || null,
-                walletPersonId: walletId!,
-                toWalletPersonId: toWalletId,
-                notes: notes || null,
-              })
-            }
+            onClick={() => (editing ? setConfirming(true) : save.mutate(buildBody()))}
           >
-            {save.isPending && <Loader2 className="animate-spin" />} Save entry
+            {save.isPending && <Loader2 className="animate-spin" />} {editing ? 'Save changes' : 'Save entry'}
           </Button>
           <Button size="sm" variant="outline" onClick={onClose}>
             Cancel
           </Button>
         </div>
+        {editing && (
+          <ConfirmTwice
+            open={confirming}
+            title="Are you sure to update?"
+            description={
+              <>
+                {initial.entryDate} · {initial.kind} · {rupees(initial.amount)} — the entry will be rewritten in
+                place. The book keeps no trace of the old values.
+              </>
+            }
+            phrase="Please update this record"
+            actionLabel="Update entry"
+            actionIcon={<Pencil />}
+            onCancel={() => setConfirming(false)}
+            onConfirm={() => {
+              setConfirming(false)
+              save.mutate(buildBody())
+            }}
+          />
+        )}
       </CardContent>
     </Card>
   )

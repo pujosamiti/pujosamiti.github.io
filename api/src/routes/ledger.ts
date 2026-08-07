@@ -79,9 +79,14 @@ ledgerRoutes.get('/entries', async (c) => {
       notes: e.notes,
       isActive: e.isActive,
       createdByName: names.get(e.createdBy) ?? '?',
+      createdAt: e.createdAt.getTime(),
     }))
   return c.json(ok(out))
 })
+
+/** Entries harden 48 hours after creation — no edit or void afterwards, admin included. */
+const EDIT_WINDOW_MS = 48 * 60 * 60 * 1000
+const isLocked = (createdAt: Date) => Date.now() - createdAt.getTime() > EDIT_WINDOW_MS
 
 function validateEntry(body: LedgerEntryInput): string | null {
   if (!['pujo-ledger', 'poila-baishakh-ledger'].includes(body.bookId)) return 'unknown book'
@@ -130,11 +135,50 @@ ledgerRoutes.post('/entries', async (c) => {
   return c.json(ok({ id }))
 })
 
+/** Rewrite an entry in place (admin). Kind is immutable — void and re-add instead. */
+ledgerRoutes.post('/entries/:id/update', async (c) => {
+  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  const id = c.req.param('id')
+  const body = await c.req.json<LedgerEntryInput>()
+  const db = drizzle(c.env.DB, { schema })
+  const [existing] = await db.select().from(schema.ledgerEntry).where(eq(schema.ledgerEntry.id, id))
+  if (!existing) return c.json({ ok: false, error: 'entry not found' }, 404)
+  if (!existing.isActive) return c.json({ ok: false, error: 'cannot edit a voided entry' }, 400)
+  if (isLocked(existing.createdAt))
+    return c.json({ ok: false, error: 'entry is locked — records can only be edited within 48 hours of creation' }, 400)
+  if (body.kind !== existing.kind)
+    return c.json({ ok: false, error: 'kind cannot be changed — void the entry and add a new one' }, 400)
+  const err = validateEntry(body)
+  if (err) return c.json({ ok: false, error: err }, 400)
+  const transfer = body.kind === 'transfer'
+  await db
+    .update(schema.ledgerEntry)
+    .set({
+      bookId: body.bookId,
+      eventId: body.eventId || null,
+      entryDate: body.entryDate,
+      category: transfer ? null : body.category,
+      subCategory: transfer ? null : body.subCategory?.trim() || null,
+      amount: body.amount,
+      personId: transfer ? null : body.personId || null,
+      counterparty: transfer ? null : body.counterparty?.trim() || null,
+      walletPersonId: body.walletPersonId,
+      toWalletPersonId: transfer ? body.toWalletPersonId : null,
+      notes: body.notes?.trim() || null,
+    })
+    .where(eq(schema.ledgerEntry.id, id))
+  return c.json(ok({ id }))
+})
+
 /** Void an entry (admin). Reverts any pledge/claim that pointed at it. */
 ledgerRoutes.post('/entries/:id/void', async (c) => {
   if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
   const id = c.req.param('id')
   const db = drizzle(c.env.DB, { schema })
+  const [existing] = await db.select().from(schema.ledgerEntry).where(eq(schema.ledgerEntry.id, id))
+  if (!existing) return c.json({ ok: false, error: 'entry not found' }, 404)
+  if (isLocked(existing.createdAt))
+    return c.json({ ok: false, error: 'entry is locked — records can only be voided within 48 hours of creation' }, 400)
   await db.update(schema.ledgerEntry).set({ isActive: false }).where(eq(schema.ledgerEntry.id, id))
   await db
     .update(schema.sponsorshipPledge)
@@ -151,12 +195,22 @@ ledgerRoutes.post('/entries/:id/void', async (c) => {
 
 ledgerRoutes.get('/summary', async (c) => {
   const db = drizzle(c.env.DB, { schema })
-  const entries = (await db.select().from(schema.ledgerEntry)).filter((e) => e.isActive)
+  const allEntries = (await db.select().from(schema.ledgerEntry)).filter((e) => e.isActive)
   const names = await peopleMap(db)
 
   const today = todayIST()
   const y = Number(today.slice(0, 4))
-  const seasonStart = today >= `${y}-07-01` ? `${y}-07-01` : `${y - 1}-07-01`
+  const currentSeasonYear = today >= `${y}-07-01` ? y : y - 1
+
+  // seasons present in the ledger (a season runs 1 July → 30 June)
+  const seasonOf = (d: string) => (d >= `${d.slice(0, 4)}-07-01` ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1)
+  const seasons = [...new Set([...allEntries.map((e) => seasonOf(e.entryDate)), currentSeasonYear])].sort((a, b) => b - a)
+
+  const requested = Number(c.req.query('year'))
+  const seasonYear = seasons.includes(requested) ? requested : currentSeasonYear
+  const seasonStart = `${seasonYear}-07-01`
+  const seasonEnd = `${seasonYear + 1}-07-01` // exclusive
+  const entries = allEntries.filter((e) => e.entryDate < seasonEnd)
 
   const wallets = new Map<string, WalletBalance>()
   const w = (pid: string): WalletBalance => {
@@ -221,6 +275,10 @@ ledgerRoutes.get('/summary', async (c) => {
 
   const summary: LedgerSummary = {
     seasonStart,
+    seasonEnd,
+    seasonYear,
+    currentSeasonYear,
+    seasons,
     totalBalance: carriedForward + collectedSince - spentSince,
     carriedForward,
     collectedSince,

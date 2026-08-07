@@ -332,7 +332,7 @@ export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
   subscription: ['core', 'non-core'],
   sponsorship: [], // auto-filled from the pledged item's catalog category
   donation: ['small box', 'large box', 'others'],
-  misc_income: [],
+  misc_income: ['Anandamela', 'Cultural Participation Contri', 'Food Coupons', 'Guest Bhog', 'Refund'],
 };
 
 /**
@@ -367,6 +367,7 @@ export const EXPENSE_TAXONOMY: Record<string, string[]> = {
   Purohit: ['Fee', 'Dhaki Fee', 'Dhaki Tip', 'Transport', 'Sankalpa'],
   'Lakshmi Pujo': ['Samagri'],
   'Saraswati Pujo': [],
+  'Bijoy Sammelani': [],
   Misc: [],
 };
 
@@ -389,6 +390,8 @@ export interface LedgerEntry {
   notes: string | null;
   isActive: boolean;
   createdByName: string;
+  /** epoch ms; edit/void lock 48 h after this, admin included */
+  createdAt: number;
 }
 
 export interface LedgerEntryInput {
@@ -484,6 +487,13 @@ export interface WalletBalance {
 export interface LedgerSummary {
   /** snapshot season boundary, e.g. "2026-07-01" */
   seasonStart: string;
+  /** exclusive end of the season window, e.g. "2027-07-01" */
+  seasonEnd: string;
+  /** season-start year this summary covers (season = 1 July → 30 June) */
+  seasonYear: number;
+  currentSeasonYear: number;
+  /** season-start years that have ledger entries (newest first) */
+  seasons: number[];
   totalBalance: number;
   carriedForward: number;
   collectedSince: number;
