@@ -7,8 +7,6 @@ import { cn } from '@/lib/utils'
 const desktopNav = [
   { to: '/', label: 'Home', end: true },
   { to: '/schedule', label: 'Schedule', end: false },
-  { to: '/gallery', label: 'Gallery', end: false },
-  { to: '/notices', label: 'Notices', end: false },
   { to: '/membersonly', label: 'Members Only', end: false },
 ]
 

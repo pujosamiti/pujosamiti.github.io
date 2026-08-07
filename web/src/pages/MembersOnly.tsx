@@ -104,7 +104,7 @@ export function MembersOnly() {
           <CardHeader>
             <CardTitle>Core Members</CardTitle>
             <CardDescription>
-              Sign in to see budgets, accounts, procurement and paperwork. Access is limited to
+              Sign in to see the ledger, budgets, sponsorship and task planning. Access is limited to
               samiti members.
             </CardDescription>
             <Button className="mt-2 self-start" asChild>

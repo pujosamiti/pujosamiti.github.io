@@ -2,7 +2,7 @@
 // Change a response shape here and both sides get compile errors instead of runtime surprises.
 
 // ── Events ──────────────────────────────────────────────────────────────────
-// Events are first-class: every notice, timetable row and gallery item is tagged
+// Events are first-class: timetable rows, ledger entries and claims are tagged
 // with an event id like "durga-pujo-2026". Adding Poila Baishakh next year is a
 // data change, not a code change.
 
@@ -36,16 +36,6 @@ export interface PujoEvent {
 
 // ── Public content ──────────────────────────────────────────────────────────
 
-export interface Notice {
-  id: string;
-  eventId: EventId | null; // null = samiti-wide notice
-  title: string;
-  /** Markdown body (sourced from a Drive .md file or D1) */
-  body: string;
-  pinned: boolean;
-  publishedAt: string; // ISO datetime
-}
-
 /** One nirghanto row: a ritual within a tithi day (Durga Pujo only). */
 export interface TimeTableEntry {
   id: string;
@@ -73,21 +63,6 @@ export interface AdminTimetableInput {
   comments: string | null;
   sortOrder: number;
 }
-
-export type GalleryKind = 'photo' | 'video';
-
-export interface GalleryItem {
-  id: string;
-  eventId: EventId | null;
-  kind: GalleryKind;
-  /** photo: Drive file id · video: YouTube video id (unlisted) */
-  ref: string;
-  caption: string | null;
-  sortOrder: number;
-}
-
-/** Public gallery is capped at 24 items; the API enforces it. */
-export const GALLERY_MAX_ITEMS = 24;
 
 export type PostType = 'blog' | 'magazine';
 

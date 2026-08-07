@@ -376,7 +376,7 @@ adminRoutes.delete('/events/:id', async (c) => {
     await db.delete(schema.event).where(eq(schema.event.id, id))
   } catch {
     return c.json(
-      { ok: false, error: 'this event is referenced by notices/timetable/gallery or other records — remove those first' },
+      { ok: false, error: 'this event is referenced by the timetable, ledger or other records — remove those first' },
       409,
     )
   }

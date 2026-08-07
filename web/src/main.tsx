@@ -5,7 +5,6 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
 import { Events } from '@/pages/Events'
-import { Gallery } from '@/pages/Gallery'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
@@ -13,7 +12,6 @@ import { Membership } from '@/pages/Membership'
 import { BrandColours } from '@/pages/BrandColours'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
-import { Notices } from '@/pages/Notices'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
@@ -46,8 +44,6 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="schedule" element={<Schedule />} />
-            <Route path="gallery" element={<Gallery />} />
-            <Route path="notices" element={<Notices />} />
             <Route path="membersonly" element={<MembersOnly />} />
             <Route path="login" element={<Login />} />
             <Route path="profile" element={<Profile />} />

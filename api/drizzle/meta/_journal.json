@@ -5,29 +5,8 @@
     {
       "idx": 0,
       "version": "6",
-      "when": 1785654748348,
+      "when": 1786120757310,
       "tag": "0000_init",
-      "breakpoints": true
-    },
-    {
-      "idx": 1,
-      "version": "6",
-      "when": 1785688843700,
-      "tag": "0001_ledger",
-      "breakpoints": true
-    },
-    {
-      "idx": 2,
-      "version": "6",
-      "when": 1786110039198,
-      "tag": "0002_drop-budget-placeholder",
-      "breakpoints": true
-    },
-    {
-      "idx": 3,
-      "version": "6",
-      "when": 1786110039534,
-      "tag": "0003_budget",
       "breakpoints": true
     }
   ]

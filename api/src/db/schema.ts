@@ -1,7 +1,7 @@
 import { integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Auth (better-auth managed tables)
+// 1 · Auth (better-auth managed tables)
 // Standard better-auth shapes. If a better-auth upgrade changes them, regenerate
 // with `npx @better-auth/cli generate` and diff against this file.
 // ─────────────────────────────────────────────────────────────────────────────
@@ -57,7 +57,49 @@ export const verification = sqliteTable('verification', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Membership
+// 2 · Events & timetable
+// Events are first-class: timetable rows, ledger entries and reimbursement
+// claims tag one. The samiti year runs Poila Baishakh (April) → Saraswati
+// Pujo (next Jan/Feb); seed.sql carries the 2020–2035 calendar.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const event = sqliteTable('event', {
+  id: text('id').primaryKey(), // "durga-pujo-2026"
+  kind: text('kind').notNull(), // EVENT_KINDS in shared
+  year: integer('year').notNull(),
+  nameBn: text('name_bn').notNull(),
+  nameEn: text('name_en').notNull(),
+  startsOn: text('starts_on').notNull(), // ISO date
+  endsOn: text('ends_on').notNull(),
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
+  purohitName: text('purohit_name'), // nirghanto header (durga pujo)
+  purohitPhone: text('purohit_phone'),
+})
+
+/**
+ * Nirghanto rows (Durga Pujo only — one-day events publish no timetable).
+ * Grouped by day (tithi label + date), each row is a bilingual ritual with
+ * from/to times and panchang comments — mirroring the samiti's yearly
+ * nirghanto document.
+ */
+export const timetableEntry = sqliteTable('timetable_entry', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id),
+  dayDate: text('day_date').notNull(), // ISO date
+  dayLabelBn: text('day_label_bn').notNull(), // "মহা ষষ্ঠী"
+  dayLabelEn: text('day_label_en').notNull(), // "Maha Shashthi"
+  titleBn: text('title_bn').notNull(), // "ষষ্ঠী পূজা"
+  titleEn: text('title_en').notNull(),
+  timeFrom: text('time_from'), // "08:30" (24h); NULL until the purohit confirms
+  timeTo: text('time_to'),
+  comments: text('comments'), // "Shashthi ends at 10:43 AM"
+  sortOrder: integer('sort_order').notNull().default(0),
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 3 · Membership
 // Per person: each individual carries their own tier (promoted by an admin,
 // core typically after the Durga Pujo subscription), eligibility and location.
 // `family` is a thin optional grouping admins curate — it gates nothing.
@@ -99,7 +141,7 @@ export const person = sqliteTable('person', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Task distribution (the Core Members feature)
+// 4 · Task distribution (the Puja Planning feature)
 // `durgapuja_task` is the year-independent master catalog (curated over time,
 // seeded from the samiti's 2020–2025 archives — see seed-tasks.sql).
 // `task_year` carries one row per task per year: phase, the three checkdates
@@ -151,90 +193,13 @@ export const taskAssignment = sqliteTable('task_assignment', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Events & public content
-// Events are first-class: notices, timetable rows and gallery items tag one.
-// The samiti year runs Poila Baishakh (April) → Saraswati Pujo (next Jan/Feb);
-// seed.sql carries the 2020–2035 calendar.
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const event = sqliteTable('event', {
-  id: text('id').primaryKey(), // "durga-pujo-2026"
-  kind: text('kind').notNull(), // EVENT_KINDS in shared
-  year: integer('year').notNull(),
-  nameBn: text('name_bn').notNull(),
-  nameEn: text('name_en').notNull(),
-  startsOn: text('starts_on').notNull(), // ISO date
-  endsOn: text('ends_on').notNull(),
-  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
-  purohitName: text('purohit_name'), // nirghanto header (durga pujo)
-  purohitPhone: text('purohit_phone'),
-})
-
-export const notice = sqliteTable('notice', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id').references(() => event.id), // NULL = samiti-wide
-  title: text('title').notNull(),
-  body: text('body').notNull(), // markdown
-  pinned: integer('pinned', { mode: 'boolean' }).notNull().default(false),
-  publishedAt: integer('published_at', { mode: 'timestamp' }).notNull(),
-})
-
-/**
- * Nirghanto rows (Durga Pujo only — one-day events publish no timetable).
- * Grouped by day (tithi label + date), each row is a bilingual ritual with
- * from/to times and panchang comments — mirroring the samiti's yearly
- * nirghanto document.
- */
-export const timetableEntry = sqliteTable('timetable_entry', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id')
-    .notNull()
-    .references(() => event.id),
-  dayDate: text('day_date').notNull(), // ISO date
-  dayLabelBn: text('day_label_bn').notNull(), // "মহা ষষ্ঠী"
-  dayLabelEn: text('day_label_en').notNull(), // "Maha Shashthi"
-  titleBn: text('title_bn').notNull(), // "ষষ্ঠী পূজা"
-  titleEn: text('title_en').notNull(),
-  timeFrom: text('time_from'), // "08:30" (24h); NULL until the purohit confirms
-  timeTo: text('time_to'),
-  comments: text('comments'), // "Shashthi ends at 10:43 AM"
-  sortOrder: integer('sort_order').notNull().default(0),
-})
-
-export const galleryItem = sqliteTable('gallery_item', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id').references(() => event.id),
-  kind: text('kind', { enum: ['photo', 'video'] }).notNull(),
-  ref: text('ref').notNull(), // Drive file id or YouTube video id
-  caption: text('caption'),
-  sortOrder: integer('sort_order').notNull().default(0),
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Event operations
-// ─────────────────────────────────────────────────────────────────────────────
-
-export const procurementItem = sqliteTable('procurement_item', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id')
-    .notNull()
-    .references(() => event.id),
-  item: text('item').notNull(),
-  quantity: text('quantity'),
-  status: text('status', { enum: ['needed', 'ordered', 'received'] })
-    .notNull()
-    .default('needed'),
-  assignee: text('assignee'),
-  notes: text('notes'),
-})
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Ledger & sponsorship
+// 5 · Money: ledger, sponsorship, reimbursements, budget
 // ONE money table (ledger_entry) + two PERPETUAL books. Sponsorship mirrors
 // the task catalog (item → item_year → pledge); pledges and reimbursement
 // claims move no money until paid/settled — then they link the ledger entry.
 // Wallets are emergent: anyone named as wallet_person_id holds samiti money.
-// Date columns are IST date strings "YYYY-MM-DD"; report year = substr(1,4).
+// Date columns are IST date strings "YYYY-MM-DD"; the reporting season runs
+// 1 July → 30 June. Entries harden 48 h after creation (no edit/void).
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const book = sqliteTable('book', {
@@ -341,7 +306,6 @@ export const expenseReimbursement = sqliteTable('expense_reimbursement', {
   notes: text('notes'), // reviewer remarks (esp. on reject)
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
-
 
 /**
  * Season expense budget, one line per (year, category, sub_category).

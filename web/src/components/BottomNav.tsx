@@ -1,4 +1,4 @@
-import { CalendarDays, Home, Image, Bell, Users } from 'lucide-react'
+import { CalendarDays, Home, Users } from 'lucide-react'
 import { NavLink } from 'react-router'
 
 import { cn } from '@/lib/utils'
@@ -6,8 +6,6 @@ import { cn } from '@/lib/utils'
 const items = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/schedule', label: 'Schedule', icon: CalendarDays, end: false },
-  { to: '/gallery', label: 'Gallery', icon: Image, end: false },
-  { to: '/notices', label: 'Notices', icon: Bell, end: false },
   { to: '/membersonly', label: 'Members', icon: Users, end: false },
 ]
 

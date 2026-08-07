@@ -177,7 +177,7 @@ export function Login() {
         <CardHeader>
           <CardTitle>Member sign in</CardTitle>
           <CardDescription>
-            Budgets, accounts, procurement and paperwork — for samiti families. Signing in only
+            The ledger, wallets, sponsorship and task planning — for samiti families. Signing in only
             shares your name and email with the samiti.
           </CardDescription>
         </CardHeader>
