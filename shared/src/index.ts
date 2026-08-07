@@ -290,16 +290,6 @@ export interface AccountsSummary {
   updatedAt: string;
 }
 
-export interface BudgetLine {
-  id: string;
-  eventId: EventId;
-  category: string;
-  item: string;
-  budgeted: number;
-  actual: number | null;
-  notes: string | null;
-}
-
 // ── API envelope ────────────────────────────────────────────────────────────
 
 export type ApiResult<T> = { ok: true; data: T } | { ok: false; error: string };
