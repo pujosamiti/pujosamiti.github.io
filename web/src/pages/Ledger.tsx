@@ -1288,16 +1288,19 @@ function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boole
           </Button>
         )}
         <div className="flex flex-wrap gap-1">
-          {CLAIM_FILTERS.map((f) => (
-            <button
-              key={f}
-              type="button"
-              onClick={() => setFilter(f)}
-              className={`rounded-full px-3 py-1 text-xs font-medium ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
-            >
-              {f}
-            </button>
-          ))}
+          {CLAIM_FILTERS.map((f) => {
+            const n = f === 'all' ? (claims ?? []).length : (claims ?? []).filter((cl) => cl.status === f).length
+            return (
+              <button
+                key={f}
+                type="button"
+                onClick={() => setFilter(f)}
+                className={`rounded-full px-3 py-1 text-xs font-medium ${filter === f ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}
+              >
+                {f} {n > 0 && <span className={filter === f ? 'opacity-80' : 'opacity-60'}>· {n}</span>}
+              </button>
+            )
+          })}
         </div>
       </div>
       {act.isError && <p className="text-sm text-destructive">{(act.error as Error).message}</p>}
