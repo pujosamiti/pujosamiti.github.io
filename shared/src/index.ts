@@ -341,7 +341,7 @@ export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
  * levels stay free text so a year can coin new ones.
  */
 export const EXPENSE_TAXONOMY: Record<string, string[]> = {
-  Cultural: ['Badges', 'External Artists', 'Rentals', 'Sound System', 'Stationery'],
+  Cultural: ['Badges', 'External Artists', 'Games Props/Artifacts', 'Prize/Awards', 'Rentals', 'Sound System', 'Stationery'],
   Flowers: ['Flowers'],
   Food: ['Bhog', 'Mishti Doi', 'Prasad Pack/Sandesh/Sweet', 'Tea Coffee Snacks'],
   Labour: ['Daily Fee', 'Fooding', 'Lodging'],
@@ -365,8 +365,8 @@ export const EXPENSE_TAXONOMY: Record<string, string[]> = {
     'Govt. Fees',
   ],
   Purohit: ['Fee', 'Dhaki Fee', 'Dhaki Tip', 'Transport', 'Sankalpa'],
-  'Lakshmi Pujo': ['Samagri'],
-  'Saraswati Pujo': [],
+  'Lakshmi Pujo': ['Bhog', 'Samagri', 'Purohit', 'Flowers'],
+  'Saraswati Pujo': ['Bhog', 'Samagri', 'Purohit', 'Flowers', 'Murti', 'Decoration', 'Labour'],
   'Bijoy Sammelani': [],
   Misc: [],
 };
@@ -472,6 +472,25 @@ export interface ReimbursementClaimInput {
   details: string | null;
 }
 
+export interface BudgetLine {
+  id: string;
+  /** season-start year (season = 1 July → 30 June) */
+  year: number;
+  category: string;
+  /** null = whole-category "General" line */
+  subCategory: string | null;
+  amount: number;
+  notes: string | null;
+}
+
+export interface BudgetLineInput {
+  year: number;
+  category: string;
+  subCategory: string | null;
+  amount: number;
+  notes?: string | null;
+}
+
 export interface WalletBalance {
   personId: string;
   personName: string;
@@ -497,6 +516,8 @@ export interface LedgerSummary {
   totalBalance: number;
   carriedForward: number;
   collectedSince: number;
+  /** portion of collectedSince that is sponsorship money */
+  collectedSponsorship: number;
   spentSince: number;
   outstandingClaims: number; // Σ requested reimbursements (liability)
   wallets: WalletBalance[];

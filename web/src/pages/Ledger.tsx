@@ -1,5 +1,7 @@
 import type {
   BookId,
+  BudgetLine,
+  BudgetLineInput,
   ClaimStatus,
   LedgerEntry,
   LedgerEntryInput,
@@ -92,26 +94,381 @@ function CorePage({ title, children }: { title: string; children: (me: Me) => Re
 }
 
 export const LedgerPage = () => <CorePage title="Ledger">{(me) => <EntriesTab isAdmin={me.role === 'admin'} />}</CorePage>
-export const WalletsPage = () => <CorePage title="Wallets">{() => <OverviewTab />}</CorePage>
+export const WalletsPage = () => (
+  <CorePage title="Wallets">{(me) => <OverviewTab isAdmin={me.role === 'admin'} />}</CorePage>
+)
 export const SponsorshipPage = () => (
   <CorePage title="Sponsorship">{(me) => <SponsorshipTab isAdmin={me.role === 'admin'} />}</CorePage>
 )
 export const ReimbursementsPage = () => (
   <CorePage title="Reimbursements">{(me) => <ClaimsTab myPersonId={me.personId!} isAdmin={me.role === 'admin'} />}</CorePage>
 )
+// ── Season spending (budget vs actuals, shown on the Wallets page) ──────────
+
+/** Season (1 July → 30 June) an IST date belongs to — mirrors the API's rule. */
+const seasonOf = (d: string) => (d >= `${d.slice(0, 4)}-07-01` ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1)
+
+const useBudget = (year: number | null) =>
+  useQuery({
+    queryKey: ['budget', year],
+    queryFn: () => api<BudgetLine[]>(`/api/members/ledger/budget?year=${year}`),
+    enabled: !!year,
+  })
+
+/**
+ * Category/sub-category spending for a season, merged with the budget where
+ * one exists. Budgets start from season 2026: past seasons render as a plain
+ * expense report (no budget columns), current seasons as budget-vs-actual.
+ */
+function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }) {
+  const { data: events } = useEvents()
+  const activeYear =
+    (events ?? []).filter((e) => e.kind === 'durga-pujo').find((e) => e.isActive)?.year ?? new Date().getFullYear()
+  const readOnly = y !== activeYear
+  const { data: lines, isPending } = useBudget(y)
+  const { data: entries } = useEntries()
+  const qc = useQueryClient()
+  const invalidate = () => void qc.invalidateQueries({ queryKey: ['budget'] })
+
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [draft, setDraft] = useState('')
+  const [addingCat, setAddingCat] = useState<string | null>(null)
+  const [newSub, setNewSub] = useState('')
+  const [newAmount, setNewAmount] = useState('')
+
+  const upsert = useMutation({
+    mutationFn: (body: BudgetLineInput) => post('/api/members/ledger/budget', body),
+    onSuccess: () => {
+      invalidate()
+      setEditingId(null)
+      setAddingCat(null)
+      setNewSub('')
+      setNewAmount('')
+    },
+  })
+  const remove = useMutation({
+    mutationFn: (id: string) => post(`/api/members/ledger/budget/${id}/delete`),
+    onSuccess: invalidate,
+  })
+  const seed = useMutation({
+    mutationFn: (body: { year: number; lines: BudgetLineInput[] }) => post('/api/members/ledger/budget/bulk', body),
+    onSuccess: invalidate,
+  })
+
+  if (isPending || !lines || !entries)
+    return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+
+  // actuals (totals + entry counts) for the selected and previous seasons
+  const actualsFor = (season: number) => {
+    const cat = new Map<string, number>()
+    const sub = new Map<string, { total: number; n: number }>()
+    for (const e of entries) {
+      if (!e.isActive || e.kind !== 'expense' || seasonOf(e.entryDate) !== season) continue
+      const c = e.category ?? 'Misc'
+      cat.set(c, (cat.get(c) ?? 0) + e.amount)
+      const k = `${c}|${e.subCategory ?? 'Misc'}`
+      const s = sub.get(k) ?? { total: 0, n: 0 }
+      s.total += e.amount
+      s.n += 1
+      sub.set(k, s)
+    }
+    return { cat, sub }
+  }
+  const now = actualsFor(y)
+  const prev = actualsFor(y - 1)
+  const totalSpent = [...now.cat.values()].reduce((s, v) => s + v, 0)
+  const hasBudget = lines.length > 0
+
+  const byCat = new Map<string, BudgetLine[]>()
+  for (const l of lines) {
+    if (!byCat.has(l.category)) byCat.set(l.category, [])
+    byCat.get(l.category)!.push(l)
+  }
+  const totalBudget = lines.reduce((s, l) => s + l.amount, 0)
+  const pct = totalBudget ? Math.round((totalSpent / totalBudget) * 100) : 0
+
+  const lineActual = (l: BudgetLine) => {
+    if (l.subCategory) return now.sub.get(`${l.category}|${l.subCategory}`)?.total ?? 0
+    // General line: category spend not claimed by budgeted sub lines
+    const claimed = byCat
+      .get(l.category)!
+      .filter((x) => x.subCategory)
+      .reduce((s, x) => s + (now.sub.get(`${l.category}|${x.subCategory}`)?.total ?? 0), 0)
+    return Math.max(0, (now.cat.get(l.category) ?? 0) - claimed)
+  }
+  const linePrev = (l: BudgetLine) =>
+    l.subCategory ? (prev.sub.get(`${l.category}|${l.subCategory}`)?.total ?? 0) : (prev.cat.get(l.category) ?? 0)
+
+  const seedFromLastSeason = () => {
+    const seedLines: BudgetLineInput[] = []
+    for (const [k, v] of prev.sub.entries()) {
+      const [category, sub] = k.split('|')
+      seedLines.push({ year: y, category, subCategory: sub === 'Misc' ? null : sub, amount: v.total })
+    }
+    if (seedLines.length) seed.mutate({ year: y, lines: seedLines })
+  }
+
+  const budgetCats = [...byCat.entries()]
+    .map(([c, ls]) => ({ category: c, lines: ls, budget: ls.reduce((s, l) => s + l.amount, 0), actual: now.cat.get(c) ?? 0 }))
+    .sort((a, b) => b.budget - a.budget)
+  const unbudgeted = [...now.cat.entries()].filter(([c]) => !byCat.has(c)).sort((a, b) => b[1] - a[1])
+  const reportCats = [...now.cat.entries()].sort((a, b) => b[1] - a[1])
+
+  if (totalSpent === 0 && !hasBudget && (readOnly || !isAdmin))
+    return null
+
+  return (
+    <div className="mt-2 flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="text-lg font-bold">{hasBudget ? 'Budget vs spend' : 'Spend by category'}</h2>
+        <span className="text-sm text-muted-foreground">
+          {hasBudget
+            ? `Budget ${rupees(totalBudget)} · spent ${rupees(totalSpent)} · ${pct}% used`
+            : `Total spent: ${rupees(totalSpent)}`}
+        </span>
+      </div>
+
+      {!hasBudget && isAdmin && !readOnly && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">No budget yet for {y}–{String(y + 1).slice(2)}</CardTitle>
+            <CardDescription>
+              Add lines per category below once spending starts, or seed one line per category/sub-category from last
+              season's actual spend and adjust.
+            </CardDescription>
+            <Button size="sm" className="mt-2 self-start" disabled={seed.isPending} onClick={seedFromLastSeason}>
+              {seed.isPending && <Loader2 className="animate-spin" />} Seed from last season's actuals
+            </Button>
+          </CardHeader>
+        </Card>
+      )}
+
+      {hasBudget
+        ? budgetCats.map(({ category, lines: ls, budget, actual }) => (
+            <Card key={category}>
+              <CardHeader className="pb-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <CardTitle className="text-base text-shiuli">{category}</CardTitle>
+                  <span className="text-sm">
+                    <span className={actual > budget ? 'font-bold text-destructive' : 'font-bold'}>{rupees(actual)}</span>
+                    <span className="text-muted-foreground"> of {rupees(budget)}</span>
+                  </span>
+                </div>
+                <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div
+                    className={actual > budget ? 'h-full bg-destructive' : 'h-full bg-durba'}
+                    style={{ width: `${Math.min(100, budget ? (actual / budget) * 100 : 100)}%` }}
+                  />
+                </div>
+              </CardHeader>
+              <CardContent className="overflow-x-auto">
+                <table className="w-full min-w-[480px] text-sm">
+                  <thead>
+                    <tr className="border-b text-left text-xs text-muted-foreground">
+                      <th className="py-1 pr-2 font-medium">Sub-category</th>
+                      <th className="py-1 pr-2 text-right font-medium">Last season</th>
+                      <th className="py-1 pr-2 text-right font-medium">Budget</th>
+                      <th className="py-1 pr-2 text-right font-medium">Actual</th>
+                      <th className="py-1 text-right font-medium">Left</th>
+                      {isAdmin && !readOnly && <th />}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ls
+                      .sort((a, b) => b.amount - a.amount)
+                      .map((l) => {
+                        const a = lineActual(l)
+                        const left = l.amount - a
+                        return (
+                          <tr key={l.id} className="border-b last:border-0">
+                            <td className="py-1.5 pr-2">
+                              {l.subCategory ?? <span className="text-muted-foreground">General</span>}
+                            </td>
+                            <td className="py-1.5 pr-2 text-right text-muted-foreground">{rupees(linePrev(l))}</td>
+                            <td className="py-1.5 pr-2 text-right">
+                              {isAdmin && !readOnly && editingId === l.id ? (
+                                <span className="flex items-center justify-end gap-1">
+                                  <input
+                                    type="number"
+                                    min="0"
+                                    className={`${inputCls} h-8 w-24`}
+                                    value={draft}
+                                    onChange={(e) => setDraft(e.target.value)}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="sm"
+                                    disabled={upsert.isPending || draft === ''}
+                                    onClick={() =>
+                                      upsert.mutate({
+                                        year: y,
+                                        category: l.category,
+                                        subCategory: l.subCategory,
+                                        amount: Number(draft),
+                                        notes: l.notes,
+                                      })
+                                    }
+                                  >
+                                    Set
+                                  </Button>
+                                </span>
+                              ) : isAdmin && !readOnly ? (
+                                <button
+                                  type="button"
+                                  className="cursor-pointer font-medium underline decoration-dotted underline-offset-4 hover:text-foreground"
+                                  onClick={() => {
+                                    setEditingId(l.id)
+                                    setDraft(String(l.amount))
+                                  }}
+                                >
+                                  {rupees(l.amount)}
+                                </button>
+                              ) : (
+                                <span className="font-medium">{rupees(l.amount)}</span>
+                              )}
+                            </td>
+                            <td className="py-1.5 pr-2 text-right">{rupees(a)}</td>
+                            <td className={`py-1.5 text-right font-medium ${left < 0 ? 'text-destructive' : ''}`}>
+                              {rupees(left)}
+                            </td>
+                            {isAdmin && !readOnly && (
+                              <td className="py-1.5 pl-2 text-right">
+                                <Button size="icon" variant="ghost" aria-label="Remove line" onClick={() => remove.mutate(l.id)}>
+                                  <Undo2 className="size-4" />
+                                </Button>
+                              </td>
+                            )}
+                          </tr>
+                        )
+                      })}
+                  </tbody>
+                </table>
+                {isAdmin && !readOnly &&
+                  (addingCat === category ? (
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
+                      <input
+                        className={`${inputCls} h-9 w-44`}
+                        list={`budget-subs-${category}`}
+                        placeholder="Sub-category (blank = General)"
+                        value={newSub}
+                        onChange={(e) => setNewSub(e.target.value)}
+                      />
+                      <datalist id={`budget-subs-${category}`}>
+                        {[...new Set([...(EXPENSE_TAXONOMY[category] ?? []), 'Misc'])].map((s) => (
+                          <option key={s} value={s} />
+                        ))}
+                      </datalist>
+                      <input
+                        type="number"
+                        min="0"
+                        className={`${inputCls} h-9 w-28`}
+                        placeholder="Amount"
+                        value={newAmount}
+                        onChange={(e) => setNewAmount(e.target.value)}
+                      />
+                      <Button
+                        size="sm"
+                        disabled={upsert.isPending || newAmount === ''}
+                        onClick={() => upsert.mutate({ year: y, category, subCategory: newSub || null, amount: Number(newAmount) })}
+                      >
+                        Add
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setAddingCat(null)}>
+                        ✕
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button size="sm" variant="ghost" className="mt-1" onClick={() => setAddingCat(category)}>
+                      <Plus /> Add line
+                    </Button>
+                  ))}
+              </CardContent>
+            </Card>
+          ))
+        : reportCats.map(([category, catTotal]) => (
+            <Card key={category}>
+              <CardHeader className="pb-2">
+                <div className="flex items-baseline justify-between gap-3">
+                  <CardTitle className="text-base text-shiuli">{category}</CardTitle>
+                  <span className="text-sm font-bold">{rupees(catTotal)}</span>
+                </div>
+                <CardDescription>{totalSpent ? Math.round((catTotal / totalSpent) * 100) : 0}% of the season's spend</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <table className="w-full text-sm">
+                  <tbody>
+                    {[...now.sub.entries()]
+                      .filter(([k]) => k.startsWith(`${category}|`))
+                      .sort((a, b) => b[1].total - a[1].total)
+                      .map(([k, s]) => (
+                        <tr key={k} className="border-b last:border-0">
+                          <td className="py-1.5 pr-2">{k.split('|')[1]}</td>
+                          <td className="py-1.5 pr-2 text-right text-xs text-muted-foreground">
+                            {s.n} {s.n === 1 ? 'entry' : 'entries'}
+                          </td>
+                          <td className="py-1.5 text-right font-medium">{rupees(s.total)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </CardContent>
+            </Card>
+          ))}
+
+      {hasBudget && unbudgeted.length > 0 && (
+        <Card style={{ background: 'color-mix(in srgb, var(--palash) 9%, var(--card))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base">Unbudgeted spend</CardTitle>
+            <CardDescription>Categories with expenses this season but no budget line.</CardDescription>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-1 text-sm">
+            {unbudgeted.map(([c, v]) => (
+              <div key={c} className="flex items-center justify-between gap-2">
+                <span>{c}</span>
+                <span className="flex items-center gap-2">
+                  <span className="font-medium">{rupees(v)}</span>
+                  {isAdmin && !readOnly && (
+                    <Button size="sm" variant="ghost" onClick={() => upsert.mutate({ year: y, category: c, subCategory: null, amount: 0 })}>
+                      Budget it
+                    </Button>
+                  )}
+                </span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {hasBudget && isAdmin && !readOnly && (
+        <div className="flex flex-wrap gap-2">
+          {[...new Set([...Object.keys(EXPENSE_TAXONOMY)])]
+            .filter((c) => !byCat.has(c))
+            .map((c) => (
+              <Button key={c} size="sm" variant="outline" onClick={() => upsert.mutate({ year: y, category: c, subCategory: null, amount: 0 })}>
+                <Plus /> {c}
+              </Button>
+            ))}
+        </div>
+      )}
+      {(upsert.isError || seed.isError) && (
+        <p className="text-sm text-destructive">{((upsert.error ?? seed.error) as Error).message}</p>
+      )}
+    </div>
+  )
+}
 
 // ── Overview ────────────────────────────────────────────────────────────────
 
-function OverviewTab() {
+function OverviewTab({ isAdmin }: { isAdmin: boolean }) {
   const [seasonYear, setSeasonYear] = useState<number | null>(null)
   const { data: s, isPending } = useSummary(seasonYear)
   if (isPending || !s) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
   const isCurrent = s.seasonYear === s.currentSeasonYear
   const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)}`
-  const stats: [string, string, string][] = [
+  const stats: [string, string, string, string?][] = [
     [isCurrent ? 'Total in hand' : `Closing balance (30 Jun ${s.seasonYear + 1})`, rupees(s.totalBalance), 'genda'],
     [`Carried forward (before 1 Jul ${s.seasonYear})`, rupees(s.carriedForward), 'sharat'],
-    ['Collected this season', rupees(s.collectedSince), 'durba'],
+    ['Collected this season', rupees(s.collectedSince), 'durba', `incl. ${rupees(s.collectedSponsorship)} sponsorship`],
     ['Spent this season', rupees(s.spentSince), 'destructive'],
     ...(isCurrent
       ? ([
@@ -137,11 +494,12 @@ function OverviewTab() {
         />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {stats.map(([label, value, tone]) => (
+        {stats.map(([label, value, tone, sub]) => (
           <Card key={label} style={{ background: `color-mix(in srgb, var(--${tone}) 9%, var(--card))` }}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{label}</p>
               <p className="text-lg font-bold">{value}</p>
+              {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
             </CardContent>
           </Card>
         ))}
@@ -186,6 +544,8 @@ function OverviewTab() {
           )}
         </CardContent>
       </Card>
+
+      <SeasonSpending year={s.seasonYear} isAdmin={isAdmin} />
     </div>
   )
 }
@@ -636,10 +996,29 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
   const activeYear = dp.find((e) => e.isActive)?.year ?? new Date().getFullYear()
   const [year, setYear] = useState<number | null>(null)
   const y = year ?? activeYear
+  // Only the active pujo year takes pledges/offers — other years are archival
+  // (the API enforces the same rule).
+  const readOnly = y !== activeYear
   const { data: items, isPending } = useSponsorship(dp.length ? y : null)
   const invalidate = useLedgerInvalidate()
   const [pledgingId, setPledgingId] = useState<string | null>(null)
   const [payingId, setPayingId] = useState<string | null>(null)
+  const [pricingId, setPricingId] = useState<string | null>(null)
+  const [priceDraft, setPriceDraft] = useState('')
+
+  const setYearAmount = useMutation({
+    mutationFn: (i: SponsorshipItemView) =>
+      post(`/api/members/ledger/sponsorship/items/${i.id}/year`, {
+        year: y,
+        amount: priceDraft ? Number(priceDraft) : null,
+        offered: i.offered,
+        notes: i.yearNotes,
+      }),
+    onSuccess: () => {
+      invalidate()
+      setPricingId(null)
+    },
+  })
 
   const toggleOffered = useMutation({
     mutationFn: (i: SponsorshipItemView) =>
@@ -656,7 +1035,10 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
     onSuccess: invalidate,
   })
 
-  const shown = (items ?? []).filter((i) => !i.retired)
+  // Retired catalog items were genuine sponsorships in their era: everyone sees
+  // them for years where they were offered or pledged; admins see them always
+  // (so a legacy slot can be re-offered in a future year).
+  const shown = (items ?? []).filter((i) => !i.retired || i.offered || i.pledge || isAdmin)
   const categories = [...new Set(shown.map((i) => i.category))]
   const offered = shown.filter((i) => i.offered)
   const pledgedTotal = offered.reduce((s, i) => s + (i.pledge && i.pledge.status !== 'cancelled' ? i.pledge.amount : 0), 0)
@@ -696,16 +1078,51 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
                       <span className="min-w-0 flex-1">
                         {i.title}
                         {!i.offered && <Badge variant="outline">not offered</Badge>}
+                        {i.retired && <Badge variant="outline">legacy</Badge>}
                         {pl && (
                           <span className="block text-xs text-muted-foreground">
                             {pl.status === 'paid' ? 'Sponsored by' : 'Pledged by'} {pl.personName} · {rupees(pl.amount)}
                           </span>
                         )}
                       </span>
-                      <span className="text-muted-foreground">{amount != null ? rupees(amount) : '—'}</span>
+                      {isAdmin && !readOnly && pricingId === i.id ? (
+                        <span className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            min="1"
+                            className={`${inputCls} h-9 w-28`}
+                            value={priceDraft}
+                            onChange={(e) => setPriceDraft(e.target.value)}
+                            placeholder="Amount"
+                            autoFocus
+                          />
+                          <Button size="sm" disabled={setYearAmount.isPending} onClick={() => setYearAmount.mutate(i)}>
+                            Set
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => setPricingId(null)}>
+                            ✕
+                          </Button>
+                        </span>
+                      ) : isAdmin && !readOnly ? (
+                        <button
+                          type="button"
+                          className="cursor-pointer text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
+                          title="Set this year's amount"
+                          onClick={() => {
+                            setPricingId(i.id)
+                            setPriceDraft(amount != null ? String(amount) : '')
+                          }}
+                        >
+                          {amount != null ? rupees(amount) : 'set amount'}
+                        </button>
+                      ) : (
+                        <span className="text-muted-foreground">{amount != null ? rupees(amount) : '—'}</span>
+                      )}
                       {pl ? (
                         pl.status === 'paid' ? (
                           <Badge variant="durba">Paid</Badge>
+                        ) : readOnly ? (
+                          <Badge variant="outline">pledged</Badge>
                         ) : payingId === i.id ? (
                           <PayPledgeInline pledgeId={pl.id} onDone={() => setPayingId(null)} />
                         ) : (
@@ -718,7 +1135,7 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
                             </Button>
                           </>
                         )
-                      ) : i.offered ? (
+                      ) : i.offered && !readOnly ? (
                         pledgingId === i.id ? (
                           <PledgeInline itemId={i.id} year={y} defaultAmount={amount} onDone={() => setPledgingId(null)} />
                         ) : (
@@ -727,7 +1144,7 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
                           </Button>
                         )
                       ) : null}
-                      {isAdmin && (
+                      {isAdmin && !readOnly && (
                         <Button size="sm" variant="ghost" onClick={() => toggleOffered.mutate(i)}>
                           {i.offered ? 'Skip this year' : 'Offer'}
                         </Button>
@@ -740,7 +1157,7 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
           )
         })
       )}
-      {isAdmin && <NewItemForm />}
+      {isAdmin && !readOnly && <NewItemForm />}
     </div>
   )
 }

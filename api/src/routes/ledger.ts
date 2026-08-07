@@ -1,6 +1,8 @@
 import type {
   ApiResult,
   BookId,
+  BudgetLine,
+  BudgetLineInput,
   LedgerEntry,
   LedgerEntryInput,
   LedgerSummary,
@@ -232,6 +234,7 @@ ledgerRoutes.get('/summary', async (c) => {
   }
 
   let collectedSince = 0
+  let collectedSponsorship = 0
   let spentSince = 0
   let carriedForward = 0
   for (const e of entries) {
@@ -240,6 +243,7 @@ ledgerRoutes.get('/summary', async (c) => {
       w(e.walletPersonId).balance += e.amount
       if (since) {
         collectedSince += e.amount
+        if (e.category === 'sponsorship') collectedSponsorship += e.amount
         w(e.walletPersonId).collectedSince += e.amount
       } else {
         carriedForward += e.amount
@@ -282,6 +286,7 @@ ledgerRoutes.get('/summary', async (c) => {
     totalBalance: carriedForward + collectedSince - spentSince,
     carriedForward,
     collectedSince,
+    collectedSponsorship,
     spentSince,
     outstandingClaims,
     wallets: [...wallets.values()]
@@ -335,6 +340,18 @@ ledgerRoutes.get('/sponsorship', async (c) => {
   return c.json(ok(out))
 })
 
+/**
+ * Sponsorship boards for past years are archival: writes (offers, pledges,
+ * payments, cancellations) are accepted only for the active Durga Pujo year.
+ */
+async function activePujoYear(db: ReturnType<typeof drizzle<typeof schema>>): Promise<number | null> {
+  const [active] = await db
+    .select({ year: schema.event.year })
+    .from(schema.event)
+    .where(and(eq(schema.event.kind, 'durga-pujo'), eq(schema.event.isActive, true)))
+  return active?.year ?? null
+}
+
 /** Create/update a master catalog item (admin). */
 ledgerRoutes.post('/sponsorship/items', async (c) => {
   if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
@@ -362,6 +379,8 @@ ledgerRoutes.post('/sponsorship/items/:id/year', async (c) => {
   const body = await c.req.json<{ year: number; amount: number | null; offered: boolean; notes: string | null }>()
   if (!body.year) return c.json({ ok: false, error: 'year required' }, 400)
   const db = drizzle(c.env.DB, { schema })
+  if (body.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past boards are archival — offerings only for the active pujo year' }, 400)
   const [item] = await db.select().from(schema.sponsorshipItem).where(eq(schema.sponsorshipItem.id, itemId)).limit(1)
   if (!item) return c.json({ ok: false, error: 'unknown item' }, 404)
   const id = `siy-${itemId}-${body.year}`
@@ -378,6 +397,8 @@ ledgerRoutes.post('/sponsorship/pledges', async (c) => {
   if (!body.itemId || !body.year || !body.personId) return c.json({ ok: false, error: 'item, year and person required' }, 400)
   if (!Number.isInteger(body.amount) || body.amount <= 0) return c.json({ ok: false, error: 'amount must be a positive whole number' }, 400)
   const db = drizzle(c.env.DB, { schema })
+  if (body.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past boards are archival — pledges only for the active pujo year' }, 400)
   const live = (
     await db
       .select()
@@ -413,6 +434,8 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
   const [pl] = await db.select().from(schema.sponsorshipPledge).where(eq(schema.sponsorshipPledge.id, pledgeId)).limit(1)
   if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
   if (pl.status !== 'pledged') return c.json({ ok: false, error: `pledge is ${pl.status}` }, 409)
+  if (pl.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past boards are archival — payments only for the active pujo year' }, 400)
   const [item] = await db.select().from(schema.sponsorshipItem).where(eq(schema.sponsorshipItem.id, pl.itemId)).limit(1)
   const entryId = crypto.randomUUID()
   await db.insert(schema.ledgerEntry).values({
@@ -443,12 +466,100 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
 
 ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {
   const db = drizzle(c.env.DB, { schema })
+  const [pl] = await db.select().from(schema.sponsorshipPledge).where(eq(schema.sponsorshipPledge.id, c.req.param('id'))).limit(1)
+  if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
+  if (pl.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past boards are archival — cancellations only for the active pujo year' }, 400)
   const res = await db
     .update(schema.sponsorshipPledge)
     .set({ status: 'cancelled' })
     .where(and(eq(schema.sponsorshipPledge.id, c.req.param('id')), eq(schema.sponsorshipPledge.status, 'pledged')))
   if (((res as unknown as { meta?: { changes?: number } }).meta?.changes ?? 1) === 0)
     return c.json({ ok: false, error: 'only un-paid pledges can be cancelled' }, 409)
+  return c.json(ok({}))
+})
+
+// ── Budget ──────────────────────────────────────────────────────────────────
+// One line per (year, category, sub); NULL sub = whole-category "General"
+// line. Budgets exist from season 2026 onward; writes only for the active year.
+
+const budgetSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+const budgetLineId = (year: number, category: string, sub: string | null) =>
+  `bl-${year}-${budgetSlug(category)}-${sub ? budgetSlug(sub) : 'general'}`
+
+ledgerRoutes.get('/budget', async (c) => {
+  const year = Number(c.req.query('year'))
+  if (!year) return c.json({ ok: false, error: 'year required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db.select().from(schema.budgetLine).where(eq(schema.budgetLine.year, year))
+  const out: BudgetLine[] = rows.map((r) => ({
+    id: r.id,
+    year: r.year,
+    category: r.category,
+    subCategory: r.subCategory,
+    amount: r.amount,
+    notes: r.notes,
+  }))
+  return c.json(ok(out))
+})
+
+function validateBudgetLine(l: BudgetLineInput): string | null {
+  if (!l.category?.trim()) return 'category required'
+  if (!Number.isInteger(l.amount) || l.amount < 0) return 'amount must be a non-negative whole number'
+  return null
+}
+
+async function upsertBudgetLine(db: ReturnType<typeof drizzle<typeof schema>>, l: BudgetLineInput) {
+  const id = budgetLineId(l.year, l.category.trim(), l.subCategory?.trim() || null)
+  const values = {
+    year: l.year,
+    category: l.category.trim(),
+    subCategory: l.subCategory?.trim() || null,
+    amount: l.amount,
+    notes: l.notes?.trim() || null,
+  }
+  const [existing] = await db.select().from(schema.budgetLine).where(eq(schema.budgetLine.id, id)).limit(1)
+  if (existing) await db.update(schema.budgetLine).set(values).where(eq(schema.budgetLine.id, id))
+  else await db.insert(schema.budgetLine).values({ id, ...values, createdAt: new Date() })
+  return id
+}
+
+ledgerRoutes.post('/budget', async (c) => {
+  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  const body = await c.req.json<BudgetLineInput>()
+  const err = validateBudgetLine(body)
+  if (err) return c.json({ ok: false, error: err }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  if (body.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'budgets can only be edited for the active pujo year' }, 400)
+  const id = await upsertBudgetLine(db, body)
+  return c.json(ok({ id }))
+})
+
+/** Bulk upsert — used by the "seed from last season's actuals" shortcut. */
+ledgerRoutes.post('/budget/bulk', async (c) => {
+  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  const body = await c.req.json<{ year: number; lines: BudgetLineInput[] }>()
+  if (!Array.isArray(body.lines) || !body.lines.length) return c.json({ ok: false, error: 'lines required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  if (body.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'budgets can only be edited for the active pujo year' }, 400)
+  for (const l of body.lines) {
+    const err = validateBudgetLine(l)
+    if (err) return c.json({ ok: false, error: `${l.category}/${l.subCategory ?? ''}: ${err}` }, 400)
+  }
+  for (const l of body.lines) await upsertBudgetLine(db, { ...l, year: body.year })
+  return c.json(ok({ count: body.lines.length }))
+})
+
+ledgerRoutes.post('/budget/:id/delete', async (c) => {
+  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  const db = drizzle(c.env.DB, { schema })
+  const [line] = await db.select().from(schema.budgetLine).where(eq(schema.budgetLine.id, c.req.param('id'))).limit(1)
+  if (!line) return c.json({ ok: false, error: 'unknown budget line' }, 404)
+  if (line.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'budgets can only be edited for the active pujo year' }, 400)
+  await db.delete(schema.budgetLine).where(eq(schema.budgetLine.id, line.id))
   return c.json(ok({}))
 })
 

@@ -214,18 +214,6 @@ export const galleryItem = sqliteTable('gallery_item', {
 // Event operations
 // ─────────────────────────────────────────────────────────────────────────────
 
-export const budgetLine = sqliteTable('budget_line', {
-  id: text('id').primaryKey(),
-  eventId: text('event_id')
-    .notNull()
-    .references(() => event.id),
-  category: text('category').notNull(), // "Pandal", "Protima", "Bhog", "Music"...
-  item: text('item').notNull(),
-  budgeted: integer('budgeted').notNull(), // whole rupees
-  actual: integer('actual'),
-  notes: text('notes'),
-})
-
 export const procurementItem = sqliteTable('procurement_item', {
   id: text('id').primaryKey(),
   eventId: text('event_id')
@@ -351,5 +339,22 @@ export const expenseReimbursement = sqliteTable('expense_reimbursement', {
   settledBy: text('settled_by').references(() => person.id),
   settledOn: text('settled_on'),
   notes: text('notes'), // reviewer remarks (esp. on reject)
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+
+/**
+ * Season expense budget, one line per (year, category, sub_category).
+ * A NULL sub_category is a whole-category "General" line (e.g. Saraswati Pujo
+ * budgeted as one figure); a category's budget is the sum of its lines.
+ * Budgets exist from season 2026 onward — no historical budgets.
+ */
+export const budgetLine = sqliteTable('budget_line', {
+  id: text('id').primaryKey(), // "bl-2026-food-bhog"
+  year: integer('year').notNull(), // season-start year (1 July boundary)
+  category: text('category').notNull(),
+  subCategory: text('sub_category'),
+  amount: integer('amount').notNull(),
+  notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })

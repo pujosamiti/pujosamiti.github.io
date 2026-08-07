@@ -15,6 +15,20 @@
       "when": 1785688843700,
       "tag": "0001_ledger",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1786110039198,
+      "tag": "0002_drop-budget-placeholder",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1786110039534,
+      "tag": "0003_budget",
+      "breakpoints": true
     }
   ]
 }

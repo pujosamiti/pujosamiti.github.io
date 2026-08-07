@@ -13,7 +13,7 @@ import { useOnboardingState } from '@/lib/onboarding'
 // tone = palette token washing the card background (icon wears it at full hue)
 const memberSections = [
   { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: 'durba' },
-  { icon: Wallet, title: 'Wallets', desc: 'Who holds what, season snapshot', gate: 'Core members only', to: '/wallets', coreOnly: true, tone: 'genda' },
+  { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Core members only', to: '/wallets', coreOnly: true, tone: 'genda' },
   { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Core members only', to: '/sponsorship', coreOnly: true, tone: 'palash' },
   { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
