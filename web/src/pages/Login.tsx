@@ -1,4 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
+import logoBw from '@/assets/logo-bw.png'
 import { AlertTriangle, CheckCircle2, Hourglass, Loader2, LogOut, RefreshCw } from 'lucide-react'
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router'
@@ -173,6 +174,14 @@ export function Login() {
   // ── Signed out ────────────────────────────────────────────────────────────
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
+      <img
+        src={logoBw}
+        alt=""
+        aria-hidden="true"
+        width={112}
+        height={112}
+        className="mx-auto mt-2 size-28 opacity-80"
+      />
       <Card>
         <CardHeader>
           <CardTitle>Member sign in</CardTitle>
