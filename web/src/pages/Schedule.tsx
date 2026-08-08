@@ -71,11 +71,11 @@ export function Schedule() {
   return (
     <div className="flex flex-col gap-4">
       <Seo
-        title={selected ? `Durga Pujo ${selected.year} Schedule` : 'Schedule'}
+        title="Durga Puja Timetable and Schedule"
         description={
           selected
-            ? `Nirghanto for Durga Pujo ${selected.year} at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.`
-            : 'Durga Pujo nirghanto — tithi-wise puja timings at Magarpatta City, Pune.'
+            ? `Nirghanto/Timetable/Schedule for Durga Pujo ${selected.year} at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.`
+            : 'Nirghanto/Timetable/Schedule for Durga Pujo at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami.'
         }
         path="/schedule"
       />

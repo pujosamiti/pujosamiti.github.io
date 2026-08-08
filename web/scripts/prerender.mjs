@@ -15,9 +15,9 @@ const SITE = 'পুজো সমিতি · Magarpatta'
 const ROUTES = [
   {
     path: '/schedule',
-    title: `Durga Pujo Schedule · ${SITE}`,
+    title: 'Durga Puja Timetable and Schedule',
     description:
-      'Nirghanto for Durga Pujo at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.',
+      'Nirghanto/Timetable/Schedule for Durga Pujo at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.',
   },
 ]
 

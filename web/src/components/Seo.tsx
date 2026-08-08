@@ -18,7 +18,7 @@ export function Seo({
   image,
   type = 'website',
 }: {
-  /** Page title; the site name is appended automatically */
+  /** The complete page title, used exactly as given */
   title: string
   description: string
   /** Route path beginning with "/", used for the canonical URL */
@@ -28,7 +28,7 @@ export function Seo({
   /** OpenGraph type: "website" for pages, "article" for book chapters/posts */
   type?: 'website' | 'article'
 }) {
-  const full = `${title} · ${SITE}`
+  const full = title
   const url = `${ORIGIN}${path}`
   return (
     <>
