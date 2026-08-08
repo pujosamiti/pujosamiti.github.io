@@ -116,15 +116,15 @@ export function DurgaPujaChapter() {
 
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
-      {data && (
-        <Seo
-          title={data.meta.title}
-          description={data.meta.oneLiner ?? data.meta.title}
-          path={`/durga-puja/${chapter.slug}`}
-          type="article"
-          image={imageUrl(data.meta.image)}
-        />
-      )}
+      {/* Always mounted, so the document <title> is never left empty —
+          fallback values until the chapter's frontmatter arrives. */}
+      <Seo
+        title={data?.meta.title || titleFromSlug(chapter.slug)}
+        description={data?.meta.oneLiner ?? data?.meta.title ?? titleFromSlug(chapter.slug)}
+        path={`/durga-puja/${chapter.slug}`}
+        type="article"
+        image={imageUrl(data?.meta.image)}
+      />
       <div className="flex items-center justify-between gap-2">
         <Link to="/durga-puja" className="flex items-center gap-1 text-sm font-medium text-primary">
           <ChevronLeft className="size-4" />
@@ -134,11 +134,23 @@ export function DurgaPujaChapter() {
           Chapter {chapter.order} of {chapters.length}
         </span>
       </div>
-      {data?.meta.author && <p className="-mt-2 text-sm text-muted-foreground">লিখেছেন · {data.meta.author}</p>}
       {isPending || !data ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
         <>
+          <header className="flex flex-col gap-1 border-b pb-4">
+            <h1 className="font-serif text-3xl font-bold text-primary md:text-4xl">{data.meta.title}</h1>
+            {data.meta.bengali && <p className="font-serif text-xl text-shiuli">{data.meta.bengali}</p>}
+            {data.meta.when && <p className="text-sm text-muted-foreground">{data.meta.when}</p>}
+            {data.meta.author && <p className="text-sm text-muted-foreground">লিখেছেন · {data.meta.author}</p>}
+            {data.meta.image && (
+              <img
+                src={data.meta.image.startsWith('http') ? data.meta.image : `/book/${data.meta.image}`}
+                alt={data.meta.title}
+                className="mt-3 w-full rounded-xl border object-cover shadow-sm"
+              />
+            )}
+          </header>
           <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
           {nav}
         </>

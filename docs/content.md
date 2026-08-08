@@ -57,7 +57,13 @@ author: "Pradyumna Das Roy"
 | `when` | no | A one-phrase "when this happens" — subtitle material. |
 | `oneLiner` | yes | The meta description and `og:description` — this is the text under the link in Google and in WhatsApp preview cards. Aim for 140–160 characters, written for a human deciding whether to tap. |
 | `image` | no | The share image (see next section). Without it, pages fall back to the site cover (`/og.webp`). |
-| `author` | no | Byline, rendered as "লিখেছেন · {author}" under the chapter header. For the book it's optional; for Pujo Sankhya articles it should be considered required. |
+| `author` | no | Byline, rendered as "লিখেছেন · {author}" in the chapter header. For the book it's optional; for Pujo Sankhya articles it should be considered required. |
+
+**The chapter header is rendered from frontmatter** — `title` (big serif
+heading), `bengali`, `when`, `author` and the `image` (as a hero picture)
+all display at the top of the page automatically. So the markdown body
+should start at `## …` level — don't repeat the title as an `# H1` inside
+the body.
 
 The parser (`web/src/lib/markdown.ts → parseFrontmatter`) handles flat
 `key: value` pairs only — no nested YAML, no lists. Quotes around values are
