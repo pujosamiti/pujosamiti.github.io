@@ -15,6 +15,22 @@ const SITE = 'পুজো সমিতি · Magarpatta'
 const TITLE_SUFFIX = 'Magarpatta City Pune'
 
 const ROUTES = [
+  // Members-only routes: prerendered so a shared link previews properly and a
+  // direct visit skips the 404-fallback redirect — but never indexed. The app
+  // still gates the content, and the API gates the data.
+  ...[
+    ['/membersonly', 'Members Only', 'The samiti members area — ledger, wallets, sponsorship and planning.'],
+    ['/login', 'Member sign in', 'Sign in to the samiti members area.'],
+    ['/profile', 'Profile', 'Your samiti profile.'],
+    ['/tasks', 'Puja Planning', 'Durga Pujo task distribution for samiti members.'],
+    ['/membership', 'Membership', 'Samiti membership register.'],
+    ['/events', 'Events', 'The samiti events calendar.'],
+    ['/nirghanto', 'Nirghanto workspace', 'Durga Pujo nirghanto workspace.'],
+    ['/ledger', 'Ledger', 'Ledger — samiti accounts, for core members.'],
+    ['/wallets', 'Wallets', 'Wallets — samiti accounts, for core members.'],
+    ['/sponsorship', 'Sponsorship', 'Sponsorship — samiti accounts, for core members.'],
+    ['/reimbursements', 'Reimbursements', 'Reimbursements — samiti accounts, for core members.'],
+  ].map(([path, title, description]) => ({ path, title: `${title} ${TITLE_SUFFIX}`, description, noindex: true })),
   {
     path: '/brandcolours',
     title: `Brand Colours ${TITLE_SUFFIX}`,
@@ -74,6 +90,10 @@ for (const r of ROUTES) {
     `<meta property="og:description" content="${esc(r.description)}" />`,
   )
   html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ORIGIN}${r.path}" />`)
+  html = html.replace(
+    /<meta name="robots" content="[^"]*" \/>/,
+    `<meta name="robots" content="${r.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'}" />`,
+  )
   if (r.image) html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${esc(r.image)}" />`)
   html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${ORIGIN}${r.path}" />`)
   const out = join(dist, ...r.path.split('/').filter(Boolean), 'index.html')
@@ -83,7 +103,7 @@ for (const r of ROUTES) {
 }
 
 // sitemap for the public routes
-const urls = ['/', ...ROUTES.map((r) => r.path)]
+const urls = ['/', ...ROUTES.filter((r) => !r.noindex).map((r) => r.path)]
 writeFileSync(
   join(dist, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
