@@ -127,6 +127,7 @@ export function DurgaPujaChapter() {
       )}
       <div className="flex items-center justify-between gap-2">
         <Link to="/durga-puja" className="flex items-center gap-1 text-sm font-medium text-primary">
+          <ChevronLeft className="size-4" />
           <BookOpen className="size-4" /> Durga Puja · the book
         </Link>
         <span className="text-xs text-muted-foreground">
