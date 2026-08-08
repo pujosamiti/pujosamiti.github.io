@@ -20,8 +20,8 @@ export function Home() {
         <img
           src={heroImage}
           alt="Dhunuchi naach before the protima during Durga Pujo"
-          width={1600}
-          height={1067}
+          width={1536}
+          height={1024}
           fetchPriority="high"
           className="w-full rounded-xl border object-cover shadow-sm"
         />
