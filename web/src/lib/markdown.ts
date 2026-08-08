@@ -7,8 +7,10 @@ export interface Frontmatter {
   order: number
   when?: string
   oneLiner?: string
-  /** share image: a bare filename resolves to /book/<name> (see docs/seotags.md) */
+  /** share image: a bare filename resolves to /book/<name> (see docs/content.md) */
   image?: string
+  /** byline, shown under the chapter header when present */
+  author?: string
   [key: string]: string | number | undefined
 }
 

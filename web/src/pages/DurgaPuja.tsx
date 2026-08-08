@@ -120,6 +120,7 @@ export function DurgaPujaChapter() {
           Chapter {chapter.order} of {chapters.length}
         </span>
       </div>
+      {data?.meta.author && <p className="-mt-2 text-sm text-muted-foreground">লিখেছেন · {data.meta.author}</p>}
       {isPending || !data ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
