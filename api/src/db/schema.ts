@@ -137,6 +137,15 @@ export const person = sqliteTable('person', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   notes: text('notes'),
+  /**
+   * How this record came to exist: 'roster' = entered from the samiti's own
+   * records by an admin (or the historical import); 'self' = someone signed in
+   * and registered themselves. It separates people genuinely awaiting
+   * activation from the long tail of non-member names on the rolls.
+   */
+  origin: text('origin', { enum: ['roster', 'self'] })
+    .notNull()
+    .default('roster'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 

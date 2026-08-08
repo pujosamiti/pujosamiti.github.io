@@ -1,0 +1,1 @@
+ALTER TABLE `person` ADD `origin` text DEFAULT 'roster' NOT NULL;

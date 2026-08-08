@@ -183,6 +183,10 @@ export interface ProfileInput {
 }
 
 export interface AdminPerson {
+  /** 'self' = registered themselves and awaits activation; 'roster' = on the samiti's rolls */
+  origin: 'roster' | 'self';
+  /** epoch ms — the merge keeps the older record */
+  createdAt: number;
   id: string;
   familyId: string | null;
   familyName: string | null;

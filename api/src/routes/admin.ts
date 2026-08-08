@@ -76,6 +76,8 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
     isActive: p.isActive,
     portfolio: p.portfolio,
     notes: p.notes,
+    origin: p.origin,
+    createdAt: p.createdAt.getTime(),
   }
 }
 
@@ -206,24 +208,52 @@ adminRoutes.post('/people/:id/merge', async (c) => {
   const { sourceId } = (await c.req.json()) as { sourceId: string }
   const id = c.req.param('id')
   if (!sourceId || sourceId === id) return c.json({ ok: false, error: 'pick a different person to merge' }, 400)
-  if (sourceId === c.get('adminPersonId')) return c.json({ ok: false, error: 'you cannot merge yourself away' }, 400)
 
   const db = drizzle(c.env.DB, { schema })
-  const [survivor] = await db.select().from(schema.person).where(eq(schema.person.id, id)).limit(1)
-  const [src] = await db.select().from(schema.person).where(eq(schema.person.id, sourceId)).limit(1)
-  if (!survivor || !src) return c.json({ ok: false, error: 'person not found' }, 404)
+  const [a] = await db.select().from(schema.person).where(eq(schema.person.id, id)).limit(1)
+  const [b] = await db.select().from(schema.person).where(eq(schema.person.id, sourceId)).limit(1)
+  if (!a || !b) return c.json({ ok: false, error: 'person not found' }, 404)
+
+  /**
+   * The OLDER record always survives, whichever way round the admin picked
+   * them. The old record is the one the samiti's history hangs off — ledger
+   * entries, pledges, task assignments, a stable id — while the newer one is
+   * almost always a fresh self-registration carrying just a name and an email.
+   * Keeping the older row means a mis-clicked direction can't strand history
+   * on a deleted id; the newer details still win, below.
+   */
+  const [survivor, src] = a.createdAt <= b.createdAt ? [a, b] : [b, a]
+  if (src.id === c.get('adminPersonId'))
+    return c.json({ ok: false, error: 'you cannot merge yourself away' }, 400)
 
   // Repoint the source's task assignments; drop those that would duplicate
-  const srcAssignments = await db.select().from(schema.taskAssignment).where(eq(schema.taskAssignment.personId, sourceId))
-  const survivorAssignments = await db.select().from(schema.taskAssignment).where(eq(schema.taskAssignment.personId, id))
-  for (const a of srcAssignments) {
-    const clash = survivorAssignments.some((b) => b.taskId === a.taskId && b.year === a.year)
-    if (clash) await db.delete(schema.taskAssignment).where(eq(schema.taskAssignment.id, a.id))
-    else await db.update(schema.taskAssignment).set({ personId: id }).where(eq(schema.taskAssignment.id, a.id))
+  const srcAssignments = await db.select().from(schema.taskAssignment).where(eq(schema.taskAssignment.personId, src.id))
+  const survivorAssignments = await db
+    .select()
+    .from(schema.taskAssignment)
+    .where(eq(schema.taskAssignment.personId, survivor.id))
+  for (const asg of srcAssignments) {
+    const clash = survivorAssignments.some((k) => k.taskId === asg.taskId && k.year === asg.year)
+    if (clash) await db.delete(schema.taskAssignment).where(eq(schema.taskAssignment.id, asg.id))
+    else await db.update(schema.taskAssignment).set({ personId: survivor.id }).where(eq(schema.taskAssignment.id, asg.id))
   }
 
+  // Everything else that names the absorbed person must follow them over, or
+  // the delete below fails on a foreign key. A transfer between the two
+  // records becomes a self-transfer (nets to zero) and is left as it is.
+  const to = survivor.id
+  const from = src.id
+  await db.update(schema.ledgerEntry).set({ personId: to }).where(eq(schema.ledgerEntry.personId, from))
+  await db.update(schema.ledgerEntry).set({ walletPersonId: to }).where(eq(schema.ledgerEntry.walletPersonId, from))
+  await db.update(schema.ledgerEntry).set({ toWalletPersonId: to }).where(eq(schema.ledgerEntry.toWalletPersonId, from))
+  await db.update(schema.ledgerEntry).set({ createdBy: to }).where(eq(schema.ledgerEntry.createdBy, from))
+  await db.update(schema.sponsorshipPledge).set({ personId: to }).where(eq(schema.sponsorshipPledge.personId, from))
+  await db.update(schema.expenseReimbursement).set({ personId: to }).where(eq(schema.expenseReimbursement.personId, from))
+  await db.update(schema.expenseReimbursement).set({ assignedTo: to }).where(eq(schema.expenseReimbursement.assignedTo, from))
+  await db.update(schema.expenseReimbursement).set({ settledBy: to }).where(eq(schema.expenseReimbursement.settledBy, from))
+
   // Delete the source first so its unique email is free for the survivor
-  await db.delete(schema.person).where(eq(schema.person.id, sourceId))
+  await db.delete(schema.person).where(eq(schema.person.id, src.id))
 
   const tierRank = { non_member: 0, member: 1, core: 2 } as const
   const notes =
@@ -252,8 +282,8 @@ adminRoutes.post('/people/:id/merge', async (c) => {
       isAdmin: survivor.isAdmin || src.isAdmin,
       isActive: survivor.isActive || src.isActive,
     })
-    .where(eq(schema.person.id, id))
-  return c.json(ok({ id, merged: sourceId }))
+    .where(eq(schema.person.id, survivor.id))
+  return c.json(ok({ id: survivor.id, merged: src.id }))
 })
 
 adminRoutes.delete('/people/:id', async (c) => {

@@ -1,7 +1,7 @@
 import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, FamilyTier } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, Users } from 'lucide-react'
+import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, UserMinus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -23,7 +23,7 @@ const TIER_LABEL: Record<FamilyTier, string> = {
 const post = (path: string, body: unknown) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-type View = 'members' | 'pending' | 'families'
+type View = 'members' | 'pending' | 'exmembers' | 'families'
 
 /** Membership roll. Core members view; admins manage. */
 export function Membership() {
@@ -53,7 +53,16 @@ export function Membership() {
   })
 
   const members = useMemo(() => people?.filter((p) => p.tier !== 'non_member') ?? [], [people])
-  const pending = useMemo(() => people?.filter((p) => p.tier === 'non_member') ?? [], [people])
+  // Someone who registered themselves and is waiting for an admin — as opposed
+  // to the long tail of non-member names carried on the samiti's own rolls.
+  const pending = useMemo(
+    () => people?.filter((p) => p.tier === 'non_member' && p.origin === 'self') ?? [],
+    [people],
+  )
+  const exMembers = useMemo(
+    () => people?.filter((p) => p.tier === 'non_member' && p.origin !== 'self') ?? [],
+    [people],
+  )
 
   if (sessionPending || memberPending) {
     return (
@@ -76,6 +85,7 @@ export function Membership() {
   const tabs: { key: View; label: string; icon: typeof Users; count: number }[] = [
     { key: 'members', label: 'Members', icon: ShieldCheck, count: members.length },
     { key: 'pending', label: 'Pending activation', icon: Hourglass, count: pending.length },
+    { key: 'exmembers', label: 'Ex-members', icon: UserMinus, count: exMembers.length },
     { key: 'families', label: 'Families', icon: Users, count: families?.length ?? 0 },
   ]
 
@@ -118,11 +128,17 @@ export function Membership() {
         <FamiliesView families={families} q={q} canEdit={canEdit} />
       ) : (
         <PeopleView
-          people={view === 'members' ? members : pending}
+          people={view === 'members' ? members : view === 'exmembers' ? exMembers : pending}
           q={q}
           families={families ?? []}
           loading={peoplePending}
-          emptyText={view === 'members' ? 'No members yet.' : 'Nobody is waiting for activation.'}
+          emptyText={
+            view === 'members'
+              ? 'No members yet.'
+              : view === 'exmembers'
+                ? 'Nobody on the rolls outside the membership.'
+                : 'Nobody is waiting for activation.'
+          }
           allowAdd={canEdit && view === 'members'}
           canEdit={canEdit}
         />

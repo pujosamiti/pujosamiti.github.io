@@ -130,6 +130,6 @@ onboardingRoutes.post('/profile', async (c) => {
   }
 
   const id = crypto.randomUUID()
-  await db.insert(schema.person).values({ id, email, createdAt: new Date(), ...values })
+  await db.insert(schema.person).values({ id, email, origin: 'self', createdAt: new Date(), ...values })
   return c.json(ok({ id }))
 })
