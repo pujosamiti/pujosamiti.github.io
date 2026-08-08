@@ -165,6 +165,21 @@
   .motifs { background: var(--band-bg); border-radius: 12px; padding: 20px; }
   .motifs figcaption { color: var(--band-fg); font-size: 13px; opacity: .85; margin-top: 10px; }
   figure { margin: 0; }
+
+  .logos { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; }
+  .logo-card {
+    background: var(--kash); border: 1px solid var(--line); border-radius: 12px;
+    padding: 20px 16px 16px; text-align: center;
+  }
+  .logo-card img { width: 148px; height: 148px; object-fit: contain; }
+  .logo-card .lname { font-weight: 600; font-size: 14px; margin-top: 12px; }
+  .logo-card .luse { font-size: 12.5px; color: var(--ink-soft); margin-top: 3px; min-height: 2.6em; }
+  .logo-card a.dl {
+    display: inline-block; margin-top: 10px; font-size: 13px; font-weight: 600;
+    color: var(--red-text); text-decoration: none; background: #fff;
+    border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px;
+  }
+  .logo-card a.dl:hover { border-color: var(--red-text); }
 </style>
 </head>
 <body>
@@ -190,6 +205,31 @@
 </div>
 
 <div class="wrap">
+
+  <h2 class="serif">The mark</h2>
+  <p class="lede">Maayer mukh in a genda ring — পুজো সমিতি above, মগরপাট্টা, পুনে below, two sindoor
+  bindus at her ears. Three official variants; every download is the full-resolution original.</p>
+
+  <div class="logos">
+    <div class="logo-card">
+      <img src="/brand/pujo-samiti-logo.png" alt="Pujo Samiti logo — original colour version" />
+      <div class="lname">Original</div>
+      <div class="luse">The primary mark — favicon, header badge, posters, anywhere it can be printed in colour.</div>
+      <a class="dl" href="/brand/pujo-samiti-logo.png" download>Download PNG</a>
+    </div>
+    <div class="logo-card">
+      <img src="/brand/pujo-samiti-logo-bw.png" alt="Pujo Samiti logo — black and white version" />
+      <div class="lname">Black &amp; white</div>
+      <div class="luse">Single-colour printing — letterheads, receipts, photocopy-safe notices, Pujo Sankhya inner pages.</div>
+      <a class="dl" href="/brand/pujo-samiti-logo-bw.png" download>Download PNG</a>
+    </div>
+    <div class="logo-card">
+      <img src="/brand/pujo-samiti-logo-bw-transparent.png" alt="Pujo Samiti logo — black and white, transparent background" />
+      <div class="lname">B&amp;W · transparent</div>
+      <div class="luse">Watermarks and overlays on light surfaces — certificates, slides, the sign-in page.</div>
+      <a class="dl" href="/brand/pujo-samiti-logo-bw-transparent.png" download>Download PNG</a>
+    </div>
+  </div>
 
   <h2 class="serif">The palette</h2>
   <p class="lede">Every colour is named for what it is in the pujo world — that is also what keeps
