@@ -90,20 +90,20 @@ export function DurgaPujaChapter() {
   const nav = (
     <div className="flex items-center justify-between gap-2">
       {prev ? (
-        <Button variant="outline" size="sm" asChild>
+        <Button size="sm" asChild>
           <Link to={`/durga-puja/${prev.slug}`}>
             <ChevronLeft /> {titleFromSlug(prev.slug)}
           </Link>
         </Button>
       ) : (
-        <Button variant="outline" size="sm" asChild>
+        <Button size="sm" asChild>
           <Link to="/durga-puja">
             <ChevronLeft /> The book
           </Link>
         </Button>
       )}
       {next ? (
-        <Button variant="outline" size="sm" asChild>
+        <Button size="sm" asChild>
           <Link to={`/durga-puja/${next.slug}`}>
             {titleFromSlug(next.slug)} <ChevronRight />
           </Link>
