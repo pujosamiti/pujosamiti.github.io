@@ -1,6 +1,7 @@
 import { Link } from 'react-router'
 
 import heroImage from '@/assets/pujo-samiti.webp'
+import { Seo } from '@/components/Seo'
 import { Button } from '@/components/ui/button'
 
 /**
@@ -10,6 +11,11 @@ import { Button } from '@/components/ui/button'
 export function Home() {
   return (
     <div className="flex flex-col gap-6">
+      <Seo
+        title="দুর্গাপূজা"
+        description="The probasi bengali community of Magarpatta City, Pune celebrates the pujo the para way — Durga Puja, Kojagari Lakshmi Puja, Saraswati Puja and Poila Baishakh, together."
+        path="/"
+      />
       <section className="pt-2 md:pt-6">
         <img
           src={heroImage}

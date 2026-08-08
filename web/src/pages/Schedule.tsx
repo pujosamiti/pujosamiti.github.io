@@ -4,6 +4,7 @@ import { Phone } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import { SearchSelect } from '@/components/SearchSelect'
+import { Seo } from '@/components/Seo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 
@@ -69,6 +70,15 @@ export function Schedule() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo
+        title={selected ? `Durga Pujo ${selected.year} Schedule` : 'Schedule'}
+        description={
+          selected
+            ? `Nirghanto for Durga Pujo ${selected.year} at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.`
+            : 'Durga Pujo nirghanto — tithi-wise puja timings at Magarpatta City, Pune.'
+        }
+        path="/schedule"
+      />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Schedule</h1>
         {dpEvents.length > 0 && selected && (
