@@ -4,6 +4,7 @@ bengali: "দেবী ও তাঁর কথা"
 order: 1
 when: "Before everything — the foundations"
 oneLiner: "Who Durga is: the demon she slays, the daughter she becomes in Bengal, and how her autumn worship grew into the greatest festival of both Bengals."
+image: durga-puja-01.webp
 ---
 
 ## Who is coming

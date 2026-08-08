@@ -25,7 +25,7 @@ const ROUTES = [
 
 // ── The Durga Puja book: one route per markdown chapter ─────────────────────
 // Frontmatter drives the tags: title (+suffix), oneLiner → description,
-// image → og:image (bare filenames resolve to /book/<name>).
+// image → og:image (bare filenames resolve to /bookdurgapuja/<name>).
 const contentDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'content', 'durga-puja')
 const fm = (raw) => {
   const m = raw.match(/^---\n([\s\S]*?)\n---/)
@@ -46,7 +46,7 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
     path: isIndex ? '/durga-puja' : `/durga-puja/${m[2]}`,
     title: `${isIndex ? 'Durga Puja' : meta.title} ${TITLE_SUFFIX}`,
     description: meta.oneLiner || meta.title || 'Bengali Durga Puja, explained properly.',
-    image: meta.image ? (meta.image.startsWith('http') ? meta.image : `${ORIGIN}/book/${meta.image}`) : undefined,
+    image: meta.image ? (meta.image.startsWith('http') ? meta.image : `${ORIGIN}/bookdurgapuja/${meta.image}`) : undefined,
   })
 }
 

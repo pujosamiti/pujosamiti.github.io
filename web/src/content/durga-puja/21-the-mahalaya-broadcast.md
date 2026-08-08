@@ -4,6 +4,7 @@ bengali: মহিষাসুরমর্দিনী
 order: 21
 when: Mahalaya, 4 a.m. — the ninety-minute All India Radio programme that opens Devi Paksha
 oneLiner: Not a different scripture but the Chandi curated for radio — conch, chorus, nineteen movements of song and Birendra Krishna Bhadra's recitation, mapped piece by piece to the verses behind them.
+image: durga-puja-21.webp
 ---
 
 ## Is the "Mahalaya mantra" different from the Chandipath?

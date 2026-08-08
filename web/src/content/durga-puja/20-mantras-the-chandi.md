@@ -4,6 +4,7 @@ bengali: চণ্ডীপাঠ — শ্রীশ্রীচণ্ডী
 order: 20
 when: Read all through the year in devout households, recited by the purohit across the puja days — above all on Ashtami — and heard by everyone, everywhere, at 4 a.m. on Mahalaya
 oneLiner: The 700-verse scripture at the heart of Durga Puja — thirteen chapters of the Goddess at war, wrapped in armour-hymns and sealed with a nine-syllable mantra — the text behind the broadcast, the anjali, and the festival itself.
+image: durga-puja-20.webp
 ---
 
 ## What the Chandi is

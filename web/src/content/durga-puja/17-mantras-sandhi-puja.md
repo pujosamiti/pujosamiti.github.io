@@ -4,6 +4,7 @@ bengali: "সন্ধিপূজার মন্ত্র"
 order: 17
 when: "The sandhikshan — the last 24 minutes of Ashtami and the first 24 minutes of Nabami"
 oneLiner: "The words of the forty-eight minutes: Chamunda's terrifying dhyana, the nine-syllable Navarna mantra, the Devi Mahatmya verses that tell why this exact moment belongs to her, and the formulas of the hundred and eight lamps."
+image: durga-puja-17.webp
 ---
 
 ## Forty-eight minutes of words

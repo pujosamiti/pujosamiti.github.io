@@ -4,6 +4,7 @@ bengali: "নবমী হোমের মন্ত্র"
 order: 18
 when: "Mahanabami, after the main nabami puja — the fire ritual that seals the three days of worship"
 oneLiner: "The words of the fire: establishing Agni, the Mahavyahriti oblations, the svaha formulas of the Durga homa, the 108 bel leaves, and the purnahuti verse of fullness that completes it all."
+image: durga-puja-18.webp
 ---
 
 ## When the worship changes medium

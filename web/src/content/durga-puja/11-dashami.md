@@ -4,6 +4,7 @@ bengali: বিজয়া দশমী
 order: 11
 when: The tenth and final day of Durga Puja — farewell and immersion
 oneLiner: The day of victory and goodbye — the goddess bid farewell in a mirror, adorned with sindoor by married women, carried in procession to the water, and sent home to Kailash with the promise "come again next year."
+image: durga-puja-11.webp
 ---
 
 ## What it is

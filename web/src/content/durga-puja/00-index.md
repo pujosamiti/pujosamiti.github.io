@@ -4,6 +4,7 @@ bengali: "বাঙালির দুর্গাপূজা"
 order: 0
 when: "The whole season — Rath Yatra to Kojagari Purnima"
 oneLiner: "An encyclopedia of the Bengali pujo — every day, every ritual, every story, and every mantra in three scripts with plain-English meaning, from the first bamboo pole to the last full moon."
+image: durga-puja-00.webp
 ---
 
 # Bengali Durga Puja

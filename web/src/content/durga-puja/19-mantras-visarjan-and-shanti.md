@@ -4,6 +4,7 @@ bengali: "মন্ত্র — বিসর্জন, অপরাজিতা
 order: 19
 when: "Bijoya Dashami — the dashami puja and darpan visarjan, the aparajita puja of the afternoon, and the shanti jal that closes the festival"
 oneLiner: "The pujo's last words — the farewell that asks the goddess to 'come again when the year has turned,' the dismissal that sends the whole divine company home carrying our worship, the victory-prayer of the Unconquered One, and the sprinkle of peace-water that folds the festival away."
+image: durga-puja-19.webp
 ---
 
 ## Where these fit

@@ -4,6 +4,7 @@ bengali: আনন্দ নাড়ু
 order: 5
 when: The weeks before Pujo, and again for Bijoya and Lakshmi Puja
 oneLiner: Why Bengali families still grate coconut and stir jaggery by hand before Durga Puja — and why the sweets that matter most never come from a shop.
+image: durga-puja-05.webp
 ---
 
 ## What it is

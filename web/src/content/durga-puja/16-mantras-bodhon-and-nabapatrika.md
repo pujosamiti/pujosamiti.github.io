@@ -4,6 +4,7 @@ bengali: "বোধন ও নবপত্রিকার মন্ত্র"
 order: 16
 when: "The mantra shelf — Shashthi evening and Saptami dawn"
 oneLiner: "The words that wake the goddess out of season, invite the bel tree, bathe the nine plants, and call life-breath into the clay."
+image: durga-puja-16.webp
 ---
 
 ## The words of the two consecration days

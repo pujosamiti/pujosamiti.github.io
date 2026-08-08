@@ -4,6 +4,7 @@ bengali: "কোজাগরী লক্ষ্মীপূজা"
 order: 12
 when: "Sharad Purnima — the Ashwin full moon, four to five days after Bijoya Dashami (October)"
 oneLiner: "On the brightest full moon of the year, Lakshmi walks the earth asking 'Who is awake?' — and Bengal answers with lamps, alpona and a hushed, homely puja that gently closes the festive season."
+image: durga-puja-12.webp
 ---
 
 ## The night after the farewell

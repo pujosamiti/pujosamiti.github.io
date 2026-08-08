@@ -4,6 +4,7 @@ bengali: খুঁটি পুজো
 order: 2
 when: Around Rath Yatra, roughly three months before Durga Puja
 oneLiner: The bamboo-staking ceremony that blesses the ground, plants the first post of the pandal, and officially opens the Durga Puja season.
+image: durga-puja-02.webp
 ---
 
 ## What it is

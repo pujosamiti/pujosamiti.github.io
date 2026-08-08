@@ -4,6 +4,7 @@ bengali: পঞ্চমী
 order: 6
 when: Fifth day of Devi Paksha, the day before Shashthi
 oneLiner: The day the waiting ends — pandal finished, protima home, lights switched on, kitchens full of naru — when the festival stands at the door without quite stepping through.
+image: durga-puja-06.webp
 ---
 
 ## What it is

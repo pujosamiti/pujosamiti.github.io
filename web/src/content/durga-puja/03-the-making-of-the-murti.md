@@ -4,6 +4,7 @@ bengali: প্রতিমা গড়া
 order: 3
 when: Rath Yatra to Mahalaya — the idol-making season
 oneLiner: How a riverside lane of potters became the world's workshop of goddesses, and how a frame of bamboo and straw — with river clay and the soil nobody expects — becomes Ma Durga.
+image: durga-puja-03.webp
 ---
 
 ## What it is

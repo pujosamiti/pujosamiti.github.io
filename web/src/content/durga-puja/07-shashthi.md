@@ -4,6 +4,7 @@ bengali: "মহাষষ্ঠী"
 order: 7
 when: "Sixth lunar day (tithi) of Devi Paksha, in the month of Ashwin (late September–October). The heart of the day is the evening, with the rites of bodhon, amantran, and adhibas."
 oneLiner: "The evening the sleeping goddess is woken out of season, invited to earth, and welcomed beneath the bel tree — with tonight's rites, Durga Puja truly begins."
+image: durga-puja-07.webp
 ---
 
 ## What it is

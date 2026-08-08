@@ -21,9 +21,9 @@ const chapters = Object.keys(files)
   .sort((a, b) => a.order - b.order)
 const indexPath = Object.keys(files).find((p) => p.endsWith('00-index.md'))!
 
-/** A bare image filename in frontmatter lives under /book/ (see docs/seotags.md). */
+/** A bare image filename in frontmatter lives under /bookdurgapuja/ (see docs/seotags.md). */
 const imageUrl = (image?: string) =>
-  image ? (image.startsWith('http') ? image : `https://pujosamiti.github.io/book/${image}`) : undefined
+  image ? (image.startsWith('http') ? image : `https://pujosamiti.github.io/bookdurgapuja/${image}`) : undefined
 
 const resolveLink = (href: string) => {
   const m = href.match(/^(?:\.\/)?(\d+)-(.+)\.md$/)
@@ -46,14 +46,25 @@ export function DurgaPujaIndex() {
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <Seo
         title="Durga Puja"
-        description="Bengali Durga Puja, explained properly — every day, every ritual, every story and every mantra, from Khunti Puja to Kojagari Lakshmi Puja. An encyclopedia by the Magarpatta pujo samiti."
+        description={
+          data?.meta.oneLiner ??
+          'Bengali Durga Puja, explained properly — every day, every ritual, every story and every mantra, from Khunti Puja to Kojagari Lakshmi Puja. An encyclopedia by the Magarpatta pujo samiti.'
+        }
         path="/durga-puja"
         type="article"
+        image={imageUrl(data?.meta.image)}
       />
       {isPending || !data ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
         <>
+          {data.meta.image && (
+            <img
+              src={data.meta.image.startsWith('http') ? data.meta.image : `/bookdurgapuja/${data.meta.image}`}
+              alt={data.meta.title}
+              className="w-full rounded-xl border object-cover shadow-sm"
+            />
+          )}
           <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
           <div className="flex justify-end">
             <Button size="sm" asChild>
@@ -145,7 +156,7 @@ export function DurgaPujaChapter() {
             {data.meta.author && <p className="text-sm text-muted-foreground">লিখেছেন · {data.meta.author}</p>}
             {data.meta.image && (
               <img
-                src={data.meta.image.startsWith('http') ? data.meta.image : `/book/${data.meta.image}`}
+                src={data.meta.image.startsWith('http') ? data.meta.image : `/bookdurgapuja/${data.meta.image}`}
                 alt={data.meta.title}
                 className="mt-3 w-full rounded-xl border object-cover shadow-sm"
               />

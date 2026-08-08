@@ -4,6 +4,7 @@ bengali: "মহাষ্টমী"
 order: 9
 when: "The eighth lunar day (tithi) of Devi Paksha — the summit of the main puja; Sandhi Puja at the tithi's turn"
 oneLiner: "The summit of Durga Puja — anjali on an empty stomach, a living child worshipped as the Goddess, and the electric forty-eight minutes when Chamunda is born."
+image: durga-puja-09.webp
 ---
 
 ## What it is

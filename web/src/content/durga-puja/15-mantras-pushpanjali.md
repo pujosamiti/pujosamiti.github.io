@@ -4,6 +4,7 @@ bengali: "পুষ্পাঞ্জলি মন্ত্র"
 order: 15
 when: "Morning anjali on Saptami, Ashtami and Nabami, after the day's worship"
 oneLiner: "The day-wise flower-offering mantras the whole community recites — Saptami asks, Mahashtami praises the slayer, Nabami contemplates time — with the opening purification, the offering refrain and each day's pranam."
+image: durga-puja-15.webp
 ---
 
 ## Flowers in cupped hands

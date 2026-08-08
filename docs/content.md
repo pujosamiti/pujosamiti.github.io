@@ -19,7 +19,7 @@ is a `git revert` away.
 | Section | Folder | URL |
 |---|---|---|
 | Durga Puja book | `web/src/content/durga-puja/*.md` | `/durga-puja` and `/durga-puja/<slug>` |
-| Content images | `web/public/book/` | `https://pujosamiti.github.io/book/<filename>` |
+| Content images | `web/public/bookdurgapuja/` | `https://pujosamiti.github.io/bookdurgapuja/<filename>` |
 | Pujo Sankhya (future) | `web/src/content/pujo-sankhya/…` (planned) | `/pujo-sankhya/…` (planned) |
 
 ## Filenames decide order and URL
@@ -71,13 +71,13 @@ optional but recommended when the value contains `:` or `—`.
 
 ## Images
 
-**Where to copy:** `web/public/book/`
-**Resulting URL:** `https://pujosamiti.github.io/book/<filename>`
+**Where to copy:** `web/public/bookdurgapuja/`
+**Resulting URL:** `https://pujosamiti.github.io/bookdurgapuja/<filename>`
 
 In frontmatter, use either form:
 
 ```yaml
-image: ashtami.webp                                  # → https://pujosamiti.github.io/book/ashtami.webp
+image: ashtami.webp                                  # → https://pujosamiti.github.io/bookdurgapuja/ashtami.webp
 image: https://example.com/full/url.webp             # used as-is
 ```
 
@@ -90,7 +90,7 @@ Practical specs:
   square-ish from the centre, so keep the subject centred.
 - WebP, ideally under 300 KB.
 - Inside the article body, images work with normal markdown:
-  `![Kola bou being bathed](/book/kola-bou-snan.webp)` — same folder, same
+  `![Kola bou being bathed](/bookdurgapuja/kola-bou-snan.webp)` — same folder, same
   URL rule.
 
 ## Linking between pages
@@ -122,7 +122,7 @@ Standard markdown plus GFM via the shared renderer
 ## The publish checklist
 
 1. Edit or add `web/src/content/durga-puja/NN-slug.md` (frontmatter + body).
-2. If the page has a share image, copy it to `web/public/book/` and set
+2. If the page has a share image, copy it to `web/public/bookdurgapuja/` and set
    `image:` in the frontmatter.
 3. `npm run build -w web` locally if you want to check — the build prints
    one `prerendered /durga-puja/…` line per page; a new file should appear

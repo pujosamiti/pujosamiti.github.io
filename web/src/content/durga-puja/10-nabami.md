@@ -4,6 +4,7 @@ bengali: মহানবমী
 order: 10
 when: The ninth day of Durga Puja — the last full day of worship
 oneLiner: The final full day of the Devi's worship — the great fire ritual with its 108 bel leaves, the grandest bhog of the year, dhunuchi dances to a thundering dhak, and a joy that already carries the first grain of goodbye.
+image: durga-puja-10.webp
 ---
 
 ## What it is

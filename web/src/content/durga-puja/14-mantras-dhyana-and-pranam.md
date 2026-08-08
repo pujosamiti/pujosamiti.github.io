@@ -4,6 +4,7 @@ bengali: "ধ্যান ও প্রণাম মন্ত্র"
 order: 14
 when: "Throughout the pujo — the dhyana at the start of each day's worship, the pranams at every act of salutation before the goddess"
 oneLiner: "The meditation-verse that paints the ten-armed goddess in words, and the salutations — Sarva-mangala-mangalye above all — that every Bengali learns by heart."
+image: durga-puja-14.webp
 ---
 
 ## Where every session begins

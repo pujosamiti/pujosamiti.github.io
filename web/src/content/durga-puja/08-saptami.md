@@ -4,6 +4,7 @@ bengali: "মহাসপ্তমী"
 order: 8
 when: "Seventh tithi of Devi Paksha — the day after Shashthi, usually late September or October"
 oneLiner: "The pujo proper begins: a banana-tree bride is bathed before dawn, the Goddess receives the world's waters through a mirror, and life-breath enters the clay."
+image: durga-puja-08.webp
 ---
 
 ## What it is

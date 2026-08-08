@@ -4,6 +4,7 @@ bengali: মহালয়া
 order: 4
 when: The new-moon day (amavasya) that ends Pitri Paksha and opens Devi Paksha — usually six or seven days before Shashthi, in September–October
 oneLiner: The dawn that turns the year toward Pujo — ancestors are honoured at the water's edge, a radio programme from the 1930s wakes a whole community at 4 a.m., and the Goddess is invited to begin her journey home.
+image: durga-puja-04.webp
 ---
 
 ## What it is

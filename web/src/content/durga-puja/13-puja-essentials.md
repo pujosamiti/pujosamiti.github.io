@@ -4,6 +4,7 @@ bengali: "দূর্গা পুজোর ফর্দ"
 order: 13
 when: "Assembled through Ashvin, checked stage by stage"
 oneLiner: "The samiti's complete bilingual checklist of every item the pujo needs, ritual by ritual — from kalparambha to Dashami."
+image: durga-puja-13.webp
 ---
 
 ## The loveliest paperwork
