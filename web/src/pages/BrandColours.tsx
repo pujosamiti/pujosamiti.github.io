@@ -3,7 +3,7 @@ import { Seo } from '@/components/Seo'
 
 /**
  * The "Pujosamiti — Bengali Visual Identity" artifact, VERBATIM. The page is
- * shipped as a self-contained static file (public/brandcolours.html) and
+ * shipped as a self-contained static file (public/brand-identity.html) and
  * framed here so its own styling renders untouched by the app's CSS —
  * palette, alpona motifs, phone mock and all.
  */
