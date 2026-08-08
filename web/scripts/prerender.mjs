@@ -69,7 +69,7 @@ for (const r of ROUTES) {
   )
   html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ORIGIN}${r.path}" />`)
   if (r.image) html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${esc(r.image)}" />`)
-  html = html.replace('</head>', `<link rel="canonical" href="${ORIGIN}${r.path}" />\n</head>`)
+  html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${ORIGIN}${r.path}" />`)
   const out = join(dist, ...r.path.split('/').filter(Boolean), 'index.html')
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(out, html)
