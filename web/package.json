@@ -13,6 +13,7 @@
   "dependencies": {
     "@pujosamiti/shared": "*",
     "@radix-ui/react-slot": "^1.3.3",
+    "@tailwindcss/typography": "^0.5.20",
     "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-query": "^5.101.4",
     "better-auth": "^1.6.25",

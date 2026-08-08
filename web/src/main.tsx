@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
 import { Events } from '@/pages/Events'
+import { DurgaPujaChapter, DurgaPujaIndex } from '@/pages/DurgaPuja'
 import { Home } from '@/pages/Home'
 import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
@@ -44,6 +45,8 @@ createRoot(document.getElementById('root')!).render(
           <Route element={<AppLayout />}>
             <Route index element={<Home />} />
             <Route path="schedule" element={<Schedule />} />
+            <Route path="durga-puja" element={<DurgaPujaIndex />} />
+            <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
             <Route path="membersonly" element={<MembersOnly />} />
             <Route path="login" element={<Login />} />
             <Route path="profile" element={<Profile />} />
