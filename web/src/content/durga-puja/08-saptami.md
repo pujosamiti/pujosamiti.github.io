@@ -164,7 +164,7 @@ The flowers actually leave your hands under the offering refrain — *eṣa saca
 
 **In simple words:** O auspiciousness within everything auspicious, gracious one who accomplishes every aim, refuge of all, three-eyed Gauri, Narayani — we bow to you. If you learn one verse of the whole pujo by heart, learn this one.
 
-All three days' anjali texts, with the opening purification, the offering refrain, and each day's pranam, are given in full in the pushpanjali chapter (15-mantras-pushpanjali.md). If you miss a word on the morning itself, tradition is untroubled: the offering is the attention, not the elocution.
+All three days' anjali texts, with the opening purification, the offering refrain, and each day's pranam, are given in full in the pushpanjali chapter ([Pushpanjali Mantras — Saptami, Mahashtami, Nabami](15-mantras-pushpanjali.md)). If you miss a word on the morning itself, tradition is untroubled: the offering is the attention, not the elocution.
 
 ### Bhog — the first full feast
 

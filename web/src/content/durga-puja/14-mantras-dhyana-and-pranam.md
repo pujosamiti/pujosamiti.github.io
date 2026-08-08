@@ -6,7 +6,7 @@ when: "Throughout the pujo — the dhyana at the start of each day's worship, th
 oneLiner: "The meditation-verse that paints the ten-armed goddess in words, and the salutations — Sarva-mangala-mangalye above all — that every Bengali learns by heart."
 ---
 
-# Dhyana and Pranam Mantras
+## Where every session begins
 
 Every session of Durga Puja worship — Saptami morning, Ashtami morning,
 Nabami morning, sandhi puja — begins the same way. Before a single flower is

@@ -6,7 +6,7 @@ when: "Before everything — the foundations"
 oneLiner: "Who Durga is: the demon she slays, the daughter she becomes in Bengal, and how her autumn worship grew into the greatest festival of both Bengals."
 ---
 
-# The Goddess and Her Story
+## Who is coming
 
 Before the first drumbeat, it is worth knowing exactly who is coming.
 

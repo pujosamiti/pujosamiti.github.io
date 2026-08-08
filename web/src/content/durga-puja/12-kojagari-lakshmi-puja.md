@@ -6,9 +6,9 @@ when: "Sharad Purnima — the Ashwin full moon, four to five days after Bijoya D
 oneLiner: "On the brightest full moon of the year, Lakshmi walks the earth asking 'Who is awake?' — and Bengal answers with lamps, alpona and a hushed, homely puja that gently closes the festive season."
 ---
 
-# Kojagari Lakshmi Puja
+## The night after the farewell
 
-The pujo does not quite end at the river. Durga Pujo goes out with a bang — drums, tears, dancing, the splash of immersion (11-dashami.md) — and then, just as the pandal falls quiet and the lights start coming down, Bengal does something lovely and unexpected. Four or five evenings after Bijoya Dashami, on the biggest, brightest full moon of the year, every Bengali home lights a lamp, draws little footprints on the floor walking *into* the house, and sits down to welcome one more guest: *Ma Lokkhi* (মা লক্ষ্মী), the goddess of wealth, harvest and household well-being.
+The pujo does not quite end at the river. Durga Pujo goes out with a bang — drums, tears, dancing, the splash of immersion ([Bijoya Dashami](11-dashami.md)) — and then, just as the pandal falls quiet and the lights start coming down, Bengal does something lovely and unexpected. Four or five evenings after Bijoya Dashami, on the biggest, brightest full moon of the year, every Bengali home lights a lamp, draws little footprints on the floor walking *into* the house, and sits down to welcome one more guest: *Ma Lokkhi* (মা লক্ষ্মী), the goddess of wealth, harvest and household well-being.
 
 This is *Kojagari Lakshmi Puja* (কোজাগরী লক্ষ্মীপূজা) — in everyday Bengali, simply *Lokkhi Pujo* (লক্ষ্মীপূজো). If Durga Pujo is the roaring public festival, Kojagari is its soft coda, kept in a completely different key: no *dhak* (ঢাক), no crowds, no spectacle. Just moonlight, incense, a grandmother reading aloud from a slim red-bordered book, and the belief that on this one night the goddess herself moves from house to house, seeing who has stayed awake for her. Where Durga arrived to thunder, Lakshmi arrives in silence — and must find the house awake.
 

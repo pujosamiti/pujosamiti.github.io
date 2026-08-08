@@ -6,7 +6,7 @@ when: "The mantra shelf — Shashthi evening and Saptami dawn"
 oneLiner: "The words that wake the goddess out of season, invite the bel tree, bathe the nine plants, and call life-breath into the clay."
 ---
 
-# Mantras: Bodhon and the Nabapatrika
+## The words of the two consecration days
 
 These are the working words of the pujo's two consecration days: Shashthi's
 awakening and invitation, and Saptami's bathing and enlivening. They are the

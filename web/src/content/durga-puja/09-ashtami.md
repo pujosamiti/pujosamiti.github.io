@@ -105,7 +105,7 @@ durgā śivā kṣamā dhātrī svāhā svadhā namo'stu te*
 
 **In simple words:** you who are the ever-victorious and the auspicious; Kali, Bhadrakali, the bearer of the skull; Durga, the gracious one, patience itself, the sustainer of all; you who are *svaha* and *svadha* — the very words by which offerings reach the gods and the ancestors — we bow to you. Each name is a facet; recited together they are the whole jewel.
 
-The full day-wise texts — with the opening Vishnu smaran, the *ete gandhapushpe* greetings to every seat in the frame, the offering refrain and all three days' rounds — are in the pushpanjali chapter (15-mantras-pushpanjali.md).
+The full day-wise texts — with the opening Vishnu smaran, the *ete gandhapushpe* greetings to every seat in the frame, the offering refrain and all three days' rounds — are in the pushpanjali chapter ([Pushpanjali Mantras — Saptami, Mahashtami, Nabami](15-mantras-pushpanjali.md)).
 
 **Items:** flowers (marigold, hibiscus, whatever the samiti's flower order yielded), bel leaves, sandal paste; clean hands and, by custom, an empty stomach.
 

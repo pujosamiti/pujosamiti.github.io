@@ -6,7 +6,7 @@ when: "Assembled through Ashvin, checked stage by stage"
 oneLiner: "The samiti's complete bilingual checklist of every item the pujo needs, ritual by ritual — from kalparambha to Dashami."
 ---
 
-# Puja Essentials — the complete *fordo* (ফর্দ)
+## The loveliest paperwork
 
 Before a single mantra is spoken, a Bengali pujo begins with paperwork — the loveliest paperwork there is. Someone sits down with the purohit and writes out the *fordo*: the list of every single item the rituals will call for, from the five grains and the five gems to the sarees and the soils, the 108 lotuses and the single knife. Every household pujo has one; every barowari pujo lives or dies by one. What follows is our samiti's own fordo, compiled with our purohit for the 2022 pujo and kept as a living reference ever since. It is arranged the way the pujo itself unfolds: each section below is one ritual stage, and within it every item appears with its Bengali name, what it actually is, the quantity our paddhati calls for, and who arranges it.
 
@@ -36,7 +36,7 @@ One more thing before the tables, because a first-time reader will need it. Some
 
 ## 1 · KALPARAMBHO - BEGINNING OF THE PUJAS (Common for all days) কল্পারম্ভের দ্রব্য
 
-*Kalparambha* is the formal opening of the pujo — the *sankalpa*, the vow, in which the worshipper declares before the deity exactly what is about to be undertaken and for whose good. It happens on Shashthi morning (07-shashthi.md) and its kit repeats through the days: the ghot that seats the divine presence, the mirror and its three-legged stand, and the "fives" that recur through every Bengali ritual — five grains, five gems, five leaves, five coloured powders, five products of the cow — each set a compressed offering of the whole created world.
+*Kalparambha* is the formal opening of the pujo — the *sankalpa*, the vow, in which the worshipper declares before the deity exactly what is about to be undertaken and for whose good. It happens on Shashthi morning ([Maha Shashthi — The Awakening](07-shashthi.md)) and its kit repeats through the days: the ghot that seats the divine presence, the mirror and its three-legged stand, and the "fives" that recur through every Bengali ritual — five grains, five gems, five leaves, five coloured powders, five products of the cow — each set a compressed offering of the whole created world.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -72,7 +72,7 @@ One more thing before the tables, because a first-time reader will need it. Some
 
 ## 2 · MAHASNAN (Common for all days) মহাস্না্নের দ্রব্য
 
-The *Mahasnan* is the great ceremonial bath — performed not on the painted clay of the murti (which would dissolve) but on the Devi's reflection caught in the darpan, the mirror. This is the fordo's most maximalist page, and deliberately so: waters from rain, dew, springs, oceans and rivers; soils from palace gate and brothel door, anthill and crossroads, elephant tusk and ox horn — every corner and calling of the world sends a token, so the goddess is bathed by all of creation, excluding no one. Nearly every "impossible" item here lives as a sanctioned symbolic pinch. The bath repeats daily from Saptami (08-saptami.md).
+The *Mahasnan* is the great ceremonial bath — performed not on the painted clay of the murti (which would dissolve) but on the Devi's reflection caught in the darpan, the mirror. This is the fordo's most maximalist page, and deliberately so: waters from rain, dew, springs, oceans and rivers; soils from palace gate and brothel door, anthill and crossroads, elephant tusk and ox horn — every corner and calling of the world sends a token, so the goddess is bathed by all of creation, excluding no one. Nearly every "impossible" item here lives as a sanctioned symbolic pinch. The bath repeats daily from Saptami ([Maha Saptami](08-saptami.md)).
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -120,7 +120,7 @@ The *Mahasnan* is the great ceremonial bath — performed not on the painted cla
 
 ## 3 · Devi Bodhon / Akaal Bodhon বোধনের দ্রব্য
 
-*Bodhon* is the awakening — the untimely (*akaal*) rousing of the goddess in autumn, just as Rama once woke her before his battle with Ravana. It happens on Shashthi evening beneath (or beside) a bel tree (07-shashthi.md), which is why this list opens with a wood-apple branch bearing a pair of fruit: the tree itself is worshipped and dressed before the Devi is called into it.
+*Bodhon* is the awakening — the untimely (*akaal*) rousing of the goddess in autumn, just as Rama once woke her before his battle with Ravana. It happens on Shashthi evening beneath (or beside) a bel tree ([Maha Shashthi — The Awakening](07-shashthi.md)), which is why this list opens with a wood-apple branch bearing a pair of fruit: the tree itself is worshipped and dressed before the Devi is called into it.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -206,7 +206,7 @@ The *Mahasnan* is the great ceremonial bath — performed not on the painted cla
 
 ## 6 · Kola Bou Snan / Nabopatrika নবপত্রিকার দ্রব্যাদি
 
-At dawn on Saptami (08-saptami.md), nine plants — banana foremost, with kochu, turmeric, jayanti, bel, pomegranate, ashok, arum and paddy — are bound together with the white aparajita creeper, bathed in procession, draped in a white-and-red saree and installed beside Ganesh as the *Kola Bou*. She is the goddess as vegetation itself, the oldest agricultural layer of the whole festival — which is why her list reads half like a nursery order and half like a bride's trousseau: plants and jute rope on one side, comb, mirror, perfume, alta and rose water on the other.
+At dawn on Saptami ([Maha Saptami](08-saptami.md)), nine plants — banana foremost, with kochu, turmeric, jayanti, bel, pomegranate, ashok, arum and paddy — are bound together with the white aparajita creeper, bathed in procession, draped in a white-and-red saree and installed beside Ganesh as the *Kola Bou*. She is the goddess as vegetation itself, the oldest agricultural layer of the whole festival — which is why her list reads half like a nursery order and half like a bride's trousseau: plants and jute rope on one side, comb, mirror, perfume, alta and rose water on the other.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -245,7 +245,7 @@ At dawn on Saptami (08-saptami.md), nine plants — banana foremost, with kochu,
 
 ## 7 · Saptami Puja সপ্তমী পূজার দ্রব্যাদি
 
-With the Nabapatrika installed and the Mahasnan done, Saptami's own puja (08-saptami.md) brings the Devi's images fully to life and begins the daily rhythm of worship. Its distinctive lines are the *baran bastra* — new cloth honouring the guru, purohit, pujak and acharya, the human officiants formally invested before the worship — and the first of the pujo's great counts: 108 bel leaves.
+With the Nabapatrika installed and the Mahasnan done, Saptami's own puja ([Maha Saptami](08-saptami.md)) brings the Devi's images fully to life and begins the daily rhythm of worship. Its distinctive lines are the *baran bastra* — new cloth honouring the guru, purohit, pujak and acharya, the human officiants formally invested before the worship — and the first of the pujo's great counts: 108 bel leaves.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -265,7 +265,7 @@ With the Nabapatrika installed and the Mahasnan done, Saptami's own puja (08-sap
 
 ## 8 · Ashtami Puja অষ্টমী পূজার দ্রব্যাদি
 
-Mahashtami (09-mahashtami.md) is the pujo's high noon — the largest anjali crowd of the year, the finest saree, the grandest naibedya. The "40 or 22 or 1" quantities on this list are not indecision but scaling: the full paddhati serves naibedya to every attendant deity of the frame — Lakshmi, Saraswati, Kartik, Ganesh and the rest — and permits a reduced or single set where means are modest.
+Mahashtami ([Maha Ashtami](09-ashtami.md)) is the pujo's high noon — the largest anjali crowd of the year, the finest saree, the grandest naibedya. The "40 or 22 or 1" quantities on this list are not indecision but scaling: the full paddhati serves naibedya to every attendant deity of the frame — Lakshmi, Saraswati, Kartik, Ganesh and the rest — and permits a reduced or single set where means are modest.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -328,7 +328,7 @@ Sandhi Puja is the pujo's most intense 48 minutes — the juncture of Ashtami an
 
 ## 10 · Navami Puja নবমী পূজার দ্রব্যাদি
 
-Mahanabami (10-mahanabami.md) is the last full day of worship, and its list shows it: the daily Mahasnan and naibedya sets repeat "as on the previous day," but now joined by the makings of the homa fire, the 51 betel leaves, the Kumari Puja materials, and the dakshina of 51 coins — the day's rites reaching their fullest, because tomorrow there will be no puja to prepare for.
+Mahanabami ([Maha Nabami](10-nabami.md)) is the last full day of worship, and its list shows it: the daily Mahasnan and naibedya sets repeat "as on the previous day," but now joined by the makings of the homa fire, the 51 betel leaves, the Kumari Puja materials, and the dakshina of 51 coins — the day's rites reaching their fullest, because tomorrow there will be no puja to prepare for.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -366,7 +366,7 @@ Mahanabami (10-mahanabami.md) is the last full day of worship, and its list show
 
 ## 11 · Navami Hom / Yagnya নবমী হোমের দ্রব্যাদি
 
-The homa is the Vedic fire-offering that crowns Nabami (10-mahanabami.md): a sand-bedded fire fed with wood, kusha grass and a full *ser* of ghee, into which 108 ghee-dipped bel leaves are offered one by one. It is the shortest list with the most consequential quantities — run out of ghee mid-homa and there is no graceful recovery.
+The homa is the Vedic fire-offering that crowns Nabami ([Maha Nabami](10-nabami.md)): a sand-bedded fire fed with wood, kusha grass and a full *ser* of ghee, into which 108 ghee-dipped bel leaves are offered one by one. It is the shortest list with the most consequential quantities — run out of ghee mid-homa and there is no graceful recovery.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|
@@ -381,7 +381,7 @@ The homa is the Vedic fire-offering that crowns Nabami (10-mahanabami.md): a san
 
 ## 12 · Dashami দশমী পূজার দ্রব্যাদি
 
-Dashami's list (11-dashami.md) is brief and bittersweet: a short morning puja in ten *upacharas*, then the farewell — dadhi and murki and sweets for the goddess's journey, and the ritual sidhdhi that old paddhatis prescribe for the send-off. After this the fordo's work is done; what remains is the baran, the sindur khela and the immersion.
+Dashami's list ([Bijoya Dashami](11-dashami.md)) is brief and bittersweet: a short morning puja in ten *upacharas*, then the farewell — dadhi and murki and sweets for the goddess's journey, and the ritual sidhdhi that old paddhatis prescribe for the send-off. After this the fordo's work is done; what remains is the baran, the sindur khela and the immersion.
 
 | Item | What it is | Qty | Arranged by | Notes |
 |---|---|---|---|---|

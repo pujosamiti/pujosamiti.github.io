@@ -6,7 +6,7 @@ when: "The sandhikshan — the last 24 minutes of Ashtami and the first 24 minut
 oneLiner: "The words of the forty-eight minutes: Chamunda's terrifying dhyana, the nine-syllable Navarna mantra, the Devi Mahatmya verses that tell why this exact moment belongs to her, and the formulas of the hundred and eight lamps."
 ---
 
-# Sandhi Puja Mantras
+## Forty-eight minutes of words
 
 *Sandhi puja* (সন্ধিপূজা) compresses the whole festival into forty-eight minutes, and its mantras match: fewer words than any other rite of the pujo, and the darkest. The rite occupies the *sandhikshan* (সন্ধিক্ষণ) — the "juncture moment" made of the last 24 minutes of the Ashtami tithi and the first 24 minutes of Nabami (see [Ashtami](09-ashtami.md) and [Nabami](10-nabami.md)). Tradition holds that at exactly this juncture the goddess took the form of **Chamunda** (চামুণ্ডা) and destroyed the demon generals Chanda and Munda. So for these forty-eight minutes the worship turns away from the familiar ten-armed golden mother and addresses her most terrifying aspect: the gaunt, dark, sword-bearing goddess who sprang from the furrowed brow of Ambika in the seventh chapter of the *Devi Mahatmya* — the "Glory of the Goddess" embedded in the Markandeya Purana and recited across Bengal as the *Chandi path* (see [The Chandi](20-mantras-the-chandi.md)).
 

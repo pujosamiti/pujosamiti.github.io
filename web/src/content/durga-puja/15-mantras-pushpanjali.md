@@ -6,7 +6,7 @@ when: "Morning anjali on Saptami, Ashtami and Nabami, after the day's worship"
 oneLiner: "The day-wise flower-offering mantras the whole community recites — Saptami asks, Mahashtami praises the slayer, Nabami contemplates time — with the opening purification, the offering refrain and each day's pranam."
 ---
 
-# Pushpanjali Mantras
+## Flowers in cupped hands
 
 **Pushpanjali** (পুষ্পাঞ্জলি) — "an offering of flowers from cupped hands" —
 is the one moment of the pujo when the liturgy passes from the purohit's

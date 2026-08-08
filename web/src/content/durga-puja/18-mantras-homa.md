@@ -6,7 +6,7 @@ when: "Mahanabami, after the main nabami puja — the fire ritual that seals the
 oneLiner: "The words of the fire: establishing Agni, the Mahavyahriti oblations, the svaha formulas of the Durga homa, the 108 bel leaves, and the purnahuti verse of fullness that completes it all."
 ---
 
-# Nabami Homa Mantras
+## When the worship changes medium
 
 On Mahanabami, after the day's puja and anjali (see [Nabami](10-nabami.md)), the worship changes medium. Everything so far has been offered to the goddess directly — flowers at her feet, food before her image. The *homa* (হোম), also called *yajna* (যজ্ঞ), offers through fire instead. A fire is kindled in a temporary altar-pit or platform, the *homa kunda*, usually built beside the mandap with bricks or banked sand, fed with *ghee* (ঘি) and wood — mango wood is the Bengali standard — and each offering is placed into the flames with a mantra ending in the word *svāhā*. Agni, the fire god of the oldest Vedic ritual, acts as the mouth of the gods: what the fire consumes, he carries to the deity. It is the most ancient layer of Hindu ritual embedded inside the pujo, and the smoke, the crackle and the rhythmic *svāhā… svāhā…* make it one of Nabami's most watchable hours.
 
