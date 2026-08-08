@@ -17,7 +17,12 @@ import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
 
+import { captureTokenFromUrl } from '@/lib/auth'
+
 import './index.css'
+
+// The API bridges the session back in the URL fragment after Google sign-in
+captureTokenFromUrl()
 
 // Second half of the GitHub Pages SPA fallback (see public/404.html)
 const redirect = sessionStorage.getItem('spa-redirect')

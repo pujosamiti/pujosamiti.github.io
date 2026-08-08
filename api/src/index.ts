@@ -5,6 +5,7 @@ import { createAuth } from './auth'
 import type { Env } from './env'
 import { adminRoutes } from './routes/admin'
 import { memberRoutes } from './routes/members'
+import { oauthRoutes } from './routes/oauth'
 import { onboardingRoutes } from './routes/onboarding'
 import { postRoutes } from './routes/posts'
 import { publicRoutes } from './routes/public'
@@ -24,6 +25,7 @@ app.get('/health', (c) => c.json({ ok: true }))
 // better-auth owns /api/auth/* (social sign-in flows, session, sign-out)
 app.on(['GET', 'POST'], '/api/auth/*', (c) => createAuth(c.env).handler(c.req.raw))
 
+app.route('/api/oauth', oauthRoutes)
 app.route('/api/public', publicRoutes)
 app.route('/api/public', postRoutes)
 app.route('/api/members', memberRoutes)

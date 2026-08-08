@@ -4,9 +4,16 @@ import type { ApiResult } from '@pujosamiti/shared'
 export const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8787'
 
 export async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  // Cookies where the browser allows them; the bearer token everywhere else
+  // (iOS blocks third-party cookies outright) — see lib/auth.ts.
+  const token = localStorage.getItem('pujosamiti.session')
   const res = await fetch(`${API_URL}${path}`, {
-    credentials: 'include', // better-auth session cookie
+    credentials: 'include',
     ...init,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...init?.headers,
+    },
   })
   if (!res.ok) {
     // surface the server's own error message when it sent one
