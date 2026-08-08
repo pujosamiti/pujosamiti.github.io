@@ -12,7 +12,7 @@ export function Home() {
   return (
     <div className="flex flex-col gap-6">
       <Seo
-        title="Durga Puja Magarpatta City Pune"
+        title="Durga Puja"
         description="The probasi bengali community of Magarpatta City, Pune celebrates the pujo the para way — Durga Puja, Kojagari Lakshmi Puja, Saraswati Puja and Poila Baishakh, together."
         path="/"
       />
