@@ -53,7 +53,16 @@ export function DurgaPujaIndex() {
       {isPending || !data ? (
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
-        <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
+        <>
+          <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
+          <div className="flex justify-end">
+            <Button size="sm" asChild>
+              <Link to={`/durga-puja/${chapters[0].slug}`}>
+                {titleFromSlug(chapters[0].slug)} <ChevronRight />
+              </Link>
+            </Button>
+          </div>
+        </>
       )}
     </div>
   )
@@ -87,7 +96,11 @@ export function DurgaPujaChapter() {
           </Link>
         </Button>
       ) : (
-        <span />
+        <Button variant="outline" size="sm" asChild>
+          <Link to="/durga-puja">
+            <ChevronLeft /> The book
+          </Link>
+        </Button>
       )}
       {next ? (
         <Button variant="outline" size="sm" asChild>
