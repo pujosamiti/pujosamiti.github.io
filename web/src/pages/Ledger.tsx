@@ -20,6 +20,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
+import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -86,6 +87,12 @@ function CorePage({ title, children }: { title: string; children: (me: Me) => Re
   }
   return (
     <div className="flex flex-col gap-4">
+      <Seo
+        title={title}
+        description={`${title} — samiti accounts, for core members.`}
+        path={`/${title.toLowerCase().replace(/\s+/g, '')}`}
+        noindex
+      />
       <BackLink />
       <h1 className="text-2xl font-bold">{title}</h1>
       {children(me)}

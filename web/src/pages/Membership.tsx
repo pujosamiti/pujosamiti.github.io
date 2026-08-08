@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
+import { Seo } from '@/components/Seo'
 
 const TIERS: FamilyTier[] = ['non_member', 'member', 'core']
 const TIER_LABEL: Record<FamilyTier, string> = {
@@ -80,6 +81,7 @@ export function Membership() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo title="Membership" description="Samiti membership register." path="/membership" noindex />
       <BackLink />
       <h1 className="text-2xl font-bold">Membership</h1>
 

@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
 import { useEvents } from '@/lib/tasks'
+import { Seo } from '@/components/Seo'
 
 /** Nirghanto editor (Durga Pujo only). Core members view; admins manage. */
 export function Nirghanto() {
@@ -42,6 +43,7 @@ export function Nirghanto() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo title="Nirghanto workspace" description="Durga Pujo nirghanto workspace." path="/nirghanto" noindex />
       <BackLink />
       <h1 className="text-2xl font-bold">Nirghanto</h1>
       <div className="relative max-w-md">

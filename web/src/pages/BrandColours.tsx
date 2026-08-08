@@ -1,4 +1,5 @@
 import { BackLink } from '@/components/BackLink'
+import { Seo } from '@/components/Seo'
 
 /**
  * The "Pujosamiti — Bengali Visual Identity" artifact, VERBATIM. The page is
@@ -9,6 +10,11 @@ import { BackLink } from '@/components/BackLink'
 export function BrandColours() {
   return (
     <div className="flex h-full flex-col gap-3">
+      <Seo
+        title="Brand Colours"
+        description="The laal-paar shada visual identity of the Magarpatta pujo samiti — palette, logo variants, alpona rules and usage."
+        path="/brandcolours"
+      />
       <BackLink />
       <iframe
         src="/brandcolours.html"

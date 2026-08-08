@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { signOut, useSession } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { leavePortal, useMyProfile } from '@/lib/onboarding'
+import { Seo } from '@/components/Seo'
 
 /** Self-service profile: any registered signed-in person, member or pending. */
 export function Profile() {
@@ -30,6 +31,7 @@ export function Profile() {
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
+      <Seo title="Profile" description="Your samiti profile." path="/profile" noindex />
       <ProfileForm
         email={session.user.email}
         initial={profile}

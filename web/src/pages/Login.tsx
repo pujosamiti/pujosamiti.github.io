@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { signInWithGoogle, signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { useMyProfile, useOnboardingState } from '@/lib/onboarding'
+import { Seo } from '@/components/Seo'
 
 /** Signed-in but not a member: route to the right funnel stage. */
 function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut: () => void }) {
@@ -174,6 +175,7 @@ export function Login() {
   // ── Signed out ────────────────────────────────────────────────────────────
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
+      <Seo title="Member sign in" description="Sign in to the samiti members area." path="/login" noindex />
       <img
         src={logoBw}
         alt=""

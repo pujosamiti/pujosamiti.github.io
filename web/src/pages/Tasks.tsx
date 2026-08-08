@@ -10,6 +10,7 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Seo } from '@/components/Seo'
 import { useMemberState } from '@/lib/member'
 import {
   createMasterTask,
@@ -80,6 +81,7 @@ export function Tasks() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo title="Puja Planning" description="Durga Pujo task distribution for samiti members." path="/tasks" noindex />
       <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">Task Distribution</h1>

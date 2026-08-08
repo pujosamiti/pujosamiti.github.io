@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
+import { Seo } from '@/components/Seo'
 
 const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
   'durga-pujo': { bn: 'দুর্গাপূজা', en: 'Durga Pujo' },
@@ -55,6 +56,7 @@ export function Events() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo title="Events" description="The samiti events calendar." path="/events" noindex />
       <BackLink />
       <h1 className="text-2xl font-bold">Events</h1>
       <div className="relative max-w-md">

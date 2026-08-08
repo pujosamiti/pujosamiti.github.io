@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { useOnboardingState } from '@/lib/onboarding'
+import { Seo } from '@/components/Seo'
 
 // tone = palette token washing the card background (icon wears it at full hue)
 const memberSections = [
@@ -36,6 +37,7 @@ export function MembersOnly() {
 
   return (
     <div className="flex flex-col gap-4">
+      <Seo title="Members Only" description="The samiti members area — ledger, wallets, sponsorship, planning." path="/membersonly" noindex />
       <h1 className="text-2xl font-bold">Members Only</h1>
 
       {me ? (
