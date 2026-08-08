@@ -17,7 +17,7 @@ export function BrandColours() {
       />
       <BackLink />
       <iframe
-        src="/brandcolours.html"
+        src="/brand-identity.html"
         title="Pujosamiti — Bengali Visual Identity"
         className="min-h-[calc(100dvh-11rem)] w-full rounded-xl border bg-white"
       />
