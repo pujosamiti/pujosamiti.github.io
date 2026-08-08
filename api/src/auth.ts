@@ -41,7 +41,10 @@ export function createAuth(env: Env) {
       },
     },
     plugins: [bearer()],
-    oauthConfig: {
+    account: {
+      // The state itself still lives in the verification table (random,
+      // matched on callback, single-use); this only drops the duplicate
+      // cookie check that iOS can never satisfy.
       skipStateCookieCheck: true,
     },
     advanced: {
