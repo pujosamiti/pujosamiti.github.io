@@ -16,6 +16,12 @@ const TITLE_SUFFIX = 'Magarpatta City Pune'
 
 const ROUTES = [
   {
+    path: '/brandcolours',
+    title: `Brand Colours ${TITLE_SUFFIX}`,
+    description:
+      'The laal-paar shada visual identity of the Magarpatta pujo samiti — palette, logo variants, alpona rules and usage.',
+  },
+  {
     path: '/schedule',
     title: `Durga Puja Timetable and Schedule ${TITLE_SUFFIX}`,
     description:
