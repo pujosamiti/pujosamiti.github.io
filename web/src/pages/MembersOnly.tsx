@@ -29,6 +29,10 @@ export function MembersOnly() {
   const { session, memberState } = useMemberState()
   const { data: onboarding } = useOnboardingState()
   const me = memberState?.status === 'member' ? memberState.me : null
+  // A member never gets into the core sections, so don't dangle them — they
+  // just read as a list of locked doors. Signed-out visitors still see the
+  // full set with its gate labels, which is what tells them what membership is for.
+  const sections = memberSections.filter((s) => !(s.coreOnly && me?.role === 'member'))
 
   const endSession = async () => {
     await signOut()
@@ -119,7 +123,7 @@ export function MembersOnly() {
       )}
 
       <div className="grid gap-3 sm:grid-cols-2">
-        {memberSections.map(({ icon: Icon, title, desc, gate, to, coreOnly, tone }) => {
+        {sections.map(({ icon: Icon, title, desc, gate, to, coreOnly, tone }) => {
           const unlocked = !!me && !!to && (!coreOnly || me.role !== 'member')
           const suffix = !me ? ` — ${gate}` : unlocked ? '' : coreOnly ? ' — Core members only' : ' — coming soon'
           const card = (
