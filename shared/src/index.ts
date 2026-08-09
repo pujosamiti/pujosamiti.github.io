@@ -32,6 +32,8 @@ export interface PujoEvent {
   /** Nirghanto header (durga pujo) */
   purohitName: string | null;
   purohitPhone: string | null;
+  /** Free note shown above the nirghanto */
+  notes: string | null;
 }
 
 // ── Public content ──────────────────────────────────────────────────────────
@@ -256,6 +258,7 @@ export interface AdminEventInput {
   isActive: boolean;
   purohitName: string | null;
   purohitPhone: string | null;
+  notes: string | null;
 }
 
 // ── Accounting (Sheets is source of truth; Worker reads via service account) ─

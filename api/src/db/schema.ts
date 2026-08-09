@@ -74,6 +74,8 @@ export const event = sqliteTable('event', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(false),
   purohitName: text('purohit_name'), // nirghanto header (durga pujo)
   purohitPhone: text('purohit_phone'),
+  /** Free note shown above the nirghanto — e.g. which panjika and place it follows. */
+  notes: text('notes'),
 })
 
 /**

@@ -156,6 +156,7 @@ function EventForm({ event, onClose }: { event?: PujoEvent; onClose: () => void 
     isActive: event?.isActive ?? false,
     purohitName: event?.purohitName ?? null,
     purohitPhone: event?.purohitPhone ?? null,
+    notes: event?.notes ?? null,
   })
   const [error, setError] = useState<string | null>(null)
   const set = (patch: Partial<AdminEventInput>) => setForm((prev) => ({ ...prev, ...patch }))

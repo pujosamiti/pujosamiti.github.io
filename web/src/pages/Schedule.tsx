@@ -113,6 +113,9 @@ export function Schedule() {
                   )}
                 </p>
               )}
+              {selected.notes && (
+                <p className="mt-2 whitespace-pre-line text-sm opacity-90">{selected.notes}</p>
+              )}
             </CardHeader>
           </Card>
 

@@ -358,6 +358,7 @@ function eventValues(body: AdminEventInput) {
     isActive: !!body.isActive,
     purohitName: body.purohitName?.trim() || null,
     purohitPhone: body.purohitPhone?.trim() || null,
+    notes: body.notes?.trim() || null,
   }
 }
 
