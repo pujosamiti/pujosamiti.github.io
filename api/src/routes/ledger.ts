@@ -11,6 +11,7 @@ import type {
   ReimbursementClaimInput,
   SponsorshipItemInput,
   SponsorshipItemView,
+  SpendRow,
   WalletBalance,
 } from '@pujosamiti/shared'
 import { CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
@@ -44,6 +45,7 @@ export const ledgerRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 const MEMBER_OPEN: [string, RegExp][] = [
   ['GET', /\/ledger\/summary$/],
   ['GET', /\/ledger\/budget$/],
+  ['GET', /\/ledger\/spend$/],
   ['GET', /\/ledger\/sponsorship$/],
   ['POST', /\/ledger\/sponsorship\/pledges$/],
   // Un-pledging is theirs to undo — the handler checks it is their own.
@@ -500,6 +502,42 @@ ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {
 const budgetSlug = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 const budgetLineId = (year: number, category: string, sub: string | null) =>
   `bl-${year}-${budgetSlug(category)}-${sub ? budgetSlug(sub) : 'general'}`
+
+/** Season (1 July → 30 June) an IST date belongs to — mirrors the web's rule. */
+const seasonOf = (d: string) => (d >= `${d.slice(0, 4)}-07-01` ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1)
+
+/**
+ * Expense totals per season/category/sub-category. This is what the Budget vs
+ * Spend table runs on, and it is open to every member — the samiti's spending
+ * shape is theirs to see, while the individual entries behind it stay core.
+ */
+ledgerRoutes.get('/spend', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db
+    .select({
+      entryDate: schema.ledgerEntry.entryDate,
+      category: schema.ledgerEntry.category,
+      subCategory: schema.ledgerEntry.subCategory,
+      amount: schema.ledgerEntry.amount,
+      kind: schema.ledgerEntry.kind,
+      isActive: schema.ledgerEntry.isActive,
+    })
+    .from(schema.ledgerEntry)
+
+  const acc = new Map<string, SpendRow>()
+  for (const e of rows) {
+    if (!e.isActive || e.kind !== 'expense') continue
+    const season = seasonOf(e.entryDate)
+    const category = e.category ?? 'Misc'
+    const subCategory = e.subCategory ?? 'Misc'
+    const key = `${season}|${category}|${subCategory}`
+    const cur = acc.get(key) ?? { season, category, subCategory, total: 0, n: 0 }
+    cur.total += e.amount
+    cur.n += 1
+    acc.set(key, cur)
+  }
+  return c.json(ok([...acc.values()]))
+})
 
 ledgerRoutes.get('/budget', async (c) => {
   const year = Number(c.req.query('year'))

@@ -452,6 +452,22 @@ export interface BudgetLine {
   notes: string | null;
 }
 
+/**
+ * One season's expense total for a category/sub-category — what the Budget vs
+ * Spend table needs. Aggregated on the server so the table can be shown to
+ * every member without handing over the individual ledger entries.
+ * Uncategorised spend lands under "Misc", matching the report's own fallback.
+ */
+export interface SpendRow {
+  /** season-start year (season = 1 July → 30 June) */
+  season: number;
+  category: string;
+  subCategory: string;
+  total: number;
+  /** how many entries make up the total */
+  n: number;
+}
+
 export interface BudgetLineInput {
   year: number;
   category: string;

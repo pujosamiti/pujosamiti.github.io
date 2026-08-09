@@ -11,6 +11,7 @@ import type {
   ReimbursementClaim,
   ReimbursementClaimInput,
   SponsorshipItemView,
+  SpendRow,
 } from '@pujosamiti/shared'
 import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -36,7 +37,13 @@ const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`
 /** Entries harden 48 h after creation — edit/void disappear, admin included. */
 const entryLocked = (e: LedgerEntry) => Date.now() - e.createdAt > 48 * 60 * 60 * 1000
 const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
-const yearOf = (d: string) => d.slice(0, 4)
+/**
+ * The samiti's books run 1 July → 30 June, so the ledger is filtered by season
+ * rather than calendar year — a March expense belongs to the pujo that began
+ * the previous July. Mirrors the API's rule.
+ */
+const seasonOf = (d: string) => (d >= `${d.slice(0, 4)}-07-01` ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1)
+const seasonRange = (y: number) => `${y}–${String(y + 1).slice(2)} (Jul ${y} – Jun ${y + 1})`
 
 const useSummary = (seasonYear?: number | null) =>
   useQuery({
@@ -58,6 +65,7 @@ function useLedgerInvalidate() {
   return () => {
     void qc.invalidateQueries({ queryKey: ['ledger-summary'] })
     void qc.invalidateQueries({ queryKey: ['ledger-entries'] })
+    void qc.invalidateQueries({ queryKey: ['ledger-spend'] })
     void qc.invalidateQueries({ queryKey: ['ledger-claims'] })
     void qc.invalidateQueries({ queryKey: ['sponsorship'] })
   }
@@ -131,15 +139,20 @@ export const ReimbursementsPage = () => (
 )
 // ── Season spending (budget vs actuals, shown on the Wallets page) ──────────
 
-/** Season (1 July → 30 June) an IST date belongs to — mirrors the API's rule. */
-const seasonOf = (d: string) => (d >= `${d.slice(0, 4)}-07-01` ? Number(d.slice(0, 4)) : Number(d.slice(0, 4)) - 1)
-
 const useBudget = (year: number | null) =>
   useQuery({
     queryKey: ['budget', year],
     queryFn: () => api<BudgetLine[]>(`/api/members/ledger/budget?year=${year}`),
     enabled: !!year,
   })
+
+/**
+ * Spend totals per season/category/sub, aggregated by the API. Members can
+ * read this even though the entries behind it are core-only, which is what
+ * lets the Budget vs Spend table render for everyone.
+ */
+const useSpend = () =>
+  useQuery({ queryKey: ['ledger-spend'], queryFn: () => api<SpendRow[]>('/api/members/ledger/spend') })
 
 /**
  * Category/sub-category spending for a season, merged with the budget where
@@ -152,7 +165,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
     (events ?? []).filter((e) => e.kind === 'durga-pujo').find((e) => e.isActive)?.year ?? new Date().getFullYear()
   const readOnly = y !== activeYear
   const { data: lines, isPending } = useBudget(y)
-  const { data: entries } = useEntries()
+  const { data: spend } = useSpend()
   const qc = useQueryClient()
   const invalidate = () => void qc.invalidateQueries({ queryKey: ['budget'] })
 
@@ -181,22 +194,17 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
     onSuccess: invalidate,
   })
 
-  if (isPending || !lines || !entries)
+  if (isPending || !lines || !spend)
     return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
 
   // actuals (totals + entry counts) for the selected and previous seasons
   const actualsFor = (season: number) => {
     const cat = new Map<string, number>()
     const sub = new Map<string, { total: number; n: number }>()
-    for (const e of entries) {
-      if (!e.isActive || e.kind !== 'expense' || seasonOf(e.entryDate) !== season) continue
-      const c = e.category ?? 'Misc'
-      cat.set(c, (cat.get(c) ?? 0) + e.amount)
-      const k = `${c}|${e.subCategory ?? 'Misc'}`
-      const s = sub.get(k) ?? { total: 0, n: 0 }
-      s.total += e.amount
-      s.n += 1
-      sub.set(k, s)
+    for (const r of spend) {
+      if (r.season !== season) continue
+      cat.set(r.category, (cat.get(r.category) ?? 0) + r.total)
+      sub.set(`${r.category}|${r.subCategory}`, { total: r.total, n: r.n })
     }
     return { cat, sub }
   }
@@ -583,8 +591,10 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
   const invalidate = useLedgerInvalidate()
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [book, setBook] = useState<string>('all')
-  const [year, setYear] = useState<string>('all')
+  // The pujo book and the newest season are what anyone actually opens this
+  // page for; the other books and older seasons are a deliberate step away.
+  const [book, setBook] = useState<string>('pujo-ledger')
+  const [season, setSeason] = useState<number | 'all' | null>(null)
   const [kind, setKind] = useState<string>('all')
 
   const voidEntry = useMutation({
@@ -592,11 +602,19 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
     onSuccess: invalidate,
   })
 
-  const years = useMemo(() => [...new Set((entries ?? []).map((e) => yearOf(e.entryDate)))].sort().reverse(), [entries])
+  const seasons = useMemo(
+    () => [...new Set((entries ?? []).map((e) => seasonOf(e.entryDate)))].sort((a, b) => b - a),
+    [entries],
+  )
+  // Land on the newest season once the entries arrive.
+  useEffect(() => {
+    if (season === null && seasons.length) setSeason(seasons[0])
+  }, [season, seasons])
+
   const shown = (entries ?? []).filter(
     (e) =>
       (book === 'all' || e.bookId === book) &&
-      (year === 'all' || yearOf(e.entryDate) === year) &&
+      (season === 'all' || season === null || seasonOf(e.entryDate) === season) &&
       (kind === 'all' || e.kind === kind),
   )
   const total = shown.filter((e) => e.isActive).reduce(
@@ -620,11 +638,16 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
             </option>
           ))}
         </select>
-        <select className={`${inputCls} w-auto`} value={year} onChange={(e) => setYear(e.target.value)} aria-label="Year">
-          <option value="all">All years</option>
-          {years.map((y) => (
+        <select
+          className={`${inputCls} w-auto`}
+          value={season === null ? 'all' : String(season)}
+          onChange={(e) => setSeason(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+          aria-label="Season"
+        >
+          <option value="all">All seasons</option>
+          {seasons.map((y) => (
             <option key={y} value={y}>
-              {y}
+              {seasonRange(y)}
             </option>
           ))}
         </select>
