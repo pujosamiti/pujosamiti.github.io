@@ -20,6 +20,7 @@ import { Hono } from 'hono'
 
 import * as schema from '../db/schema'
 import type { Env } from '../env'
+import { activePujoYear } from '../lib/pujo'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -32,11 +33,28 @@ type Vars = { me: Me }
  * checked); this gate narrows to CORE members — the first area where
  * non-admin core members WRITE (entries, pledges, claims). Admin-only bits
  * (void, reject, catalog edits) check role inline.
+ *
+ * A short list is open to every member: the season's money is the samiti's
+ * own business, and the sponsorship board takes pledges from anyone on the
+ * rolls. Everything that MOVES money — recording a payment against a pledge,
+ * ledger entries, budget, reimbursement claims — stays core.
  */
 export const ledgerRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 
+const MEMBER_OPEN: [string, RegExp][] = [
+  ['GET', /\/ledger\/summary$/],
+  ['GET', /\/ledger\/budget$/],
+  ['GET', /\/ledger\/sponsorship$/],
+  ['POST', /\/ledger\/sponsorship\/pledges$/],
+  // Un-pledging is theirs to undo — the handler checks it is their own.
+  ['POST', /\/ledger\/sponsorship\/pledges\/[^/]+\/cancel$/],
+]
+
 ledgerRoutes.use('*', async (c, next) => {
-  if (c.get('me').role === 'member') return c.json({ ok: false, error: 'core members only' }, 403)
+  if (c.get('me').role === 'member') {
+    const open = MEMBER_OPEN.some(([method, path]) => method === c.req.method && path.test(c.req.path))
+    if (!open) return c.json({ ok: false, error: 'core members only' }, 403)
+  }
   await next()
 })
 
@@ -344,14 +362,6 @@ ledgerRoutes.get('/sponsorship', async (c) => {
  * Sponsorship boards for past years are archival: writes (offers, pledges,
  * payments, cancellations) are accepted only for the active Durga Pujo year.
  */
-async function activePujoYear(db: ReturnType<typeof drizzle<typeof schema>>): Promise<number | null> {
-  const [active] = await db
-    .select({ year: schema.event.year })
-    .from(schema.event)
-    .where(and(eq(schema.event.kind, 'durga-pujo'), eq(schema.event.isActive, true)))
-  return active?.year ?? null
-}
-
 /** Create/update a master catalog item (admin). */
 ledgerRoutes.post('/sponsorship/items', async (c) => {
   if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
@@ -468,6 +478,10 @@ ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const [pl] = await db.select().from(schema.sponsorshipPledge).where(eq(schema.sponsorshipPledge.id, c.req.param('id'))).limit(1)
   if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
+  // Members may pledge, so they may take it back — but only their own.
+  const me = c.get('me')
+  if (me.role === 'member' && pl.personId !== me.personId)
+    return c.json({ ok: false, error: 'you can only cancel your own pledge' }, 403)
   if (pl.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — cancellations only for the active pujo year' }, 400)
   const res = await db

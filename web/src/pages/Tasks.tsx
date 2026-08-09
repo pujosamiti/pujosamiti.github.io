@@ -52,6 +52,11 @@ export function Tasks() {
     setYear(active?.year ?? years[years.length - 1] ?? new Date().getFullYear())
   }, [events, year, years])
 
+  // Only the active pujo year is editable — past plans are the record of what
+  // that year's team did, and the API refuses writes against them either way.
+  const activeYear = (events ?? []).find((e) => e.isActive && e.kind === 'durga-pujo')?.year ?? null
+  const archival = year != null && activeYear != null && year !== activeYear
+
   const { data: tasks, isPending: tasksPending, error } = useTasks(me ? year : null)
   const { data: people } = useMembersLite()
   const [adding, setAdding] = useState(false)
@@ -74,7 +79,7 @@ export function Tasks() {
     )
   }
 
-  const canEdit = me.role !== 'member'
+  const canEdit = me.role !== 'member' && !archival
   const active = (tasks ?? []).filter((t) => !t.skipped)
   const skipped = (tasks ?? []).filter((t) => t.skipped)
   const categories = [...new Set(active.map((t) => t.category))]
@@ -98,6 +103,13 @@ export function Tasks() {
           ariaLabel="Durga Pujo year"
         />
       </div>
+
+      {archival && (
+        <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
+          Durga Pujo {year} is closed — this is the record of what that year's team planned, kept
+          read-only. Planning happens on {activeYear}.
+        </p>
+      )}
 
       {canEdit &&
         year &&
@@ -169,9 +181,10 @@ function TaskCard({
   const [editing, setEditing] = useState(false)
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['tasks'] })
 
+  // Puja planning is core work — a plain member reads the plan and nothing more.
   const isOwner = t.owners.some((o) => o.id === myPersonId)
   const isVolunteer = t.volunteers.some((v) => v.id === myPersonId)
-  const canPhase = canEdit || isOwner
+  const canPhase = canEdit
 
   const phaseMut = useMutation({
     mutationFn: (phase: TaskPhase) =>
@@ -229,7 +242,7 @@ function TaskCard({
                 {PHASE_LABEL[ph]}
               </Button>
             ))}
-            {(canEdit || isOwner) && (
+            {canEdit && (
               <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${t.title}`}>
                 <Pencil />
               </Button>
@@ -278,7 +291,7 @@ function TaskCard({
             Volunteers ({t.volunteers.length}):{' '}
             {t.volunteers.length ? t.volunteers.map((v) => v.name).join(', ') : 'none yet'}
           </span>
-          {!isOwner && (
+          {canEdit && !isOwner && (
             <Button
               size="sm"
               variant={isVolunteer ? 'outline' : 'secondary'}

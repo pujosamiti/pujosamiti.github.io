@@ -64,7 +64,16 @@ function useLedgerInvalidate() {
 }
 
 /** Shared core-members-only gate for the four money pages. */
-function CorePage({ title, children }: { title: string; children: (me: Me) => React.ReactNode }) {
+function CorePage({
+  title,
+  members = false,
+  children,
+}: {
+  title: string
+  /** Open to every member, not just core — the page itself hides what they can't do. */
+  members?: boolean
+  children: (me: Me) => React.ReactNode
+}) {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
 
@@ -75,7 +84,7 @@ function CorePage({ title, children }: { title: string; children: (me: Me) => Re
       </div>
     )
   }
-  if (!me || me.role === 'member') {
+  if (!me || (me.role === 'member' && !members)) {
     return (
       <Card className="mx-auto max-w-md">
         <CardHeader>
@@ -102,10 +111,20 @@ function CorePage({ title, children }: { title: string; children: (me: Me) => Re
 
 export const LedgerPage = () => <CorePage title="Ledger">{(me) => <EntriesTab isAdmin={me.role === 'admin'} />}</CorePage>
 export const WalletsPage = () => (
-  <CorePage title="Wallets">{(me) => <OverviewTab isAdmin={me.role === 'admin'} />}</CorePage>
+  <CorePage title="Wallets" members>
+    {(me) => <OverviewTab isAdmin={me.role === 'admin'} />}
+  </CorePage>
 )
 export const SponsorshipPage = () => (
-  <CorePage title="Sponsorship">{(me) => <SponsorshipTab isAdmin={me.role === 'admin'} />}</CorePage>
+  <CorePage title="Sponsorship" members>
+    {(me) => (
+      <SponsorshipTab
+        isAdmin={me.role === 'admin'}
+        canSettle={me.role !== 'member'}
+        myPersonId={me.personId!}
+      />
+    )}
+  </CorePage>
 )
 export const ReimbursementsPage = () => (
   <CorePage title="Reimbursements">{(me) => <ClaimsTab myPersonId={me.personId!} isAdmin={me.role === 'admin'} />}</CorePage>
@@ -997,7 +1016,16 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 
 // ── Sponsorship ─────────────────────────────────────────────────────────────
 
-function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
+function SponsorshipTab({
+  isAdmin,
+  canSettle,
+  myPersonId,
+}: {
+  isAdmin: boolean
+  /** Core and above: may record a payment against a pledge, or cancel anyone's. */
+  canSettle: boolean
+  myPersonId: string
+}) {
   const { data: events } = useEvents()
   const dp = (events ?? []).filter((e) => e.kind === 'durga-pujo')
   const activeYear = dp.find((e) => e.isActive)?.year ?? new Date().getFullYear()
@@ -1130,6 +1158,16 @@ function SponsorshipTab({ isAdmin }: { isAdmin: boolean }) {
                           <Badge variant="durba">Paid</Badge>
                         ) : readOnly ? (
                           <Badge variant="outline">pledged</Badge>
+                        ) : !canSettle ? (
+                          // A member sees the pledge, and may take back their own.
+                          <>
+                            <Badge variant="outline">pledged</Badge>
+                            {pl.personId === myPersonId && (
+                              <Button size="icon" variant="ghost" aria-label="Cancel my pledge" onClick={() => cancelPledge.mutate(pl.id)}>
+                                <Undo2 className="size-4" />
+                              </Button>
+                            )}
+                          </>
                         ) : payingId === i.id ? (
                           <PayPledgeInline pledgeId={pl.id} onDone={() => setPayingId(null)} />
                         ) : (

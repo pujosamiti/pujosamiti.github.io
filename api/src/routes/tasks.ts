@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 
 import * as schema from '../db/schema'
 import type { Env } from '../env'
+import { activePujoYear } from '../lib/pujo'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -15,32 +16,14 @@ const PHASES: TaskPhase[] = ['todo', 'in_progress', 'completed']
 
 /**
  * Task distribution over the year-independent durgapuja_task catalog.
- * Mounted under the member gate (/api/members/tasks): members view and
- * volunteer themselves; core members/admins curate the catalog and yearly
- * assignments; owners can update their task's phase and checkdates.
+ * Mounted under the member gate (/api/members/tasks). Puja planning is core
+ * work: only core members and admins own tasks, volunteer for them, curate
+ * the catalog or move a task along. Plain members read the plan and nothing
+ * more — every write below checks canEdit.
  */
 export const taskRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
 const canEdit = (me: Me) => me.role !== 'member'
-
-type DB = ReturnType<typeof drizzle<typeof schema>>
-
-async function isOwner(db: DB, taskId: string, year: number, personId: string) {
-  const [row] = await db
-    .select({ id: schema.taskAssignment.id })
-    .from(schema.taskAssignment)
-    .where(
-      and(
-        eq(schema.taskAssignment.taskId, taskId),
-        eq(schema.taskAssignment.year, year),
-        eq(schema.taskAssignment.personId, personId),
-        eq(schema.taskAssignment.role, 'owner'),
-        eq(schema.taskAssignment.isActive, true),
-      ),
-    )
-    .limit(1)
-  return !!row
-}
 
 taskRoutes.get('/', async (c) => {
   const year = Number(c.req.query('year'))
@@ -130,7 +113,7 @@ taskRoutes.post('/:id', async (c) => {
   return c.json(ok({ id }))
 })
 
-/** Upsert one year's phase/checkdates/assignments. Core, or (phase+checks only) an owner. */
+/** Upsert one year's phase/checkdates/assignments — core, active year only. */
 taskRoutes.post('/:id/year', async (c) => {
   const me = c.get('me')
   const body = (await c.req.json()) as TaskYearInput
@@ -143,9 +126,9 @@ taskRoutes.post('/:id/year', async (c) => {
   const [t] = await db.select({ id: schema.durgapujaTask.id }).from(schema.durgapujaTask).where(eq(schema.durgapujaTask.id, id)).limit(1)
   if (!t) return c.json({ ok: false, error: 'task not found' }, 404)
 
-  const editor = canEdit(me)
-  const owner = editor ? true : await isOwner(db, id, body.year, me.personId)
-  if (!editor && !owner) return c.json({ ok: false, error: 'owners or core members only' }, 403)
+  if (!canEdit(me)) return c.json({ ok: false, error: 'core members only' }, 403)
+  if (body.year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past years are archival — planning only for the active pujo year' }, 400)
 
   const checks = [0, 1, 2].map((i) => body.checks?.[i] ?? { date: null, notes: null })
   const phase = PHASES.includes(body.phase) ? body.phase : 'todo'
@@ -167,33 +150,31 @@ taskRoutes.post('/:id/year', async (c) => {
   if (existing) await db.update(schema.taskYear).set(yearValues).where(eq(schema.taskYear.id, existing.id))
   else await db.insert(schema.taskYear).values({ id: crypto.randomUUID(), taskId: id, year: body.year, ...yearValues })
 
-  // Assignments: core members only (owners can't reassign people)
-  if (editor) {
-    const owners = [...new Set(body.ownerIds ?? [])]
-    const volunteers = [...new Set(body.volunteerIds ?? [])].filter((v) => !owners.includes(v))
-    const current = await db
-      .select()
-      .from(schema.taskAssignment)
-      .where(and(eq(schema.taskAssignment.taskId, id), eq(schema.taskAssignment.year, body.year)))
-    const wanted = new Map<string, 'owner' | 'volunteer'>([
-      ...owners.map((p) => [p, 'owner'] as const),
-      ...volunteers.map((p) => [p, 'volunteer'] as const),
-    ])
-    for (const row of current) {
-      const want = wanted.get(row.personId)
-      if (!want) {
-        if (row.isActive) await db.update(schema.taskAssignment).set({ isActive: false }).where(eq(schema.taskAssignment.id, row.id))
-      } else {
-        if (!row.isActive || row.role !== want)
-          await db.update(schema.taskAssignment).set({ isActive: true, role: want }).where(eq(schema.taskAssignment.id, row.id))
-        wanted.delete(row.personId)
-      }
+  // Assignments — everyone who reaches here is core or admin.
+  const owners = [...new Set(body.ownerIds ?? [])]
+  const volunteers = [...new Set(body.volunteerIds ?? [])].filter((v) => !owners.includes(v))
+  const current = await db
+    .select()
+    .from(schema.taskAssignment)
+    .where(and(eq(schema.taskAssignment.taskId, id), eq(schema.taskAssignment.year, body.year)))
+  const wanted = new Map<string, 'owner' | 'volunteer'>([
+    ...owners.map((p) => [p, 'owner'] as const),
+    ...volunteers.map((p) => [p, 'volunteer'] as const),
+  ])
+  for (const row of current) {
+    const want = wanted.get(row.personId)
+    if (!want) {
+      if (row.isActive) await db.update(schema.taskAssignment).set({ isActive: false }).where(eq(schema.taskAssignment.id, row.id))
+    } else {
+      if (!row.isActive || row.role !== want)
+        await db.update(schema.taskAssignment).set({ isActive: true, role: want }).where(eq(schema.taskAssignment.id, row.id))
+      wanted.delete(row.personId)
     }
-    for (const [personId, role] of wanted) {
-      await db
-        .insert(schema.taskAssignment)
-        .values({ id: crypto.randomUUID(), taskId: id, year: body.year, personId, role })
-    }
+  }
+  for (const [personId, role] of wanted) {
+    await db
+      .insert(schema.taskAssignment)
+      .values({ id: crypto.randomUUID(), taskId: id, year: body.year, personId, role })
   }
   return c.json(ok({ id, year: body.year }))
 })
@@ -207,6 +188,8 @@ taskRoutes.post('/:id/skip', async (c) => {
   const id = c.req.param('id')
   const [t] = await db.select({ id: schema.durgapujaTask.id }).from(schema.durgapujaTask).where(eq(schema.durgapujaTask.id, id)).limit(1)
   if (!t) return c.json({ ok: false, error: 'task not found' }, 404)
+  if (year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past years are archival — planning only for the active pujo year' }, 400)
   const [existing] = await db
     .select({ id: schema.taskYear.id })
     .from(schema.taskYear)
@@ -220,12 +203,15 @@ taskRoutes.post('/:id/skip', async (c) => {
 /** Any member can volunteer themselves for a year (or withdraw). */
 taskRoutes.post('/:id/volunteer', async (c) => {
   const me = c.get('me')
+  if (!canEdit(me)) return c.json({ ok: false, error: 'core members only' }, 403)
   const { year, join } = (await c.req.json()) as { year: number; join: boolean }
   if (!Number.isInteger(year)) return c.json({ ok: false, error: 'year is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
   const id = c.req.param('id')
   const [t] = await db.select({ id: schema.durgapujaTask.id }).from(schema.durgapujaTask).where(eq(schema.durgapujaTask.id, id)).limit(1)
   if (!t) return c.json({ ok: false, error: 'task not found' }, 404)
+  if (year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'past years are archival — planning only for the active pujo year' }, 400)
 
   const mine = and(
     eq(schema.taskAssignment.taskId, id),
