@@ -4,6 +4,7 @@ import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { Events } from '@/pages/Events'
 import { DurgaPujaChapter, DurgaPujaIndex } from '@/pages/DurgaPuja'
 import { Home } from '@/pages/Home'
@@ -31,6 +32,23 @@ if (redirect) {
   history.replaceState(null, '', redirect)
 }
 
+/**
+ * Every deploy publishes a fresh set of hashed assets and deletes the old set,
+ * while Pages lets browsers hold the HTML for ten minutes. A phone that kept a
+ * tab open across a deploy therefore reaches for a chunk that is no longer
+ * there — the book chapters are lazy-loaded, so this is a real path — and the
+ * import rejects with nothing rendered. Reload once to pick up the new HTML,
+ * rate-limited so a genuinely missing file can't put us in a refresh loop.
+ */
+const STALE_RELOAD = 'pujosamiti.stale-reload'
+window.addEventListener('vite:preloadError', (event) => {
+  event.preventDefault()
+  const last = Number(sessionStorage.getItem(STALE_RELOAD) ?? 0)
+  if (Date.now() - last < 10_000) return
+  sessionStorage.setItem(STALE_RELOAD, String(Date.now()))
+  window.location.reload()
+})
+
 // Worker responses change rarely and the audience is on phones with spotty
 // pandal-area networks — cache aggressively, refetch quietly.
 const queryClient = new QueryClient({
@@ -44,30 +62,32 @@ const queryClient = new QueryClient({
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
-        <Routes>
-          <Route element={<AppLayout />}>
-            <Route index element={<Home />} />
-            <Route path="schedule" element={<Schedule />} />
-            <Route path="durga-puja" element={<DurgaPujaIndex />} />
-            <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
-            <Route path="membersonly" element={<MembersOnly />} />
-            <Route path="login" element={<Login />} />
-            <Route path="profile" element={<Profile />} />
-            <Route path="tasks" element={<Tasks />} />
-            <Route path="membership" element={<Membership />} />
-            <Route path="events" element={<Events />} />
-            <Route path="nirghanto" element={<Nirghanto />} />
-            <Route path="ledger" element={<LedgerPage />} />
-            <Route path="wallets" element={<WalletsPage />} />
-            <Route path="sponsorship" element={<SponsorshipPage />} />
-            <Route path="reimbursements" element={<ReimbursementsPage />} />
-            <Route path="brandcolours" element={<BrandColours />} />
-            <Route path="*" element={<Home />} />
-          </Route>
-        </Routes>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ErrorBoundary>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter basename={import.meta.env.BASE_URL}>
+          <Routes>
+            <Route element={<AppLayout />}>
+              <Route index element={<Home />} />
+              <Route path="schedule" element={<Schedule />} />
+              <Route path="durga-puja" element={<DurgaPujaIndex />} />
+              <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
+              <Route path="membersonly" element={<MembersOnly />} />
+              <Route path="login" element={<Login />} />
+              <Route path="profile" element={<Profile />} />
+              <Route path="tasks" element={<Tasks />} />
+              <Route path="membership" element={<Membership />} />
+              <Route path="events" element={<Events />} />
+              <Route path="nirghanto" element={<Nirghanto />} />
+              <Route path="ledger" element={<LedgerPage />} />
+              <Route path="wallets" element={<WalletsPage />} />
+              <Route path="sponsorship" element={<SponsorshipPage />} />
+              <Route path="reimbursements" element={<ReimbursementsPage />} />
+              <Route path="brandcolours" element={<BrandColours />} />
+              <Route path="*" element={<Home />} />
+            </Route>
+          </Routes>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )
