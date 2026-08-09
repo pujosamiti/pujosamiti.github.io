@@ -134,6 +134,12 @@ export const person = sqliteTable('person', {
   phone: text('phone'), // labelled WhatsApp number in the UI
   gender: text('gender'), // e.g. mahila-volunteer scheduling
   isAdmin: integer('is_admin', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * Finance authority without full admin: the ledger, budgets, sponsorship
+   * pricing and claim rejection. A treasurer needs the books, not the
+   * membership roll. Admins hold this implicitly.
+   */
+  isFinAdmin: integer('is_fin_admin', { mode: 'boolean' }).notNull().default(false),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   notes: text('notes'),

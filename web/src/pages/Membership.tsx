@@ -223,6 +223,11 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
                   admin
                 </Badge>
               )}
+              {!p.isAdmin && p.isFinAdmin && (
+                <Badge variant="outline" className="ml-1 align-middle">
+                  finance
+                </Badge>
+              )}
               {p.portfolio && (
                 <Badge variant="genda" className="ml-1 align-middle">
                   {p.portfolio}
@@ -417,6 +422,7 @@ function PersonForm({
     phone: person?.phone ?? null,
     gender: person?.gender ?? null,
     isAdmin: person?.isAdmin ?? false,
+    isFinAdmin: person?.isFinAdmin ?? false,
     isActive: person?.isActive ?? true,
     portfolio: person?.portfolio ?? null,
     notes: person?.notes ?? null,
@@ -560,6 +566,15 @@ function PersonForm({
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isAdmin} onChange={(e) => set({ isAdmin: e.target.checked })} />
               Admin (can manage membership)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.isFinAdmin}
+                onChange={(e) => set({ isFinAdmin: e.target.checked })}
+                disabled={form.isAdmin}
+              />
+              Finance admin (ledger, budget, sponsorship pricing)
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />

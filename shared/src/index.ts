@@ -83,7 +83,11 @@ export interface Post extends PostSummary {
 
 // ── Members & auth ──────────────────────────────────────────────────────────
 
-export type MemberRole = 'member' | 'coremember' | 'admin';
+/**
+ * 'fin_admin' runs the money — ledger, budgets, sponsorship pricing, claim
+ * rejection — without touching membership. 'admin' holds everything.
+ */
+export type MemberRole = 'member' | 'coremember' | 'fin_admin' | 'admin';
 
 export interface Me {
   id: string;
@@ -201,6 +205,8 @@ export interface AdminPerson {
   phone: string | null;
   gender: string | null;
   isAdmin: boolean;
+  /** Finance authority without the membership roll */
+  isFinAdmin: boolean;
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;
@@ -219,6 +225,8 @@ export interface AdminPersonInput {
   phone: string | null;
   gender: string | null;
   isAdmin: boolean;
+  /** Finance authority without the membership roll */
+  isFinAdmin: boolean;
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;

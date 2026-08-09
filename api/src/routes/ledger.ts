@@ -30,15 +30,21 @@ function ok<T>(data: T): ApiResult<T> {
 type Vars = { me: Me }
 
 /**
- * Money routes. Mounted inside memberRoutes (session + membership already
- * checked); this gate narrows to CORE members — the first area where
- * non-admin core members WRITE (entries, pledges, claims). Admin-only bits
- * (void, reject, catalog edits) check role inline.
+ * Money routes, in three rings.
  *
- * A short list is open to every member: the season's money is the samiti's
- * own business, and the sponsorship board takes pledges from anyone on the
- * rolls. Everything that MOVES money — recording a payment against a pledge,
- * ledger entries, budget, reimbursement claims — stays core.
+ * Every member reads: the season summary, the budget, spend by category and
+ * the sponsorship board — the samiti's accounts are its own business — and may
+ * pledge for an item or take back a pledge of their own (MEMBER_OPEN below).
+ *
+ * Core members read the ledger itself and run the day-to-day: raising a
+ * reimbursement claim, taking one on to pay.
+ *
+ * Anything that WRITES THE BOOKS is finance work — fin_admin or admin, checked
+ * inline with canFinance. That covers the obvious (adding, editing or voiding
+ * an entry, budgets, sponsorship pricing) and the two side doors that also mint
+ * ledger entries: recording a payment against a pledge, and settling a claim.
+ * Money is only recorded as received or paid by the person answerable for the
+ * wallet it moved through.
  */
 export const ledgerRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 
@@ -60,7 +66,16 @@ ledgerRoutes.use('*', async (c, next) => {
   await next()
 })
 
-const isAdmin = (c: { get: (k: 'me') => Me }) => c.get('me').role === 'admin'
+/**
+ * The money side: ledger entries, budgets, sponsorship pricing and claim
+ * rejection. A fin_admin holds these without the membership roll; an admin
+ * holds everything. Core members read, and do the day-to-day (pledges,
+ * claims, dispatching) — they do not write the books.
+ */
+const canFinance = (c: { get: (k: 'me') => Me }) => {
+  const role = c.get('me').role
+  return role === 'admin' || role === 'fin_admin'
+}
 
 /** Today as an IST date string — IST is a fixed UTC+05:30, no DST. */
 function todayIST(): string {
@@ -131,6 +146,7 @@ function validateEntry(body: LedgerEntryInput): string | null {
 }
 
 ledgerRoutes.post('/entries', async (c) => {
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<LedgerEntryInput>()
   const err = validateEntry(body)
   if (err) return c.json({ ok: false, error: err }, 400)
@@ -159,7 +175,7 @@ ledgerRoutes.post('/entries', async (c) => {
 
 /** Rewrite an entry in place (admin). Kind is immutable — void and re-add instead. */
 ledgerRoutes.post('/entries/:id/update', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const id = c.req.param('id')
   const body = await c.req.json<LedgerEntryInput>()
   const db = drizzle(c.env.DB, { schema })
@@ -194,7 +210,7 @@ ledgerRoutes.post('/entries/:id/update', async (c) => {
 
 /** Void an entry (admin). Reverts any pledge/claim that pointed at it. */
 ledgerRoutes.post('/entries/:id/void', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const id = c.req.param('id')
   const db = drizzle(c.env.DB, { schema })
   const [existing] = await db.select().from(schema.ledgerEntry).where(eq(schema.ledgerEntry.id, id))
@@ -366,7 +382,7 @@ ledgerRoutes.get('/sponsorship', async (c) => {
  */
 /** Create/update a master catalog item (admin). */
 ledgerRoutes.post('/sponsorship/items', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<SponsorshipItemInput & { retired?: boolean }>()
   if (!body.title?.trim() || !body.category?.trim()) return c.json({ ok: false, error: 'title and category required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -386,7 +402,7 @@ ledgerRoutes.post('/sponsorship/items', async (c) => {
 
 /** Upsert this year's offering for an item (admin): amount / offered / notes. */
 ledgerRoutes.post('/sponsorship/items/:id/year', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const itemId = c.req.param('id')
   const body = await c.req.json<{ year: number; amount: number | null; offered: boolean; notes: string | null }>()
   if (!body.year) return c.json({ ok: false, error: 'year required' }, 400)
@@ -437,6 +453,9 @@ ledgerRoutes.post('/sponsorship/pledges', async (c) => {
  * the pledge. Compare-and-set on status prevents double payment.
  */
 ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
+  // This writes a contribution entry and credits a wallet — the same act as
+  // adding to the ledger, so it belongs to whoever actually holds the money.
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const pledgeId = c.req.param('id')
   const body = await c.req.json<{ walletPersonId: string; entryDate?: string }>()
   if (!body.walletPersonId) return c.json({ ok: false, error: 'wallet person required' }, 400)
@@ -577,7 +596,7 @@ async function upsertBudgetLine(db: ReturnType<typeof drizzle<typeof schema>>, l
 }
 
 ledgerRoutes.post('/budget', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<BudgetLineInput>()
   const err = validateBudgetLine(body)
   if (err) return c.json({ ok: false, error: err }, 400)
@@ -590,7 +609,7 @@ ledgerRoutes.post('/budget', async (c) => {
 
 /** Bulk upsert — used by the "seed from last season's actuals" shortcut. */
 ledgerRoutes.post('/budget/bulk', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<{ year: number; lines: BudgetLineInput[] }>()
   if (!Array.isArray(body.lines) || !body.lines.length) return c.json({ ok: false, error: 'lines required' }, 400)
   const db = drizzle(c.env.DB, { schema })
@@ -605,7 +624,7 @@ ledgerRoutes.post('/budget/bulk', async (c) => {
 })
 
 ledgerRoutes.post('/budget/:id/delete', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const db = drizzle(c.env.DB, { schema })
   const [line] = await db.select().from(schema.budgetLine).where(eq(schema.budgetLine.id, c.req.param('id'))).limit(1)
   if (!line) return c.json({ ok: false, error: 'unknown budget line' }, 404)
@@ -700,6 +719,8 @@ ledgerRoutes.post('/claims/:id/assign', async (c) => {
  * needs reassignment. Compare-and-set on status prevents double settlement.
  */
 ledgerRoutes.post('/claims/:id/settle', async (c) => {
+  // Settling writes an expense entry against a wallet — finance work.
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const me = c.get('me')
   const body = await c.req.json<{ entryDate?: string }>().catch(() => ({}) as { entryDate?: string })
   const entryDate = body.entryDate ?? todayIST()
@@ -750,7 +771,7 @@ ledgerRoutes.post('/claims/:id/settle', async (c) => {
 })
 
 ledgerRoutes.post('/claims/:id/reject', async (c) => {
-  if (!isAdmin(c)) return c.json({ ok: false, error: 'admin only' }, 403)
+  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<{ notes?: string | null }>().catch(() => ({}) as { notes?: string | null })
   const db = drizzle(c.env.DB, { schema })
   const res = await db
@@ -771,7 +792,7 @@ ledgerRoutes.post('/claims/:id/cancel', async (c) => {
     .where(eq(schema.expenseReimbursement.id, c.req.param('id')))
     .limit(1)
   if (!claim) return c.json({ ok: false, error: 'unknown claim' }, 404)
-  if (claim.personId !== me.personId && !isAdmin(c))
+  if (claim.personId !== me.personId && !canFinance(c))
     return c.json({ ok: false, error: 'only the claimant (or an admin) can cancel' }, 403)
   const res = await db
     .update(schema.expenseReimbursement)

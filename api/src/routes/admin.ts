@@ -73,6 +73,7 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
     phone: p.phone,
     gender: p.gender,
     isAdmin: p.isAdmin,
+    isFinAdmin: p.isFinAdmin,
     isActive: p.isActive,
     portfolio: p.portfolio,
     notes: p.notes,
@@ -98,6 +99,7 @@ function personValues(body: AdminPersonInput) {
     phone: body.phone?.trim() || null,
     gender: body.gender?.trim() || null,
     isAdmin: !!body.isAdmin,
+    isFinAdmin: !!body.isFinAdmin,
     isActive: !!body.isActive,
     portfolio: body.portfolio?.trim() || null,
     notes: body.notes?.trim() || null,
@@ -280,6 +282,7 @@ adminRoutes.post('/people/:id/merge', async (c) => {
       notes,
       tier: tierRank[src.tier] > tierRank[survivor.tier] ? src.tier : survivor.tier,
       isAdmin: survivor.isAdmin || src.isAdmin,
+      isFinAdmin: survivor.isFinAdmin || src.isFinAdmin,
       isActive: survivor.isActive || src.isActive,
     })
     .where(eq(schema.person.id, survivor.id))

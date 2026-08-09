@@ -43,7 +43,7 @@ memberRoutes.use('*', async (c, next) => {
     name: p.displayName,
     email: session.user.email,
     image: session.user.image ?? null,
-    role: p.isAdmin ? 'admin' : p.tier === 'core' ? 'coremember' : 'member',
+    role: p.isAdmin ? 'admin' : p.isFinAdmin ? 'fin_admin' : p.tier === 'core' ? 'coremember' : 'member',
     portfolio: p.portfolio,
   })
   await next()

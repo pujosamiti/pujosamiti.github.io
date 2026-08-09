@@ -1,0 +1,1 @@
+ALTER TABLE `person` ADD `is_fin_admin` integer DEFAULT false NOT NULL;

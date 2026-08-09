@@ -34,6 +34,8 @@ const post = <T,>(path: string, body?: unknown) =>
   api<T>(path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body ?? {}) })
 
 const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`
+/** Money powers: the books, budgets, sponsorship pricing, claim rejection. */
+const canFinance = (me: Me) => me.role === 'admin' || me.role === 'fin_admin'
 /** Entries harden 48 h after creation — edit/void disappear, admin included. */
 const entryLocked = (e: LedgerEntry) => Date.now() - e.createdAt > 48 * 60 * 60 * 1000
 const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
@@ -117,25 +119,25 @@ function CorePage({
   )
 }
 
-export const LedgerPage = () => <CorePage title="Ledger">{(me) => <EntriesTab isAdmin={me.role === 'admin'} />}</CorePage>
+export const LedgerPage = () => <CorePage title="Ledger">{(me) => <EntriesTab isFinAdmin={canFinance(me)} />}</CorePage>
 export const WalletsPage = () => (
   <CorePage title="Wallets" members>
-    {(me) => <OverviewTab isAdmin={me.role === 'admin'} />}
+    {(me) => <OverviewTab isFinAdmin={canFinance(me)} />}
   </CorePage>
 )
 export const SponsorshipPage = () => (
   <CorePage title="Sponsorship" members>
     {(me) => (
       <SponsorshipTab
-        isAdmin={me.role === 'admin'}
-        canSettle={me.role !== 'member'}
+        isFinAdmin={canFinance(me)}
+        canSettle={canFinance(me)}
         myPersonId={me.personId!}
       />
     )}
   </CorePage>
 )
 export const ReimbursementsPage = () => (
-  <CorePage title="Reimbursements">{(me) => <ClaimsTab myPersonId={me.personId!} isAdmin={me.role === 'admin'} />}</CorePage>
+  <CorePage title="Reimbursements">{(me) => <ClaimsTab myPersonId={me.personId!} isFinAdmin={canFinance(me)} />}</CorePage>
 )
 // ── Season spending (budget vs actuals, shown on the Wallets page) ──────────
 
@@ -159,7 +161,7 @@ const useSpend = () =>
  * one exists. Budgets start from season 2026: past seasons render as a plain
  * expense report (no budget columns), current seasons as budget-vs-actual.
  */
-function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }) {
+function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boolean }) {
   const { data: events } = useEvents()
   const activeYear =
     (events ?? []).filter((e) => e.kind === 'durga-pujo').find((e) => e.isActive)?.year ?? new Date().getFullYear()
@@ -248,7 +250,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
   const unbudgeted = [...now.cat.entries()].filter(([c]) => !byCat.has(c)).sort((a, b) => b[1] - a[1])
   const reportCats = [...now.cat.entries()].sort((a, b) => b[1] - a[1])
 
-  if (totalSpent === 0 && !hasBudget && (readOnly || !isAdmin))
+  if (totalSpent === 0 && !hasBudget && (readOnly || !isFinAdmin))
     return null
 
   return (
@@ -262,7 +264,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
         </span>
       </div>
 
-      {!hasBudget && isAdmin && !readOnly && (
+      {!hasBudget && isFinAdmin && !readOnly && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">No budget yet for {y}–{String(y + 1).slice(2)}</CardTitle>
@@ -304,7 +306,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                       <th className="py-1 pr-2 text-right font-medium">Budget</th>
                       <th className="py-1 pr-2 text-right font-medium">Actual</th>
                       <th className="py-1 text-right font-medium">Left</th>
-                      {isAdmin && !readOnly && <th />}
+                      {isFinAdmin && !readOnly && <th />}
                     </tr>
                   </thead>
                   <tbody>
@@ -320,7 +322,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                             </td>
                             <td className="py-1.5 pr-2 text-right text-muted-foreground">{rupees(linePrev(l))}</td>
                             <td className="py-1.5 pr-2 text-right">
-                              {isAdmin && !readOnly && editingId === l.id ? (
+                              {isFinAdmin && !readOnly && editingId === l.id ? (
                                 <span className="flex items-center justify-end gap-1">
                                   <input
                                     type="number"
@@ -346,7 +348,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                                     Set
                                   </Button>
                                 </span>
-                              ) : isAdmin && !readOnly ? (
+                              ) : isFinAdmin && !readOnly ? (
                                 <button
                                   type="button"
                                   className="cursor-pointer font-medium underline decoration-dotted underline-offset-4 hover:text-foreground"
@@ -365,7 +367,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                             <td className={`py-1.5 text-right font-medium ${left < 0 ? 'text-destructive' : ''}`}>
                               {rupees(left)}
                             </td>
-                            {isAdmin && !readOnly && (
+                            {isFinAdmin && !readOnly && (
                               <td className="py-1.5 pl-2 text-right">
                                 <Button size="icon" variant="ghost" aria-label="Remove line" onClick={() => remove.mutate(l.id)}>
                                   <Undo2 className="size-4" />
@@ -377,7 +379,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                       })}
                   </tbody>
                 </table>
-                {isAdmin && !readOnly &&
+                {isFinAdmin && !readOnly &&
                   (addingCat === category ? (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
                       <input
@@ -461,7 +463,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
                 <span>{c}</span>
                 <span className="flex items-center gap-2">
                   <span className="font-medium">{rupees(v)}</span>
-                  {isAdmin && !readOnly && (
+                  {isFinAdmin && !readOnly && (
                     <Button size="sm" variant="ghost" onClick={() => upsert.mutate({ year: y, category: c, subCategory: null, amount: 0 })}>
                       Budget it
                     </Button>
@@ -473,7 +475,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
         </Card>
       )}
 
-      {hasBudget && isAdmin && !readOnly && (
+      {hasBudget && isFinAdmin && !readOnly && (
         <div className="flex flex-wrap gap-2">
           {[...new Set([...Object.keys(EXPENSE_TAXONOMY)])]
             .filter((c) => !byCat.has(c))
@@ -493,7 +495,7 @@ function SeasonSpending({ year: y, isAdmin }: { year: number; isAdmin: boolean }
 
 // ── Overview ────────────────────────────────────────────────────────────────
 
-function OverviewTab({ isAdmin }: { isAdmin: boolean }) {
+function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
   const [seasonYear, setSeasonYear] = useState<number | null>(null)
   const { data: s, isPending } = useSummary(seasonYear)
   if (isPending || !s) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
@@ -579,14 +581,14 @@ function OverviewTab({ isAdmin }: { isAdmin: boolean }) {
         </CardContent>
       </Card>
 
-      <SeasonSpending year={s.seasonYear} isAdmin={isAdmin} />
+      <SeasonSpending year={s.seasonYear} isFinAdmin={isFinAdmin} />
     </div>
   )
 }
 
 // ── Entries ─────────────────────────────────────────────────────────────────
 
-function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
+function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
   const { data: entries, isPending } = useEntries()
   const invalidate = useLedgerInvalidate()
   const [adding, setAdding] = useState(false)
@@ -625,7 +627,7 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
-        {!adding && (
+        {isFinAdmin && !adding && (
           <Button size="sm" onClick={() => setAdding(true)}>
             <Plus /> Add entry
           </Button>
@@ -693,7 +695,7 @@ function EntriesTab({ isAdmin }: { isAdmin: boolean }) {
                   {!e.isActive && <Badge variant="outline">voided</Badge>}
                 </span>
                 <span className="font-semibold">{rupees(e.amount)}</span>
-                {isAdmin && e.isActive && !entryLocked(e) && (
+                {isFinAdmin && e.isActive && !entryLocked(e) && (
                   <span className="flex shrink-0">
                     <Button size="icon" variant="ghost" aria-label="Edit entry" onClick={() => setEditingId(e.id)}>
                       <Pencil className="size-4" />
@@ -1040,11 +1042,11 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 // ── Sponsorship ─────────────────────────────────────────────────────────────
 
 function SponsorshipTab({
-  isAdmin,
+  isFinAdmin,
   canSettle,
   myPersonId,
 }: {
-  isAdmin: boolean
+  isFinAdmin: boolean
   /** Core and above: may record a payment against a pledge, or cancel anyone's. */
   canSettle: boolean
   myPersonId: string
@@ -1096,7 +1098,7 @@ function SponsorshipTab({
   // Retired catalog items were genuine sponsorships in their era: everyone sees
   // them for years where they were offered or pledged; admins see them always
   // (so a legacy slot can be re-offered in a future year).
-  const shown = (items ?? []).filter((i) => !i.retired || i.offered || i.pledge || isAdmin)
+  const shown = (items ?? []).filter((i) => !i.retired || i.offered || i.pledge || isFinAdmin)
   const categories = [...new Set(shown.map((i) => i.category))]
   const offered = shown.filter((i) => i.offered)
   const pledgedTotal = offered.reduce((s, i) => s + (i.pledge && i.pledge.status !== 'cancelled' ? i.pledge.amount : 0), 0)
@@ -1120,7 +1122,7 @@ function SponsorshipTab({
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       ) : (
         categories.map((cat) => {
-          const rows = shown.filter((i) => i.category === cat && (isAdmin || i.offered))
+          const rows = shown.filter((i) => i.category === cat && (isFinAdmin || i.offered))
           if (!rows.length) return null
           return (
             <Card key={cat}>
@@ -1143,7 +1145,7 @@ function SponsorshipTab({
                           </span>
                         )}
                       </span>
-                      {isAdmin && !readOnly && pricingId === i.id ? (
+                      {isFinAdmin && !readOnly && pricingId === i.id ? (
                         <span className="flex items-center gap-1">
                           <input
                             type="number"
@@ -1161,7 +1163,7 @@ function SponsorshipTab({
                             ✕
                           </Button>
                         </span>
-                      ) : isAdmin && !readOnly ? (
+                      ) : isFinAdmin && !readOnly ? (
                         <button
                           type="button"
                           className="cursor-pointer text-muted-foreground underline decoration-dotted underline-offset-4 hover:text-foreground"
@@ -1212,7 +1214,7 @@ function SponsorshipTab({
                           </Button>
                         )
                       ) : null}
-                      {isAdmin && !readOnly && (
+                      {isFinAdmin && !readOnly && (
                         <Button size="sm" variant="ghost" onClick={() => toggleOffered.mutate(i)}>
                           {i.offered ? 'Skip this year' : 'Offer'}
                         </Button>
@@ -1225,7 +1227,7 @@ function SponsorshipTab({
           )
         })
       )}
-      {isAdmin && !readOnly && <NewItemForm />}
+      {isFinAdmin && !readOnly && <NewItemForm />}
     </div>
   )
 }
@@ -1331,7 +1333,7 @@ function NewItemForm() {
 
 const CLAIM_FILTERS: (ClaimStatus | 'all')[] = ['requested', 'settled', 'rejected', 'cancelled', 'all']
 
-function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boolean }) {
+function ClaimsTab({ myPersonId, isFinAdmin }: { myPersonId: string; isFinAdmin: boolean }) {
   const { data: claims, isPending } = useClaims()
   const invalidate = useLedgerInvalidate()
   const [filter, setFilter] = useState<ClaimStatus | 'all'>('requested')
@@ -1386,7 +1388,8 @@ function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boole
       ) : (
         shown.map((cl) => {
           const mine = cl.personId === myPersonId
-          const canSettle = cl.status === 'requested' && !mine && (!cl.assignedTo || cl.assignedTo === myPersonId)
+          const canSettle =
+            isFinAdmin && cl.status === 'requested' && !mine && (!cl.assignedTo || cl.assignedTo === myPersonId)
           return (
             <Card key={cl.id}>
               <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 text-sm">
@@ -1450,7 +1453,7 @@ function ClaimsTab({ myPersonId, isAdmin }: { myPersonId: string; isAdmin: boole
                         Withdraw
                       </Button>
                     )}
-                    {isAdmin &&
+                    {isFinAdmin &&
                       (rejectingId === cl.id ? (
                         <RejectInline
                           onConfirm={(notes) => {
