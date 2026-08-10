@@ -1,5 +1,5 @@
 import type { ApiResult, OnboardingState, ProfileInput } from '@pujosamiti/shared'
-import { eq } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -34,7 +34,7 @@ onboardingRoutes.get('/status', async (c) => {
   const [p] = await db
     .select({ tier: schema.person.tier, isActive: schema.person.isActive })
     .from(schema.person)
-    .where(eq(schema.person.email, c.get('email')))
+    .where(or(eq(schema.person.email, c.get('email')), eq(schema.person.altEmail, c.get('email'))))
     .limit(1)
   // Inactive = left the portal: they re-register (profile form) like a new user.
   const state: OnboardingState = !p || !p.isActive
@@ -51,7 +51,7 @@ onboardingRoutes.get('/me', async (c) => {
   const [p] = await db
     .select()
     .from(schema.person)
-    .where(eq(schema.person.email, c.get('email')))
+    .where(or(eq(schema.person.email, c.get('email')), eq(schema.person.altEmail, c.get('email'))))
     .limit(1)
   if (!p) return c.json(ok<ProfileInput | null>(null))
   return c.json(
@@ -77,7 +77,7 @@ onboardingRoutes.post('/leave', async (c) => {
   const [p] = await db
     .select({ id: schema.person.id, isAdmin: schema.person.isAdmin })
     .from(schema.person)
-    .where(eq(schema.person.email, c.get('email')))
+    .where(or(eq(schema.person.email, c.get('email')), eq(schema.person.altEmail, c.get('email'))))
     .limit(1)
   if (!p) return c.json({ ok: false, error: 'not registered' }, 404)
   if (p.isAdmin)
@@ -115,7 +115,7 @@ onboardingRoutes.post('/profile', async (c) => {
   const [existing] = await db
     .select({ id: schema.person.id })
     .from(schema.person)
-    .where(eq(schema.person.email, email))
+    .where(or(eq(schema.person.email, email), eq(schema.person.altEmail, email)))
     .limit(1)
   if (existing) {
     // Profile completion/update for an already-registered person. Self-service

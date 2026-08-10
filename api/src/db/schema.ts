@@ -123,6 +123,8 @@ export const person = sqliteTable('person', {
   familyId: text('family_id').references(() => family.id), // optional grouping
   displayName: text('display_name').notNull(),
   email: text('email').unique(), // login match key; NULL = no-Google member
+  /** Second Google account, for people who sign in with either. Matched the same way. */
+  altEmail: text('alt_email').unique(),
   society: text('society'), // from shared locations list, or free text
   residenceDetail: text('residence_detail'), // flat no
   workplace: text('workplace'), // tower, for works-in-MGP people

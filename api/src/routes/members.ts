@@ -1,5 +1,5 @@
 import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite } from '@pujosamiti/shared'
-import { eq } from 'drizzle-orm'
+import { eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -32,7 +32,7 @@ memberRoutes.use('*', async (c, next) => {
   const [p] = await db
     .select()
     .from(schema.person)
-    .where(eq(schema.person.email, session.user.email))
+    .where(or(eq(schema.person.email, session.user.email), eq(schema.person.altEmail, session.user.email)))
     .limit(1)
   if (!p || !p.isActive || p.tier === 'non_member')
     return c.json({ ok: false, error: 'not a samiti member' }, 403)

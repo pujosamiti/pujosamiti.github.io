@@ -10,7 +10,7 @@ import type {
   PujoEvent,
 } from '@pujosamiti/shared'
 import { EVENT_KINDS } from '@pujosamiti/shared'
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { desc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -42,7 +42,7 @@ adminRoutes.use('*', async (c, next) => {
   const [p] = await db
     .select({ id: schema.person.id, tier: schema.person.tier, isAdmin: schema.person.isAdmin, isActive: schema.person.isActive })
     .from(schema.person)
-    .where(eq(schema.person.email, session.user.email))
+    .where(or(eq(schema.person.email, session.user.email), eq(schema.person.altEmail, session.user.email)))
     .limit(1)
   if (!p || !p.isActive || (p.tier !== 'core' && !p.isAdmin))
     return c.json({ ok: false, error: 'core members only' }, 403)
@@ -64,6 +64,7 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
     familyName,
     displayName: p.displayName,
     email: p.email,
+    altEmail: p.altEmail,
     society: p.society,
     residenceDetail: p.residenceDetail,
     workplace: p.workplace,
@@ -144,6 +145,27 @@ adminRoutes.get('/people', async (c) => {
   return c.json(ok(out))
 })
 
+/**
+ * An address identifies exactly one person, whichever column it sits in — so a
+ * new email must clash with neither the primary nor the alternate of anyone else.
+ */
+async function emailClash(
+  db: ReturnType<typeof drizzle<typeof schema>>,
+  addresses: (string | null)[],
+  excludeId?: string,
+) {
+  const wanted = addresses.filter(Boolean) as string[]
+  if (!wanted.length) return null
+  if (new Set(wanted).size !== wanted.length) return 'the two addresses must differ'
+  const rows = await db
+    .select({ id: schema.person.id, email: schema.person.email, altEmail: schema.person.altEmail })
+    .from(schema.person)
+  const hit = rows.find(
+    (r) => r.id !== excludeId && wanted.some((w) => r.email === w || r.altEmail === w),
+  )
+  return hit ? 'that email already belongs to a person' : null
+}
+
 adminRoutes.post('/people', async (c) => {
   const guard = requireAdmin(c)
   if (guard) return guard
@@ -151,12 +173,11 @@ adminRoutes.post('/people', async (c) => {
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
   const email = body.email?.trim() || null
-  if (email) {
-    const [dup] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.email, email)).limit(1)
-    if (dup) return c.json({ ok: false, error: 'that email already belongs to a person' }, 409)
-  }
+  const altEmail = body.altEmail?.trim() || null
+  const clash = await emailClash(db, [email, altEmail])
+  if (clash) return c.json({ ok: false, error: clash }, 409)
   const id = crypto.randomUUID()
-  await db.insert(schema.person).values({ id, email, createdAt: new Date(), ...personValues(body) })
+  await db.insert(schema.person).values({ id, email, altEmail, createdAt: new Date(), ...personValues(body) })
   return c.json(ok({ id }))
 })
 
@@ -172,15 +193,10 @@ adminRoutes.post('/people/:id', async (c) => {
   if (id === c.get('adminPersonId') && (!body.isAdmin || !body.isActive))
     return c.json({ ok: false, error: 'you cannot deactivate or de-admin yourself' }, 400)
   const email = body.email?.trim() || null
-  if (email) {
-    const [dup] = await db
-      .select({ id: schema.person.id })
-      .from(schema.person)
-      .where(and(eq(schema.person.email, email), ne(schema.person.id, id)))
-      .limit(1)
-    if (dup) return c.json({ ok: false, error: 'that email already belongs to a person' }, 409)
-  }
-  await db.update(schema.person).set({ email, ...personValues(body) }).where(eq(schema.person.id, id))
+  const altEmail = body.altEmail?.trim() || null
+  const clash = await emailClash(db, [email, altEmail], id)
+  if (clash) return c.json({ ok: false, error: clash }, 409)
+  await db.update(schema.person).set({ email, altEmail, ...personValues(body) }).where(eq(schema.person.id, id))
   return c.json(ok({ id }))
 })
 
@@ -264,12 +280,15 @@ adminRoutes.post('/people/:id/merge', async (c) => {
         ? `${survivor.notes} | ${src.notes}`
         : src.notes
       : survivor.notes
+  const addresses = [...new Set([src.email, survivor.email, src.altEmail, survivor.altEmail].filter(Boolean))] as string[]
   await db
     .update(schema.person)
     .set({
       // latest (source) info overrides; nulls never erase known values
       displayName: src.displayName,
-      email: src.email ?? survivor.email,
+      // Both sign-in addresses survive the merge — that is the point of altEmail.
+      email: addresses[0] ?? null,
+      altEmail: addresses[1] ?? null,
       society: src.society ?? survivor.society,
       residenceDetail: src.residenceDetail ?? survivor.residenceDetail,
       workplace: src.workplace ?? survivor.workplace,

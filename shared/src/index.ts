@@ -198,6 +198,8 @@ export interface AdminPerson {
   familyName: string | null;
   displayName: string;
   email: string | null;
+  /** Second sign-in address; either matches this person */
+  altEmail: string | null;
   society: string | null;
   residenceDetail: string | null;
   workplace: string | null;
@@ -219,6 +221,8 @@ export interface AdminPersonInput {
   familyId: string | null;
   displayName: string;
   email: string | null;
+  /** Second sign-in address; either matches this person */
+  altEmail: string | null;
   society: string | null;
   residenceDetail: string | null;
   workplace: string | null;

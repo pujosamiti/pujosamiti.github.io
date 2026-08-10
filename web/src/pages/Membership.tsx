@@ -241,7 +241,7 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
             </p>
             {canEdit && (
               <p className="truncate text-sm text-muted-foreground">
-                {[p.email ?? 'no login', where.filter(Boolean).join(' '), p.phone, p.familyName && `family: ${p.familyName}`]
+                {[p.email ?? 'no login', p.altEmail, where.filter(Boolean).join(' '), p.phone, p.familyName && `family: ${p.familyName}`]
                   .filter(Boolean)
                   .join(' · ')}
               </p>
@@ -414,6 +414,7 @@ function PersonForm({
     familyId: person?.familyId ?? null,
     displayName: person?.displayName ?? '',
     email: person?.email ?? null,
+    altEmail: person?.altEmail ?? null,
     society: person?.society ?? null,
     residenceDetail: person?.residenceDetail ?? null,
     workplace: person?.workplace ?? null,
@@ -463,6 +464,11 @@ function PersonForm({
             </Field>
             <Field label="Email (empty = no site login)">
               <input className={inputCls} type="email" value={form.email ?? ''} onChange={(e) => set({ email: e.target.value || null })} />
+            </Field>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Field label="Second email (if they sign in with either)">
+              <input className={inputCls} type="email" value={form.altEmail ?? ''} onChange={(e) => set({ altEmail: e.target.value || null })} />
             </Field>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
