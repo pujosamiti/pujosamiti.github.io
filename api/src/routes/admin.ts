@@ -448,6 +448,7 @@ function timetableValues(body: AdminTimetableInput) {
     timeFrom: body.timeFrom || null,
     timeTo: body.timeTo || null,
     comments: body.comments?.trim() || null,
+    alertNote: body.alertNote?.trim() || null,
     sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 0,
   }
 }

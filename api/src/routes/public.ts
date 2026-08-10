@@ -16,7 +16,10 @@ publicRoutes.get('/events', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   // soonest first, so the current season tops the chooser
   const rows = await db.select().from(schema.event).orderBy(asc(schema.event.startsOn))
-  return c.json(ok(rows as unknown as PujoEvent[]))
+  // The purohit's number is the one personal detail on an otherwise public
+  // page, so it is withheld here and served from the member route instead.
+  const out = rows.map((e) => ({ ...e, purohitPhone: null }))
+  return c.json(ok(out as unknown as PujoEvent[]))
 })
 
 publicRoutes.get('/timetable', async (c) => {

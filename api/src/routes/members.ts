@@ -1,5 +1,5 @@
-import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite } from '@pujosamiti/shared'
-import { eq, or } from 'drizzle-orm'
+import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite, PujoEvent } from '@pujosamiti/shared'
+import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -60,6 +60,13 @@ memberRoutes.get('/people', async (c) => {
     .where(eq(schema.person.isActive, true))
     .orderBy(schema.person.displayName)
   return c.json(ok(rows as MemberLite[]))
+})
+
+/** Same list as the public feed, but carrying the purohit's phone. */
+memberRoutes.get('/events', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db.select().from(schema.event).orderBy(asc(schema.event.startsOn))
+  return c.json(ok(rows as unknown as PujoEvent[]))
 })
 
 memberRoutes.route('/tasks', taskRoutes)

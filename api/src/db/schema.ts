@@ -97,6 +97,8 @@ export const timetableEntry = sqliteTable('timetable_entry', {
   timeFrom: text('time_from'), // "08:30" (24h); NULL until the purohit confirms
   timeTo: text('time_to'),
   comments: text('comments'), // "Shashthi ends at 10:43 AM"
+  /** A second note, shown in red beneath the comment — a departure from the printed nirghanto. */
+  alertNote: text('alert_note'),
   sortOrder: integer('sort_order').notNull().default(0),
 })
 

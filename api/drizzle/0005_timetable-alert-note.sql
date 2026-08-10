@@ -1,0 +1,1 @@
+ALTER TABLE `timetable_entry` ADD `alert_note` text;

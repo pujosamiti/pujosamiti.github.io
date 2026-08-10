@@ -166,6 +166,7 @@ function TimetableRow({ entry: t, canEdit, onEdit }: { entry: TimeTableEntry; ca
           {t.timeFrom ? (t.timeTo ? `${t.timeFrom}–${t.timeTo}` : t.timeFrom) : 'time TBD'}
         </span>
         {t.comments && <span className="text-muted-foreground"> · {t.comments}</span>}
+        {t.alertNote && <span className="font-medium text-jaba"> · {t.alertNote}</span>}
       </span>
       {canEdit && (
         <span className="flex shrink-0 gap-1">
@@ -212,6 +213,7 @@ function TimetableForm({
     timeFrom: entry?.timeFrom ?? null,
     timeTo: entry?.timeTo ?? null,
     comments: entry?.comments ?? null,
+    alertNote: entry?.alertNote ?? null,
     sortOrder: entry?.sortOrder ?? (lastDay?.sortOrder ?? 0) + 1,
   })
   const [error, setError] = useState<string | null>(null)
@@ -329,6 +331,14 @@ function TimetableForm({
               value={form.comments ?? ''}
               onChange={(e) => set({ comments: e.target.value || null })}
               placeholder="e.g. Shashthi ends at 10:43 AM"
+            />
+          </Field>
+          <Field label="Note in red (a departure from the printed nirghanto)">
+            <input
+              className={inputCls}
+              value={form.alertNote ?? ''}
+              onChange={(e) => set({ alertNote: e.target.value || null })}
+              placeholder="e.g. combined with the morning puja; no separate puja at night"
             />
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}

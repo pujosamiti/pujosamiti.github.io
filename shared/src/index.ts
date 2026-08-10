@@ -50,6 +50,8 @@ export interface TimeTableEntry {
   timeFrom: string | null; // "08:30" 24h; null until the purohit confirms
   timeTo: string | null;
   comments: string | null;
+  /** A second note shown in red beneath the comment — a departure from the printed nirghanto */
+  alertNote: string | null;
   sortOrder: number;
 }
 
@@ -63,6 +65,7 @@ export interface AdminTimetableInput {
   timeFrom: string | null;
   timeTo: string | null;
   comments: string | null;
+  alertNote: string | null;
   sortOrder: number;
 }
 

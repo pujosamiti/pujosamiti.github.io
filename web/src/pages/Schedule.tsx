@@ -7,6 +7,22 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
+import { useMemberState } from '@/lib/member'
+
+/**
+ * The public feed withholds the purohit's number; members get it from their
+ * own route. Full names show to everyone, the phone only once signed in.
+ */
+function usePurohitPhone(eventId: string | undefined) {
+  const { memberState } = useMemberState()
+  const isMember = memberState?.status === 'member'
+  const { data } = useQuery({
+    queryKey: ['member-events'],
+    queryFn: () => api<PujoEvent[]>('/api/members/events'),
+    enabled: isMember,
+  })
+  return data?.find((e) => e.id === eventId)?.purohitPhone ?? null
+}
 
 function formatDay(iso: string) {
   return new Date(iso).toLocaleDateString('en-IN', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
@@ -41,6 +57,8 @@ export function Schedule() {
   const activeYear = allDp.find((e) => e.isActive)?.year ?? new Date().getFullYear()
   const dpEvents = allDp.filter((e) => e.year >= 2022 && e.year <= activeYear).sort((a, b) => a.year - b.year)
   const selected = dpEvents.find((e) => e.id === eventId) ?? dpEvents.find((e) => e.isActive) ?? dpEvents[dpEvents.length - 1] ?? null
+
+  const purohitPhone = usePurohitPhone(selected?.id)
 
   const timetable = useQuery({
     queryKey: ['timetable', selected?.id],
@@ -102,13 +120,13 @@ export function Schedule() {
           <Card className="bg-band text-band-foreground">
             <CardHeader>
               <CardTitle className="font-serif">দূর্গা পুজোর নির্ঘণ্ট · {selected.year}</CardTitle>
-              {(selected.purohitName || selected.purohitPhone) && (
+              {selected.purohitName && (
                 <p className="text-sm opacity-90">
                   পুরোহিত: {selected.purohitName}
-                  {selected.purohitPhone && (
+                  {purohitPhone && (
                     <>
                       {' '}
-                      · <Phone className="inline size-3.5" aria-hidden="true" /> {selected.purohitPhone}
+                      · <Phone className="inline size-3.5" aria-hidden="true" /> {purohitPhone}
                     </>
                   )}
                 </p>
@@ -151,6 +169,7 @@ export function Schedule() {
                         </span>
                       </div>
                       {t.comments && <p className="text-muted-foreground">{t.comments}</p>}
+                      {t.alertNote && <p className="font-medium text-jaba">{t.alertNote}</p>}
                     </div>
                   )
                 })}
