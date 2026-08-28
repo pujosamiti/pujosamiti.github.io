@@ -84,6 +84,8 @@ procurementRoutes.get('/', async (c) => {
           id: i.id,
           category: i.category,
           title: i.title,
+          nameHi: i.nameHi,
+          nameBn: i.nameBn,
           details: i.details,
           sortOrder: i.sortOrder,
           isActive: i.isActive,
@@ -118,6 +120,8 @@ procurementRoutes.post('/items', async (c) => {
     id,
     category: body.category.trim(),
     title: body.title.trim(),
+    nameHi: body.nameHi?.trim() || null,
+    nameBn: body.nameBn?.trim() || null,
     details: body.details?.trim() || null,
     sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
     createdAt: new Date(),
@@ -144,6 +148,8 @@ procurementRoutes.post('/items/:id', async (c) => {
     .set({
       category: body.category.trim(),
       title: body.title.trim(),
+      nameHi: body.nameHi?.trim() || null,
+      nameBn: body.nameBn?.trim() || null,
       details: body.details?.trim() || null,
       sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
       isActive: body.isActive !== false,
@@ -197,6 +203,7 @@ procurementRoutes.post('/days', async (c) => {
     year: body.year,
     label: body.label.trim(),
     date: body.date?.trim() || null,
+    time: body.time?.trim() || null,
     sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
     notes: body.notes?.trim() || null,
   })
@@ -221,6 +228,7 @@ procurementRoutes.post('/days/:id', async (c) => {
     .set({
       label: body.label.trim(),
       date: body.date?.trim() || null,
+      time: body.time?.trim() || null,
       sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
       notes: body.notes?.trim() || null,
     })

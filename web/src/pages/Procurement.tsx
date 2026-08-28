@@ -123,7 +123,11 @@ export function Procurement() {
           />
         </div>
       </div>
-      {selectedDay?.notes && <p className="text-sm text-muted-foreground">{selectedDay.notes}</p>}
+      {selectedDay && (selectedDay.date || selectedDay.time || selectedDay.notes) && (
+        <p className="text-sm text-muted-foreground">
+          {[selectedDay.date, selectedDay.time, selectedDay.notes].filter(Boolean).join(' · ')}
+        </p>
+      )}
 
       {archival && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground print:hidden">
@@ -204,15 +208,17 @@ function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['procurement', year] })
   const [label, setLabel] = useState('')
   const [date, setDate] = useState('')
+  const [time, setTime] = useState('')
   const [editing, setEditing] = useState<string | null>(null)
 
   const add = useMutation({
     mutationFn: () =>
-      createDay({ year, label, date: date || null, sortOrder: (days.length + 1) * 10, notes: null }),
+      createDay({ year, label, date: date || null, time: time || null, sortOrder: (days.length + 1) * 10, notes: null }),
     onSuccess: async () => {
       await invalidate()
       setLabel('')
       setDate('')
+      setTime('')
     },
   })
   const remove = useMutation({ mutationFn: deleteDay, onSettled: invalidate })
@@ -234,6 +240,7 @@ function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
             <div key={d.id} className="flex items-center gap-2 text-sm">
               <Badge variant="outline">{d.label}</Badge>
               {d.date && <span className="text-muted-foreground">{d.date}</span>}
+              {d.time && <span className="text-muted-foreground">{d.time}</span>}
               {d.notes && <span className="truncate text-muted-foreground">— {d.notes}</span>}
               <span className="ml-auto flex gap-1">
                 <Button size="sm" variant="ghost" onClick={() => setEditing(d.id)} aria-label={`Edit ${d.label}`}>
@@ -258,6 +265,9 @@ function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
           <Field label="Date (optional)">
             <input className={inputCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
+          <Field label="Delivery time (optional)">
+            <input className={inputCls} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
           <Button size="sm" onClick={() => add.mutate()} disabled={add.isPending || !label.trim()}>
             {add.isPending ? <Loader2 className="animate-spin" /> : <Plus />} Add day
           </Button>
@@ -272,11 +282,12 @@ function DayEditRow({ year, day, onClose }: { year: number; day: ProcurementDay;
   const queryClient = useQueryClient()
   const [label, setLabel] = useState(day.label)
   const [date, setDate] = useState(day.date ?? '')
+  const [time, setTime] = useState(day.time ?? '')
   const [sortOrder, setSortOrder] = useState(String(day.sortOrder))
   const [notes, setNotes] = useState(day.notes ?? '')
   const save = useMutation({
     mutationFn: () =>
-      updateDay(day.id, { year, label, date: date || null, sortOrder: Number(sortOrder) || 1000, notes: notes.trim() || null }),
+      updateDay(day.id, { year, label, date: date || null, time: time || null, sortOrder: Number(sortOrder) || 1000, notes: notes.trim() || null }),
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['procurement', year] })
       onClose()
@@ -289,6 +300,9 @@ function DayEditRow({ year, day, onClose }: { year: number; day: ProcurementDay;
       </Field>
       <Field label="Date">
         <input className={inputCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+      </Field>
+      <Field label="Time">
+        <input className={inputCls} type="time" value={time} onChange={(e) => setTime(e.target.value)} />
       </Field>
       <Field label="Order">
         <input className={inputCls} inputMode="numeric" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
@@ -361,6 +375,9 @@ function ItemCard({
                 {STATUS_LABEL[item.status]}
               </Badge>
             </CardTitle>
+            {(item.nameHi || item.nameBn) && (
+              <CardDescription>{[item.nameBn, item.nameHi].filter(Boolean).join(' · ')}</CardDescription>
+            )}
             {(item.totalQuantity || item.details) && (
               <CardDescription>
                 {item.totalQuantity && <span className="font-medium">Total: {item.totalQuantity}</span>}
@@ -456,6 +473,8 @@ function ItemForm({
   const queryClient = useQueryClient()
   const [category, setCategory] = useState(initial?.category ?? '')
   const [title, setTitle] = useState(initial?.title ?? '')
+  const [nameHi, setNameHi] = useState(initial?.nameHi ?? '')
+  const [nameBn, setNameBn] = useState(initial?.nameBn ?? '')
   const [details, setDetails] = useState(initial?.details ?? '')
   const [sortOrder, setSortOrder] = useState(String(initial?.sortOrder ?? 1000))
   const [totalQuantity, setTotalQuantity] = useState(initial?.totalQuantity ?? '')
@@ -467,6 +486,8 @@ function ItemForm({
       const master = {
         category,
         title,
+        nameHi: nameHi.trim() || null,
+        nameBn: nameBn.trim() || null,
         details: details.trim() || null,
         sortOrder: Number(sortOrder) || 1000,
         isActive: true,
@@ -484,6 +505,8 @@ function ItemForm({
       updateProcurementItem(initial!.id, {
         category: initial!.category,
         title: initial!.title,
+        nameHi: initial!.nameHi,
+        nameBn: initial!.nameBn,
         details: initial!.details,
         sortOrder: initial!.sortOrder,
         isActive: false,
@@ -517,6 +540,14 @@ function ItemForm({
           </Field>
           <Field label="Item">
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Jaba Phool (Red Hibiscus)" />
+          </Field>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Vendor name — Hindi (optional)">
+            <input className={inputCls} value={nameHi} onChange={(e) => setNameHi(e.target.value)} placeholder="लाल जास्वंद गुड़हल फूल" />
+          </Field>
+          <Field label="Vendor name — Bengali (optional)">
+            <input className={inputCls} value={nameBn} onChange={(e) => setNameBn(e.target.value)} placeholder="লাল জবা ফুল" />
           </Field>
         </div>
         <Field label="Details (optional)">

@@ -79,6 +79,13 @@ slot, free-text quantity, per-cell purchased tick for the market run);
 (pending/partial/done) and remarks ("Purohit will bring"). Core members
 curate; only the active pujo year is writable.
 
+Vendor-order support (modelled on the yearly bilingual flowers docx handed to
+the Pune phoolwala): days carry an optional **delivery date + time** — by
+samiti convention most flowers arrive the *evening before* the puja day
+("27th, 7 pm" for Shashthi; Sandhi Puja 10 am gets its own column when the
+timings call for it) — and items carry optional **name_hi/name_bn** vendor
+names.
+
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
 The heart of the system. Design decisions (from the schema comments and the
@@ -159,6 +166,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0004 | `0004_person-alt-email.sql` | `person.alt_email` (second sign-in address) |
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
 | 0006 | `0006_procurement.sql` | Procurement: item catalog, per-year day columns, item-year totals/status, day-slot quantity cells |
+| 0007 | `0007_procurement-vendor.sql` | Vendor-order fields: `procurement_day.time`, `procurement_item.name_hi/name_bn` |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

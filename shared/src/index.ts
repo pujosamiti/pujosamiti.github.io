@@ -188,9 +188,11 @@ export interface ProcurementDay {
   id: string;
   year: number;
   label: string;
+  /** Delivery moment for the vendor order — often the evening BEFORE the puja day. */
   date: string | null; // ISO date, optional
+  time: string | null; // "HH:MM" 24h, optional
   sortOrder: number;
-  notes: string | null; // e.g. the Sandhi Puja window
+  notes: string | null; // e.g. "সন্ধি পুজো + নবমী combined delivery"
 }
 
 /** One cell: quantity for an item on one day, one slot. */
@@ -208,6 +210,9 @@ export interface ProcurementItemView {
   id: string;
   category: string;
   title: string;
+  /** Vendor-facing names for the printable order (Hindi for the phoolwala, Bengali for the committee). */
+  nameHi: string | null;
+  nameBn: string | null;
   details: string | null; // the sheet's NOTE lines
   sortOrder: number;
   isActive: boolean;
@@ -225,6 +230,8 @@ export interface ProcurementView {
 export interface ProcurementItemInput {
   category: string;
   title: string;
+  nameHi: string | null;
+  nameBn: string | null;
   details: string | null;
   sortOrder: number;
   isActive: boolean;
@@ -241,6 +248,7 @@ export interface ProcurementDayInput {
   year: number;
   label: string;
   date: string | null;
+  time: string | null;
   sortOrder: number;
   notes: string | null;
 }

@@ -363,6 +363,12 @@ export const procurementItem = sqliteTable('procurement_item', {
   id: text('id').primaryKey(),
   category: text('category').notNull(), // "Pottery", "Grocery", "Flowers / Garlands"…
   title: text('title').notNull(), // "Jaba Phool (Red Hibiscus)"
+  /**
+   * Vendor-facing names, used by the printable order (the yearly flowers doc
+   * is handed to a Pune phoolwala in Hindi, with Bengali for the committee).
+   */
+  nameHi: text('name_hi'), // "लाल जास्वंद गुड़हल फूल"
+  nameBn: text('name_bn'), // "লাল জবা ফুল"
   details: text('details'), // the sheet's NOTE lines: spec, packaging, warnings
   sortOrder: integer('sort_order').notNull().default(1000), // drives item AND category ordering
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
@@ -391,9 +397,15 @@ export const procurementDay = sqliteTable('procurement_day', {
   id: text('id').primaryKey(),
   year: integer('year').notNull(),
   label: text('label').notNull(), // "Shashthi", "Saptami · Day 2", "Sandhi Puja"
+  /**
+   * Delivery moment for the vendor order. By the samiti's convention most
+   * flowers arrive the EVENING BEFORE the puja day ("27th, 7 pm" for
+   * Shashthi), so date/time describe the delivery, not the tithi.
+   */
   date: text('date'), // ISO "YYYY-MM-DD", optional
+  time: text('time'), // "HH:MM" 24h, optional ("19:00", "10:00")
   sortOrder: integer('sort_order').notNull().default(1000),
-  notes: text('notes'), // e.g. the Sandhi Puja window
+  notes: text('notes'), // e.g. "সন্ধি পুজো + নবমী combined delivery"
 })
 
 /** One cell: what to buy for one item, one day, one slot. */

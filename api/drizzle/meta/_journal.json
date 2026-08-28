@@ -50,6 +50,13 @@
       "when": 1787933930404,
       "tag": "0006_procurement",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1787933930405,
+      "tag": "0007_procurement-vendor",
+      "breakpoints": true
     }
   ]
 }
