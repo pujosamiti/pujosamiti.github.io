@@ -7,7 +7,7 @@ import type {
 } from '@pujosamiti/shared'
 import { DURGA_PUJO_DEFAULT_DAYS, PROCUREMENT_SLOTS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Check, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
+import { CalendarCog, Check, ChevronDown, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Seo } from '@/components/Seo'
+import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
 import {
   createDay,
@@ -46,6 +47,15 @@ export function Procurement() {
   const [dayId, setDayId] = useState<string>('all')
   const [adding, setAdding] = useState(false)
   const [managingDays, setManagingDays] = useState(false)
+  // Print wants every accordion open; flip, print, flip back.
+  const [printAll, setPrintAll] = useState(false)
+  const onPrint = () => {
+    setPrintAll(true)
+    setTimeout(() => {
+      window.print()
+      setPrintAll(false)
+    }, 60)
+  }
 
   const years = useMemo(() => {
     const ys = new Set<number>((events ?? []).filter((e) => e.kind === 'durga-pujo').map((e) => e.year))
@@ -103,7 +113,7 @@ export function Procurement() {
           {year && <span className="text-muted-foreground"> · {year}</span>}
         </h1>
         <div className="flex gap-2 print:hidden">
-          <Button size="sm" variant="outline" onClick={() => window.print()}>
+          <Button size="sm" variant="outline" onClick={onPrint}>
             <Printer /> Print
           </Button>
           <SearchSelect
@@ -172,16 +182,25 @@ export function Procurement() {
             : 'Nothing on the list yet — core members can add days and items.'}
         </p>
       ) : (
-        categories.map((cat) => (
-          <section key={cat} className="flex flex-col gap-3">
-            <h2 className="font-serif text-lg font-bold">{cat}</h2>
-            {visible
-              .filter((i) => i.category === cat)
-              .map((i) => (
-                <ItemCard key={i.id} item={i} year={year} days={days} canEdit={canEdit} categories={categories} />
+        categories.map((cat) => {
+          const catItems = visible.filter((i) => i.category === cat)
+          return (
+            <CategorySection key={cat} title={cat} count={catItems.length} forceOpen={printAll || !!selectedDay}>
+              {catItems.map((i) => (
+                <ItemRow
+                  key={i.id}
+                  item={i}
+                  year={year}
+                  days={days}
+                  canEdit={canEdit}
+                  categories={categories}
+                  forceOpen={printAll}
+                  dayFiltered={!!selectedDay}
+                />
               ))}
-          </section>
-        ))
+            </CategorySection>
+          )
+        })
       )}
     </div>
   )
@@ -322,21 +341,60 @@ function DayEditRow({ year, day, onClose }: { year: number; day: ProcurementDay;
   )
 }
 
-function ItemCard({
+/** Collapsible category band ("Pottery", "Grocery", …) holding item lines. */
+function CategorySection({
+  title,
+  count,
+  forceOpen,
+  children,
+}: {
+  title: string
+  count: number
+  forceOpen: boolean
+  children: React.ReactNode
+}) {
+  const [open, setOpen] = useState(true)
+  const shown = open || forceOpen
+  return (
+    <section className="overflow-hidden rounded-md border">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center justify-between gap-2 bg-accent/40 px-3 py-2 text-left"
+        aria-expanded={shown}
+      >
+        <h2 className="font-serif text-lg font-bold">{title}</h2>
+        <span className="flex items-center gap-2 text-xs text-muted-foreground">
+          {count}
+          <ChevronDown className={cn('size-4 transition-transform', shown && 'rotate-180')} aria-hidden="true" />
+        </span>
+      </button>
+      {shown && <div className="divide-y border-t">{children}</div>}
+    </section>
+  )
+}
+
+/** One item as a compact line; expands to details, cells and edit controls. */
+function ItemRow({
   item,
   year,
   days,
   canEdit,
   categories,
+  forceOpen,
+  dayFiltered,
 }: {
   item: ProcurementItemView
   year: number
   days: ProcurementDay[]
   canEdit: boolean
   categories: string[]
+  forceOpen: boolean
+  dayFiltered: boolean
 }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['procurement', year] })
+  const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
   const [addingCell, setAddingCell] = useState(false)
   const [editingCell, setEditingCell] = useState<string | null>(null)
@@ -351,9 +409,6 @@ function ItemCard({
     onSettled: invalidate,
   })
 
-  if (editing)
-    return <ItemForm year={year} categories={categories} initial={item} onClose={() => setEditing(false)} />
-
   const dayById = new Map(days.map((d) => [d.id, d]))
   const ordered = [...item.cells].sort((a, b) => {
     const da = dayById.get(a.dayId)
@@ -363,98 +418,127 @@ function ItemCard({
       PROCUREMENT_SLOTS.indexOf(a.slot) - PROCUREMENT_SLOTS.indexOf(b.slot)
     )
   })
+  const allBought = ordered.length > 0 && ordered.every((c) => c.purchased)
+  // Line summary: the day view reads like the order sheet; all-days shows the total
+  const summary = dayFiltered
+    ? ordered.map((c) => `${SLOT_LABEL[c.slot]} ${c.quantity}`).join(' · ')
+    : [item.totalQuantity, ordered.length > 0 ? `${ordered.length} ${ordered.length === 1 ? 'delivery' : 'deliveries'}` : null]
+        .filter(Boolean)
+        .join(' · ')
+  const shown = open || forceOpen
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <div>
-            <CardTitle className="flex flex-wrap items-center gap-2">
-              {item.title}
-              <Badge variant={item.status === 'done' ? 'durba' : item.status === 'partial' ? 'genda' : 'outline'}>
-                {STATUS_LABEL[item.status]}
-              </Badge>
-            </CardTitle>
-            {(item.nameHi || item.nameBn) && (
-              <CardDescription>{[item.nameBn, item.nameHi].filter(Boolean).join(' · ')}</CardDescription>
+    <div className="px-3">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="flex w-full items-center gap-2 py-2 text-left"
+        aria-expanded={shown}
+      >
+        <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.title}</span>
+        {item.status !== 'pending' && (
+          <Badge variant={item.status === 'done' ? 'durba' : 'genda'}>{STATUS_LABEL[item.status]}</Badge>
+        )}
+        {summary && (
+          <span
+            className={cn(
+              'max-w-[45%] truncate text-xs text-muted-foreground',
+              allBought && dayFiltered && 'line-through opacity-60',
             )}
-            {(item.totalQuantity || item.details) && (
-              <CardDescription>
-                {item.totalQuantity && <span className="font-medium">Total: {item.totalQuantity}</span>}
-                {item.totalQuantity && item.details && ' · '}
-                {item.details}
-              </CardDescription>
-            )}
-          </div>
-          {canEdit && (
-            <Button size="sm" variant="ghost" onClick={() => setEditing(true)} aria-label={`Edit ${item.title}`}>
-              <Pencil />
-            </Button>
+          >
+            {summary}
+          </span>
+        )}
+        <ChevronDown
+          className={cn('size-4 shrink-0 text-muted-foreground transition-transform', shown && 'rotate-180')}
+          aria-hidden="true"
+        />
+      </button>
+      {shown && (
+        <div className="flex flex-col gap-2 pb-3">
+          {editing ? (
+            <ItemForm year={year} categories={categories} initial={item} onClose={() => setEditing(false)} />
+          ) : (
+            <>
+              {(item.nameHi || item.nameBn) && (
+                <p className="text-sm text-muted-foreground">{[item.nameBn, item.nameHi].filter(Boolean).join(' · ')}</p>
+              )}
+              {(item.totalQuantity || item.details) && (
+                <p className="text-sm text-muted-foreground">
+                  {item.totalQuantity && <span className="font-medium text-foreground">Total: {item.totalQuantity}</span>}
+                  {item.totalQuantity && item.details && ' · '}
+                  {item.details}
+                </p>
+              )}
+              {item.yearNotes && <p className="text-sm text-shiuli">{item.yearNotes}</p>}
+              {ordered.length === 0 && <p className="text-sm text-muted-foreground">No day-wise quantities yet.</p>}
+              {ordered.map((cell) =>
+                editingCell === cell.id ? (
+                  <CellForm
+                    key={cell.id}
+                    itemId={item.id}
+                    year={year}
+                    days={days}
+                    initial={cell}
+                    onClose={() => setEditingCell(null)}
+                  />
+                ) : (
+                  <div key={cell.id} className="flex items-center gap-2 text-sm">
+                    {canEdit && (
+                      <button
+                        onClick={() => purchasedMut.mutate({ id: cell.id, purchased: !cell.purchased })}
+                        aria-label={cell.purchased ? 'Mark not purchased' : 'Mark purchased'}
+                        className={
+                          cell.purchased
+                            ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-white'
+                            : 'flex size-5 shrink-0 items-center justify-center rounded border border-input'
+                        }
+                      >
+                        {cell.purchased && <Check className="size-3.5" />}
+                      </button>
+                    )}
+                    <Badge variant={cell.purchased ? 'durba' : 'outline'}>
+                      {dayById.get(cell.dayId)?.label ?? '?'}
+                    </Badge>
+                    <span className="text-muted-foreground">{SLOT_LABEL[cell.slot]}</span>
+                    <span className={cell.purchased ? 'font-medium line-through opacity-60' : 'font-medium'}>
+                      {cell.quantity}
+                    </span>
+                    {cell.notes && <span className="truncate text-muted-foreground">— {cell.notes}</span>}
+                    {canEdit && (
+                      <span className="ml-auto flex shrink-0 gap-1 print:hidden">
+                        <Button size="sm" variant="ghost" onClick={() => setEditingCell(cell.id)} aria-label="Edit quantity">
+                          <Pencil />
+                        </Button>
+                        <Button size="sm" variant="ghost" onClick={() => clearCell.mutate(cell)} aria-label="Delete quantity">
+                          <Trash2 />
+                        </Button>
+                      </span>
+                    )}
+                  </div>
+                ),
+              )}
+              {canEdit && (
+                <div className="flex flex-wrap gap-2 print:hidden">
+                  {addingCell ? (
+                    <CellForm itemId={item.id} year={year} days={days} onClose={() => setAddingCell(false)} />
+                  ) : days.length > 0 ? (
+                    <Button size="sm" variant="outline" onClick={() => setAddingCell(true)}>
+                      <Plus /> Add day quantity
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Add the year's days first (Edit days).</p>
+                  )}
+                  <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
+                    <Pencil /> Edit item
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-2">
-        {item.yearNotes && <p className="text-sm text-shiuli">{item.yearNotes}</p>}
-        {ordered.map((cell) =>
-          editingCell === cell.id ? (
-            <CellForm
-              key={cell.id}
-              itemId={item.id}
-              year={year}
-              days={days}
-              initial={cell}
-              onClose={() => setEditingCell(null)}
-            />
-          ) : (
-            <div key={cell.id} className="flex items-center gap-2 text-sm">
-              {canEdit && (
-                <button
-                  onClick={() => purchasedMut.mutate({ id: cell.id, purchased: !cell.purchased })}
-                  aria-label={cell.purchased ? 'Mark not purchased' : 'Mark purchased'}
-                  className={
-                    cell.purchased
-                      ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-white'
-                      : 'flex size-5 shrink-0 items-center justify-center rounded border border-input'
-                  }
-                >
-                  {cell.purchased && <Check className="size-3.5" />}
-                </button>
-              )}
-              <Badge variant={cell.purchased ? 'durba' : 'outline'}>
-                {dayById.get(cell.dayId)?.label ?? '?'}
-              </Badge>
-              <span className="text-muted-foreground">{SLOT_LABEL[cell.slot]}</span>
-              <span className={cell.purchased ? 'font-medium line-through opacity-60' : 'font-medium'}>
-                {cell.quantity}
-              </span>
-              {cell.notes && <span className="truncate text-muted-foreground">— {cell.notes}</span>}
-              {canEdit && (
-                <span className="ml-auto flex shrink-0 gap-1 print:hidden">
-                  <Button size="sm" variant="ghost" onClick={() => setEditingCell(cell.id)} aria-label="Edit quantity">
-                    <Pencil />
-                  </Button>
-                  <Button size="sm" variant="ghost" onClick={() => clearCell.mutate(cell)} aria-label="Delete quantity">
-                    <Trash2 />
-                  </Button>
-                </span>
-              )}
-            </div>
-          ),
-        )}
-        {canEdit &&
-          (addingCell ? (
-            <CellForm itemId={item.id} year={year} days={days} onClose={() => setAddingCell(false)} />
-          ) : days.length > 0 ? (
-            <div className="print:hidden">
-              <Button size="sm" variant="outline" onClick={() => setAddingCell(true)}>
-                <Plus /> Add day quantity
-              </Button>
-            </div>
-          ) : (
-            <p className="text-xs text-muted-foreground print:hidden">Add the year's days first (Edit days).</p>
-          ))}
-      </CardContent>
-    </Card>
+      )}
+    </div>
   )
 }
 
