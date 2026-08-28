@@ -5,8 +5,10 @@ import type {
   ProcurementDayInput,
   ProcurementItemInput,
   ProcurementItemYearInput,
+  ProcurementMasterItem,
   ProcurementSlot,
   ProcurementStatus,
+  ProcurementSuggestion,
   ProcurementView,
 } from '@pujosamiti/shared'
 import { PROCUREMENT_SLOTS } from '@pujosamiti/shared'
@@ -16,7 +18,7 @@ import { Hono } from 'hono'
 
 import * as schema from '../db/schema'
 import type { Env } from '../env'
-import { activePujoYear } from '../lib/pujo'
+import { activePujoYear, sandhiRow, tithiOf } from '../lib/pujo'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -87,6 +89,7 @@ procurementRoutes.get('/', async (c) => {
           nameHi: i.nameHi,
           nameBn: i.nameBn,
           details: i.details,
+          suggestedTotal: i.suggestedTotal,
           sortOrder: i.sortOrder,
           isActive: i.isActive,
           totalQuantity: y?.totalQuantity ?? null,
@@ -125,6 +128,7 @@ procurementRoutes.post('/items', async (c) => {
     nameHi: body.nameHi?.trim() || null,
     nameBn: body.nameBn?.trim() || null,
     details: body.details?.trim() || null,
+    suggestedTotal: body.suggestedTotal?.trim() || null,
     sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
     createdAt: new Date(),
   })
@@ -153,6 +157,7 @@ procurementRoutes.post('/items/:id', async (c) => {
       nameHi: body.nameHi?.trim() || null,
       nameBn: body.nameBn?.trim() || null,
       details: body.details?.trim() || null,
+      suggestedTotal: body.suggestedTotal?.trim() || null,
       sortOrder: Number.isFinite(body.sortOrder) ? Math.trunc(body.sortOrder) : 1000,
       isActive: body.isActive !== false,
     })
@@ -212,6 +217,146 @@ procurementRoutes.post('/days', async (c) => {
     notes: body.notes?.trim() || null,
   })
   return c.json(ok({ id }))
+})
+
+/** Tithi a delivery column serves: via its puja day, else its own label. */
+function dayTithi(
+  d: { label: string; pujaDayId: string | null },
+  pujaDays: { id: string; labelEn: string }[],
+): string | null {
+  const src = pujaDays.find((p) => p.id === d.pujaDayId)?.labelEn ?? d.label
+  if (/sandhi/i.test(src)) return 'Sandhi Puja'
+  return tithiOf(src)
+}
+
+/**
+ * Create the year's delivery columns from its Puja Days (ADMIN, active year,
+ * empty column list). Convention: delivery lands the EVENING BEFORE the tithi
+ * at 19:00; a nirghanto Sandhi Puja row adds its own same-morning 10:00 column.
+ */
+procurementRoutes.post('/days/seed', async (c) => {
+  const me = c.get('me')
+  if (me.role !== 'admin') return c.json({ ok: false, error: 'admins only' }, 403)
+  const { year } = (await c.req.json()) as { year: number }
+  const db = drizzle(c.env.DB, { schema })
+  if (year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'columns seed only for the active pujo year' }, 400)
+  const existing = await db
+    .select({ id: schema.procurementDay.id })
+    .from(schema.procurementDay)
+    .where(eq(schema.procurementDay.year, year))
+  if (existing.length > 0)
+    return c.json({ ok: false, error: 'delivery columns already exist — remove them first to reseed' }, 400)
+  const eventId = `durga-pujo-${year}`
+  const pujaDays = await db
+    .select()
+    .from(schema.pujaDay)
+    .where(eq(schema.pujaDay.eventId, eventId))
+    .orderBy(asc(schema.pujaDay.sortOrder))
+  if (pujaDays.length === 0)
+    return c.json(
+      { ok: false, error: 'no Puja Days yet — finalise the nirghanto and seed Puja Days first' },
+      400,
+    )
+  const dayBefore = (iso: string) => {
+    const t = new Date(`${iso}T12:00:00Z`)
+    t.setUTCDate(t.getUTCDate() - 1)
+    return t.toISOString().slice(0, 10)
+  }
+  let created = 0
+  for (const pd of pujaDays) {
+    await db.insert(schema.procurementDay).values({
+      id: crypto.randomUUID(),
+      year,
+      pujaDayId: pd.id,
+      label: pd.labelEn,
+      date: dayBefore(pd.date),
+      time: '19:00',
+      sortOrder: pd.sortOrder,
+      notes: `tithi ${pd.date} — delivery evening before, 19:00 default`,
+    })
+    created++
+  }
+  const sandhi = await sandhiRow(db, eventId)
+  if (sandhi) {
+    const host = pujaDays.find((p) => p.date === sandhi.dayDate)
+    await db.insert(schema.procurementDay).values({
+      id: crypto.randomUUID(),
+      year,
+      pujaDayId: host?.id ?? null,
+      label: 'Sandhi Puja',
+      date: sandhi.dayDate,
+      time: '10:00',
+      sortOrder: (host?.sortOrder ?? pujaDays.length * 10) + 5,
+      notes: `Sandhi window ${[sandhi.timeFrom, sandhi.timeTo].filter(Boolean).join('–') || 'TBC'} — delivery same morning, 10:00 default`,
+    })
+    created++
+  }
+  return c.json(ok({ created }))
+})
+
+/**
+ * Fill the active year from the master list (ADMIN): suggested totals become
+ * item-year totals, suggested tithi × slot quantities become cells on every
+ * matching delivery column (both Ashtamis in an Adhik Diba year). Existing
+ * values are never overwritten — prefill only adds what's missing.
+ */
+procurementRoutes.post('/days/prefill', async (c) => {
+  const me = c.get('me')
+  if (me.role !== 'admin') return c.json({ ok: false, error: 'admins only' }, 403)
+  const { year } = (await c.req.json()) as { year: number }
+  const db = drizzle(c.env.DB, { schema })
+  if (year !== (await activePujoYear(db)))
+    return c.json({ ok: false, error: 'prefill applies only to the active pujo year' }, 400)
+  const days = await db.select().from(schema.procurementDay).where(eq(schema.procurementDay.year, year))
+  if (days.length === 0)
+    return c.json({ ok: false, error: 'seed the delivery columns first' }, 400)
+  const pujaDays = await db
+    .select()
+    .from(schema.pujaDay)
+    .where(eq(schema.pujaDay.eventId, `durga-pujo-${year}`))
+  const items = await db.select().from(schema.procurementItem)
+  const suggestions = await db.select().from(schema.procurementSuggestion)
+  const itemYears = await db
+    .select()
+    .from(schema.procurementItemYear)
+    .where(eq(schema.procurementItemYear.year, year))
+  const dayIds = days.map((d) => d.id)
+  const cells = dayIds.length
+    ? await db.select().from(schema.procurementNeed).where(inArray(schema.procurementNeed.dayId, dayIds))
+    : []
+  const haveCell = new Set(cells.map((n) => `${n.itemId}|${n.dayId}|${n.slot}`))
+  let totals = 0
+  let added = 0
+  for (const item of items.filter((i) => i.isActive)) {
+    const iy = itemYears.find((y) => y.itemId === item.id)
+    if (item.suggestedTotal && !iy) {
+      await db.insert(schema.procurementItemYear).values({
+        id: crypto.randomUUID(),
+        itemId: item.id,
+        year,
+        totalQuantity: item.suggestedTotal,
+      })
+      totals++
+    }
+    for (const sg of suggestions.filter((x) => x.itemId === item.id)) {
+      for (const d of days) {
+        if (dayTithi(d, pujaDays) !== sg.tithi) continue
+        const key = `${item.id}|${d.id}|${sg.slot}`
+        if (haveCell.has(key)) continue
+        await db.insert(schema.procurementNeed).values({
+          id: crypto.randomUUID(),
+          itemId: item.id,
+          dayId: d.id,
+          slot: sg.slot,
+          quantity: sg.quantity,
+        })
+        haveCell.add(key)
+        added++
+      }
+    }
+  }
+  return c.json(ok({ totals, cells: added }))
 })
 
 /** Edit a day column (core, active year). */
@@ -329,3 +474,60 @@ procurementRoutes.post('/cells/:id/purchased', async (c) => {
     .where(eq(schema.procurementNeed.id, n.id))
   return c.json(ok({ id: n.id, purchased: !!purchased }))
 })
+
+/** The master list: every catalog item with its suggested quantities. */
+procurementRoutes.get('/master', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const items = await db
+    .select()
+    .from(schema.procurementItem)
+    .orderBy(asc(schema.procurementItem.sortOrder), asc(schema.procurementItem.title))
+  const suggestions = await db.select().from(schema.procurementSuggestion)
+  const out: ProcurementMasterItem[] = items
+    .filter((i) => i.isActive)
+    .map((i) => ({
+      id: i.id,
+      category: i.category,
+      title: i.title,
+      nameHi: i.nameHi,
+      nameBn: i.nameBn,
+      details: i.details,
+      suggestedTotal: i.suggestedTotal,
+      sortOrder: i.sortOrder,
+      isActive: i.isActive,
+      suggestions: suggestions
+        .filter((sg) => sg.itemId === i.id)
+        .map((sg) => ({ tithi: sg.tithi, slot: sg.slot, quantity: sg.quantity })),
+    }))
+  return c.json(ok(out))
+})
+
+/** Replace an item's suggested tithi × slot quantities (core). */
+procurementRoutes.post('/items/:id/suggestions', async (c) => {
+  if (!canEdit(c.get('me'))) return c.json({ ok: false, error: 'core members only' }, 403)
+  const { suggestions } = (await c.req.json()) as { suggestions: ProcurementSuggestion[] }
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [i] = await db
+    .select({ id: schema.procurementItem.id })
+    .from(schema.procurementItem)
+    .where(eq(schema.procurementItem.id, id))
+    .limit(1)
+  if (!i) return c.json({ ok: false, error: 'item not found' }, 404)
+  await db.delete(schema.procurementSuggestion).where(eq(schema.procurementSuggestion.itemId, id))
+  let n = 0
+  for (const sg of suggestions ?? []) {
+    const quantity = sg.quantity?.trim()
+    if (!quantity || !sg.tithi?.trim()) continue
+    await db.insert(schema.procurementSuggestion).values({
+      id: crypto.randomUUID(),
+      itemId: id,
+      tithi: sg.tithi.trim(),
+      slot: asSlot(sg.slot),
+      quantity,
+    })
+    n++
+  }
+  return c.json(ok({ id, saved: n }))
+})
+

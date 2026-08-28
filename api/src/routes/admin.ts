@@ -17,6 +17,7 @@ import { Hono } from 'hono'
 import { createAuth } from '../auth'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
+import { deriveDaysFromNirghanto } from '../lib/pujo'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -490,4 +491,86 @@ adminRoutes.delete('/timetable/:id', async (c) => {
   const id = c.req.param('id')
   await db.delete(schema.timetableEntry).where(eq(schema.timetableEntry.id, id))
   return c.json(ok({ id }))
+})
+
+/**
+ * Declare the year's nirghanto published & final (or reopen it). Finalisation
+ * is the gate for seeding Puja Days — and everything downstream of them.
+ */
+adminRoutes.post('/events/:id/nirghanto-finalize', async (c) => {
+  const deny = requireAdmin(c)
+  if (deny) return deny
+  const { finalized } = (await c.req.json()) as { finalized: boolean }
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [ev] = await db.select().from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (finalized) {
+    const derived = await deriveDaysFromNirghanto(db, id)
+    if (derived.length === 0)
+      return c.json({ ok: false, error: 'no nirghanto days to finalise — build the timetable first' }, 400)
+  }
+  const on = finalized ? new Date().toISOString().slice(0, 10) : null
+  await db.update(schema.event).set({ nirghantoFinalizedOn: on }).where(eq(schema.event.id, id))
+  return c.json({ ok: true, data: { id, nirghantoFinalizedOn: on } })
+})
+
+/** Create the Puja Days from the finalised nirghanto (admin; once per event). */
+adminRoutes.post('/events/:id/seed-puja-days', async (c) => {
+  const deny = requireAdmin(c)
+  if (deny) return deny
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [ev] = await db.select().from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (!ev.nirghantoFinalizedOn)
+    return c.json({ ok: false, error: 'finalise the nirghanto first — Puja Days seed from it' }, 400)
+  const existing = await db.select({ id: schema.pujaDay.id }).from(schema.pujaDay).where(eq(schema.pujaDay.eventId, id))
+  if (existing.length > 0)
+    return c.json({ ok: false, error: 'Puja Days already exist — use re-sync to update them' }, 400)
+  const derived = await deriveDaysFromNirghanto(db, id)
+  for (const d of derived) {
+    await db.insert(schema.pujaDay).values({ id: crypto.randomUUID(), eventId: id, ...d })
+  }
+  return c.json({ ok: true, data: { created: derived.length } })
+})
+
+/**
+ * Re-align Puja Days after the nirghanto changed (admin): matched days (by
+ * label) get their date/source refreshed, new days are added; days no longer
+ * in the nirghanto are kept but flagged in the response — deleting data that
+ * features may reference is a human decision.
+ */
+adminRoutes.post('/events/:id/resync-puja-days', async (c) => {
+  const deny = requireAdmin(c)
+  if (deny) return deny
+  const db = drizzle(c.env.DB, { schema })
+  const id = c.req.param('id')
+  const [ev] = await db.select().from(schema.event).where(eq(schema.event.id, id)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (!ev.nirghantoFinalizedOn)
+    return c.json({ ok: false, error: 'finalise the nirghanto first' }, 400)
+  const derived = await deriveDaysFromNirghanto(db, id)
+  const existing = await db.select().from(schema.pujaDay).where(eq(schema.pujaDay.eventId, id))
+  let updated = 0
+  let created = 0
+  const matchedIds = new Set<string>()
+  for (const d of derived) {
+    const m = existing.find((x) => x.labelEn === d.labelEn && !matchedIds.has(x.id))
+    if (m) {
+      matchedIds.add(m.id)
+      if (m.date !== d.date || m.sourceLabel !== d.sourceLabel || m.sortOrder !== d.sortOrder) {
+        await db
+          .update(schema.pujaDay)
+          .set({ date: d.date, labelBn: d.labelBn, sourceLabel: d.sourceLabel, sortOrder: d.sortOrder })
+          .where(eq(schema.pujaDay.id, m.id))
+        updated++
+      }
+    } else {
+      await db.insert(schema.pujaDay).values({ id: crypto.randomUUID(), eventId: id, ...d })
+      created++
+    }
+  }
+  const orphaned = existing.filter((x) => !matchedIds.has(x.id)).map((x) => x.labelEn)
+  return c.json({ ok: true, data: { updated, created, orphaned } })
 })

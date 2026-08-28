@@ -1,15 +1,17 @@
 import type { AdminTimetableInput, PujoEvent, TimeTableEntry } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { CalendarDays, Check, Loader2, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
+import { resyncPujaDays, seedPujaDays, setNirghantoFinalized, usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
 import { Seo } from '@/components/Seo'
 
@@ -117,6 +119,7 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
           Purohit for the nirghanto header is set on the event (Events → edit Durga Pujo {selected.year}).
         </p>
       )}
+      <PujaDaysPanel event={selected} isAdmin={canEdit} />
 
       {adding && <TimetableForm event={selected} entries={entries ?? []} onClose={() => setAdding(false)} />}
       {isPending ? (
@@ -351,6 +354,95 @@ function TimetableForm({
             </Button>
           </div>
         </form>
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Days of the Pujo — the admin workflow that turns a finalised nirghanto into
+ * the canonical per-year calendar every day-scoped feature uses.
+ */
+function PujaDaysPanel({ event, isAdmin }: { event: PujoEvent; isAdmin: boolean }) {
+  const queryClient = useQueryClient()
+  const { data } = usePujaDays(event.year)
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['puja-days', event.year] })
+  const finalizeMut = useMutation({
+    mutationFn: (finalized: boolean) => setNirghantoFinalized(event.id, finalized),
+    onSettled: invalidate,
+  })
+  const seedMut = useMutation({ mutationFn: () => seedPujaDays(event.id), onSettled: invalidate })
+  const resyncMut = useMutation({ mutationFn: () => resyncPujaDays(event.id), onSettled: invalidate })
+  if (!data) return null
+  const err = finalizeMut.error ?? seedMut.error ?? resyncMut.error
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex flex-wrap items-center gap-2">
+          <CalendarDays className="size-5 text-primary" aria-hidden="true" /> Days of the Pujo
+          <Badge variant={data.finalizedOn ? 'durba' : 'outline'}>
+            {data.finalizedOn ? `Nirghanto finalised ${data.finalizedOn}` : 'Nirghanto draft'}
+          </Badge>
+        </CardTitle>
+        <CardDescription>
+          The canonical calendar (Panchami → Dashami) that procurement, bhog menu, RSVP, coupons and
+          ritual volunteers all build on. An admin finalises the nirghanto, then seeds these days from it.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-2">
+        {data.days.length > 0 && (
+          <div className="flex flex-wrap gap-1.5">
+            {data.days.map((d) => (
+              <Badge key={d.id} variant="outline">
+                {d.labelEn} · {d.date}
+              </Badge>
+            ))}
+          </div>
+        )}
+        {data.days.length === 0 && data.finalizedOn && (
+          <p className="text-sm text-muted-foreground">Not seeded yet.</p>
+        )}
+        {!data.inSync && (
+          <p className="text-sm text-shiuli">
+            The nirghanto changed after these days were seeded — re-sync to update dates and labels.
+          </p>
+        )}
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2">
+            {!data.finalizedOn ? (
+              <>
+                <Button
+                  size="sm"
+                  onClick={() => finalizeMut.mutate(true)}
+                  disabled={finalizeMut.isPending || !data.hasNirghanto}
+                >
+                  {finalizeMut.isPending ? <Loader2 className="animate-spin" /> : <Check />} Finalise nirghanto
+                </Button>
+                {!data.hasNirghanto && (
+                  <p className="text-xs text-muted-foreground">Build the timetable first.</p>
+                )}
+              </>
+            ) : (
+              <>
+                {data.days.length === 0 && (
+                  <Button size="sm" onClick={() => seedMut.mutate()} disabled={seedMut.isPending}>
+                    {seedMut.isPending ? <Loader2 className="animate-spin" /> : <Plus />} Seed Puja Days
+                  </Button>
+                )}
+                {!data.inSync && (
+                  <Button size="sm" variant="outline" onClick={() => resyncMut.mutate()} disabled={resyncMut.isPending}>
+                    <RefreshCw /> Re-sync from nirghanto
+                  </Button>
+                )}
+                <Button size="sm" variant="ghost" onClick={() => finalizeMut.mutate(false)} disabled={finalizeMut.isPending}>
+                  Reopen nirghanto
+                </Button>
+              </>
+            )}
+          </div>
+        )}
+        {err && <p className="text-sm text-destructive">{err.message}</p>}
       </CardContent>
     </Card>
   )

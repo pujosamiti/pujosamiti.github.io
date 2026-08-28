@@ -76,6 +76,11 @@ export const event = sqliteTable('event', {
   purohitPhone: text('purohit_phone'),
   /** Free note shown above the nirghanto — e.g. which panjika and place it follows. */
   notes: text('notes'),
+  /**
+   * Set when an admin declares the nirghanto published & final. Gates the
+   * seeding of puja_day (and everything downstream); NULL = draft.
+   */
+  nirghantoFinalizedOn: text('nirghanto_finalized_on'), // ISO date
 })
 
 /**
@@ -100,6 +105,28 @@ export const timetableEntry = sqliteTable('timetable_entry', {
   /** A second note, shown in red beneath the comment — a departure from the printed nirghanto. */
   alertNote: text('alert_note'),
   sortOrder: integer('sort_order').notNull().default(0),
+})
+
+/**
+ * THE DAYS OF THE PUJO — the canonical per-year calendar that every day-scoped
+ * feature hangs off (procurement deliveries, bhog menu, RSVP, coupons,
+ * ritual-volunteer slots). Seeded by an ADMIN from the finalised nirghanto:
+ * Panchami → Dashami in tithi order, keeping duplicated tithis as their own
+ * days ("Ashtami · Day 2" when the panjika gives Adhik Diba). `source_label`
+ * preserves the nirghanto's wording for traceability; labels stay editable
+ * because the panjika shifts every year.
+ */
+export const pujaDay = sqliteTable('puja_day', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id, { onDelete: 'cascade' }),
+  date: text('date').notNull(), // tithi date, ISO
+  labelEn: text('label_en').notNull(), // "Panchami", "Ashtami · Day 2"
+  labelBn: text('label_bn'), // "মহাষ্টমী"
+  sourceLabel: text('source_label'), // "Maha Ashtami (Adhik Diba)"
+  sortOrder: integer('sort_order').notNull().default(1000),
+  notes: text('notes'),
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -370,9 +397,30 @@ export const procurementItem = sqliteTable('procurement_item', {
   nameHi: text('name_hi'), // "लाल जास्वंद गुड़हल फूल"
   nameBn: text('name_bn'), // "লাল জবা ফুল"
   details: text('details'), // the sheet's NOTE lines: spec, packaging, warnings
+  /** Year-independent suggested total ("10 kg") — the samiti buys much the same every year. */
+  suggestedTotal: text('suggested_total'),
   sortOrder: integer('sort_order').notNull().default(1000), // drives item AND category ordering
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+/**
+ * Year-independent suggested quantity for one tithi × slot ("Shashthi morning:
+ * 250 gm") — the master list's memory of what the samiti usually orders.
+ * Tithi-relative (not day-id-relative) so it maps onto whichever actual days
+ * a year has; prefill applies it to every matching day (both Ashtamis in an
+ * Adhik Diba year), and the committee trims.
+ */
+export const procurementSuggestion = sqliteTable('procurement_suggestion', {
+  id: text('id').primaryKey(),
+  itemId: text('item_id')
+    .notNull()
+    .references(() => procurementItem.id, { onDelete: 'cascade' }),
+  tithi: text('tithi').notNull(), // PUJA_TITHIS in shared: Panchami … Dashami, Sandhi Puja
+  slot: text('slot', { enum: ['morning', 'evening'] })
+    .notNull()
+    .default('morning'),
+  quantity: text('quantity').notNull(),
 })
 
 /** The sheet's Total Quantity / Procurement Status / remarks columns, per year. */
@@ -399,6 +447,8 @@ export const procurementItemYear = sqliteTable('procurement_item_year', {
 export const procurementDay = sqliteTable('procurement_day', {
   id: text('id').primaryKey(),
   year: integer('year').notNull(),
+  /** The puja day this delivery serves; NULL for free-form columns. */
+  pujaDayId: text('puja_day_id').references(() => pujaDay.id, { onDelete: 'set null' }),
   label: text('label').notNull(), // "Shashthi", "Saptami · Day 2", "Sandhi Puja"
   /**
    * Delivery moment for the vendor order. By the samiti's convention most

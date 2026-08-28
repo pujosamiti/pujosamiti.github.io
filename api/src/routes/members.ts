@@ -1,4 +1,4 @@
-import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite, PujoEvent } from '@pujosamiti/shared'
+import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite, PujaDaysView, PujoEvent } from '@pujosamiti/shared'
 import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -7,6 +7,7 @@ import { createAuth } from '../auth'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { readSheetRange } from '../lib/google'
+import { deriveDaysFromNirghanto } from '../lib/pujo'
 import { ledgerRoutes } from './ledger'
 import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
@@ -68,6 +69,30 @@ memberRoutes.get('/events', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const rows = await db.select().from(schema.event).orderBy(asc(schema.event.startsOn))
   return c.json(ok(rows as unknown as PujoEvent[]))
+})
+
+/** The Days of the Pujo for a year — the calendar every day-scoped feature uses. */
+memberRoutes.get('/puja-days', async (c) => {
+  const year = Number(c.req.query('year'))
+  if (!Number.isInteger(year)) return c.json({ ok: false, error: 'year query param required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const eventId = `durga-pujo-${year}`
+  const [ev] = await db.select().from(schema.event).where(eq(schema.event.id, eventId)).limit(1)
+  if (!ev) return c.json({ ok: false, error: 'no such durga pujo year' }, 404)
+  const days = await db
+    .select()
+    .from(schema.pujaDay)
+    .where(eq(schema.pujaDay.eventId, eventId))
+    .orderBy(asc(schema.pujaDay.sortOrder))
+  const derived = await deriveDaysFromNirghanto(db, eventId)
+  const sig = (xs: { date: string; labelEn: string }[]) => xs.map((x) => `${x.date}|${x.labelEn}`).sort().join(';')
+  const out: PujaDaysView = {
+    finalizedOn: ev.nirghantoFinalizedOn,
+    hasNirghanto: derived.length > 0,
+    inSync: days.length === 0 || sig(days) === sig(derived),
+    days: days as unknown as PujaDaysView['days'],
+  }
+  return c.json(ok(out))
 })
 
 memberRoutes.route('/tasks', taskRoutes)

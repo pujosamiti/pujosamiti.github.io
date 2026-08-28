@@ -67,7 +67,18 @@ admin-curated grouping — **it gates nothing**. Key columns:
 `task_assignment` links people per year as `owner` (max 5, app-enforced —
 `TASK_MAX_OWNERS` in shared) or `volunteer`. Soft deletes everywhere.
 
-### Procurement: `procurement_item`, `procurement_item_year`, `procurement_day`, `procurement_need`
+### Days of the Pujo: `puja_day` (+ `event.nirghanto_finalized_on`)
+
+The canonical per-year calendar every day-scoped feature builds on
+(procurement deliveries, bhog menu, RSVP, coupons, ritual-volunteer slots).
+An **admin** finalises the nirghanto (`event.nirghanto_finalized_on`), then
+seeds Puja Days from it: Panchami → Dashami as **tithi-days** — in a crunched
+year two tithis share one date (2024: Oct 10 was Saptami AND Ashtami) and a
+tithi can span two dates ("Ashtami · Day 2", 2026's Adhik Diba). No finalised
+nirghanto → no seeding; features wait. Later nirghanto edits surface as an
+out-of-sync warning with an admin re-sync.
+
+### Procurement: `procurement_item` (+`procurement_suggestion`), `procurement_item_year`, `procurement_day`, `procurement_need`
 
 The digital form of the samiti's yearly procurement sheet (2024/2025 format):
 items grouped in category sections × per-year day columns, each split
@@ -79,12 +90,15 @@ slot, free-text quantity, per-cell purchased tick for the market run);
 (pending/partial/done) and remarks ("Purohit will bring"). Core members
 curate; only the active pujo year is writable.
 
-Vendor-order support (modelled on the yearly bilingual flowers docx handed to
-the Pune phoolwala): days carry an optional **delivery date + time** — by
-samiti convention most flowers arrive the *evening before* the puja day
-("27th, 7 pm" for Shashthi; Sandhi Puja 10 am gets its own column when the
-timings call for it) — and items carry optional **name_hi/name_bn** vendor
-names.
+Delivery columns reference their `puja_day` and are **admin-seeded** from it:
+delivery date = the evening before the tithi at 19:00 by default; a nirghanto
+Sandhi Puja row adds a same-morning 10:00 column carrying its real window.
+Items carry optional **name_hi/name_bn** vendor names (the flowers order is
+handed to the Pune phoolwala bilingual) and a year-independent **master
+list**: `suggested_total` plus tithi × slot `procurement_suggestion` rows
+(distilled from 2023–2025; edited at /procurement/master). An admin prefill
+maps suggestions onto the year's actual days — both Ashtamis in an Adhik
+Diba year — never overwriting existing values.
 
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
@@ -165,8 +179,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0003 | `0003_event-notes.sql` | `event.notes` (note above the nirghanto) |
 | 0004 | `0004_person-alt-email.sql` | `person.alt_email` (second sign-in address) |
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
-| 0006 | `0006_procurement.sql` | Procurement: item catalog, per-year day columns, item-year totals/status, day-slot quantity cells |
-| 0007 | `0007_procurement-vendor.sql` | Vendor-order fields: `procurement_day.time`, `procurement_item.name_hi/name_bn` |
+| 0006 | `0006_puja-days-procurement.sql` | Puja Days (`puja_day`, `event.nirghanto_finalized_on`) + the full procurement suite (catalog with vendor names & master-list suggestions, item-years with due date/time, puja-day-linked delivery columns, quantity cells) |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

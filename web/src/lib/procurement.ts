@@ -3,6 +3,8 @@ import type {
   ProcurementDayInput,
   ProcurementItemInput,
   ProcurementItemYearInput,
+  ProcurementMasterItem,
+  ProcurementSuggestion,
   ProcurementView,
 } from '@pujosamiti/shared'
 import { useQuery } from '@tanstack/react-query'
@@ -36,3 +38,19 @@ export const deleteDay = (id: string) => post(`/api/members/procurement/days/${i
 export const saveCell = (input: ProcurementCellInput) => post('/api/members/procurement/cells', input)
 export const setCellPurchased = (id: string, purchased: boolean) =>
   post(`/api/members/procurement/cells/${id}/purchased`, { purchased })
+
+export function useProcurementMaster() {
+  const { memberState } = useMemberState()
+  return useQuery({
+    queryKey: ['procurement-master'],
+    queryFn: () => api<ProcurementMasterItem[]>('/api/members/procurement/master'),
+    enabled: memberState?.status === 'member',
+  })
+}
+
+export const saveSuggestions = (itemId: string, suggestions: ProcurementSuggestion[]) =>
+  post(`/api/members/procurement/items/${itemId}/suggestions`, { suggestions })
+export const seedDeliveryColumns = (year: number) =>
+  post('/api/members/procurement/days/seed', { year }) as Promise<{ created: number }>
+export const prefillFromMaster = (year: number) =>
+  post('/api/members/procurement/days/prefill', { year }) as Promise<{ totals: number; cells: number }>

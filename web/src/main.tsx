@@ -16,6 +16,7 @@ import { BrandColours } from '@/pages/BrandColours'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Procurement } from '@/pages/Procurement'
+import { ProcurementMaster } from '@/pages/ProcurementMaster'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
@@ -82,6 +83,7 @@ createRoot(document.getElementById('root')!).render(
               <Route element={<RequireMember />}>
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="procurement" element={<Procurement />} />
+                <Route path="procurement/master" element={<ProcurementMaster />} />
                 <Route path="membership" element={<Membership />} />
                 <Route path="events" element={<Events />} />
                 <Route path="nirghanto" element={<Nirghanto />} />

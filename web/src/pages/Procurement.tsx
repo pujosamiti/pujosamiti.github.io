@@ -5,9 +5,10 @@ import type {
   ProcurementSlot,
   ProcurementStatus,
 } from '@pujosamiti/shared'
-import { DURGA_PUJO_DEFAULT_DAYS, PROCUREMENT_SLOTS } from '@pujosamiti/shared'
+import { PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Check, ChevronDown, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
+import { CalendarCog, Check, ChevronDown, ListChecks, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
+import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
@@ -23,13 +24,16 @@ import {
   createDay,
   createProcurementItem,
   deleteDay,
+  prefillFromMaster,
   saveCell,
   saveItemYear,
+  seedDeliveryColumns,
   setCellPurchased,
   updateDay,
   updateProcurementItem,
   useProcurement,
 } from '@/lib/procurement'
+import { usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
 
 const SLOT_LABEL: Record<ProcurementSlot, string> = { morning: 'Morning', evening: 'Evening' }
@@ -113,6 +117,11 @@ export function Procurement() {
           {year && <span className="text-muted-foreground"> · {year}</span>}
         </h1>
         <div className="flex gap-2 print:hidden">
+          <Button size="sm" variant="outline" asChild>
+            <Link to="/procurement/master">
+              <ListChecks /> Master list
+            </Link>
+          </Button>
           <Button size="sm" variant="outline" onClick={onPrint}>
             <Printer /> Print
           </Button>
@@ -158,7 +167,7 @@ export function Procurement() {
         )}
       </div>
 
-      {managingDays && canEdit && year && <DayManager year={year} days={days} />}
+      {managingDays && canEdit && year && <DayManager year={year} days={days} isAdmin={me.role === 'admin'} />}
 
       {canEdit &&
         year &&
@@ -221,10 +230,11 @@ function DayChip({ label, active, onClick }: { label: string; active: boolean; o
   )
 }
 
-/** The year's day columns: add (with ritual-order suggestions), edit, remove. */
-function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
+/** The year's delivery columns: seed from Puja Days (admin), prefill, add, edit, remove. */
+function DayManager({ year, days, isAdmin }: { year: number; days: ProcurementDay[]; isAdmin: boolean }) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['procurement', year] })
+  const { data: pujaDays } = usePujaDays(year)
   const [label, setLabel] = useState('')
   const [date, setDate] = useState('')
   const [time, setTime] = useState('')
@@ -241,14 +251,18 @@ function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
     },
   })
   const remove = useMutation({ mutationFn: deleteDay, onSettled: invalidate })
+  const seed = useMutation({ mutationFn: () => seedDeliveryColumns(year), onSettled: invalidate })
+  const prefill = useMutation({ mutationFn: () => prefillFromMaster(year), onSettled: invalidate })
 
   return (
     <Card className="print:hidden">
       <CardHeader>
-        <CardTitle>Days of the {year} sheet</CardTitle>
+        <CardTitle>Delivery columns of the {year} sheet</CardTitle>
         <CardDescription>
-          A tithi that spans two calendar days gets two entries ("Saptami · Day 2"); add Sandhi Puja
-          when the timings call for it. Removing a day removes its quantities.
+          Seeded from the Puja Days: <span className="font-medium text-foreground">delivery date = the
+          evening before the tithi, at 19:00 by default</span> (Sandhi Puja: same morning, 10:00) —
+          adjust any day after seeding. A tithi spanning two calendar days gets two columns
+          ("Ashtami · Day 2"). Removing a day removes its quantities.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
@@ -272,12 +286,34 @@ function DayManager({ year, days }: { year: number; days: ProcurementDay[] }) {
             </div>
           ),
         )}
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2 border-b pb-3">
+            {days.length === 0 ? (
+              (pujaDays?.days.length ?? 0) > 0 ? (
+                <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
+                  {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed from Puja Days
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No Puja Days for {year} yet — finalise the nirghanto and seed them first (Nirghanto page).
+                </p>
+              )
+            ) : (
+              <Button size="sm" variant="outline" onClick={() => prefill.mutate()} disabled={prefill.isPending}>
+                {prefill.isPending ? <Loader2 className="animate-spin" /> : <Plus />} Prefill quantities from master list
+              </Button>
+            )}
+            {(seed.error || prefill.error) && (
+              <p className="text-sm text-destructive">{(seed.error ?? prefill.error)!.message}</p>
+            )}
+          </div>
+        )}
         <div className="flex flex-wrap items-end gap-2">
           <Field label="Day">
             <input className={inputCls} list="procurement-day-suggestions" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Saptami · Day 2" />
             <datalist id="procurement-day-suggestions">
-              {DURGA_PUJO_DEFAULT_DAYS.map((d) => (
-                <option key={d} value={d} />
+              {PUJA_TITHIS.map((t) => (
+                <option key={t} value={t} />
               ))}
             </datalist>
           </Field>
@@ -585,6 +621,7 @@ function ItemForm({
         nameHi: nameHi.trim() || null,
         nameBn: nameBn.trim() || null,
         details: details.trim() || null,
+        suggestedTotal: initial?.suggestedTotal ?? null,
         sortOrder: Number(sortOrder) || 1000,
         isActive: true,
       }
@@ -622,6 +659,7 @@ function ItemForm({
         nameHi: initial!.nameHi,
         nameBn: initial!.nameBn,
         details: initial!.details,
+        suggestedTotal: initial!.suggestedTotal,
         sortOrder: initial!.sortOrder,
         isActive: false,
       }),

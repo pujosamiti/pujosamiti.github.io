@@ -34,6 +34,8 @@ export interface PujoEvent {
   purohitPhone: string | null;
   /** Free note shown above the nirghanto */
   notes: string | null;
+  /** Set when an admin declares the nirghanto published & final; null = draft */
+  nirghantoFinalizedOn: string | null;
 }
 
 // ── Public content ──────────────────────────────────────────────────────────
@@ -67,6 +69,44 @@ export interface AdminTimetableInput {
   comments: string | null;
   alertNote: string | null;
   sortOrder: number;
+}
+
+// ── Days of the Pujo ────────────────────────────────────────────────────────
+// The canonical per-year calendar (seeded by an admin from the FINALISED
+// nirghanto) that every day-scoped feature references: procurement
+// deliveries, bhog menu, RSVP, coupons, ritual-volunteer slots.
+
+/** Canonical tithi names, in ritual order — the master list's day vocabulary. */
+export const PUJA_TITHIS = [
+  'Panchami',
+  'Shashthi',
+  'Saptami',
+  'Ashtami',
+  'Sandhi Puja',
+  'Nabami',
+  'Dashami',
+] as const;
+export type PujaTithi = (typeof PUJA_TITHIS)[number];
+
+export interface PujaDay {
+  id: string;
+  eventId: EventId;
+  date: string; // tithi date, ISO
+  labelEn: string; // "Panchami", "Ashtami · Day 2"
+  labelBn: string | null;
+  sourceLabel: string | null; // the nirghanto's wording, e.g. "Maha Ashtami (Adhik Diba)"
+  sortOrder: number;
+  notes: string | null;
+}
+
+export interface PujaDaysView {
+  /** Event's nirghanto finalisation date; null = draft (seeding blocked) */
+  finalizedOn: string | null;
+  /** Whether the year has any nirghanto rows at all */
+  hasNirghanto: boolean;
+  /** False when the nirghanto changed after the days were seeded */
+  inSync: boolean;
+  days: PujaDay[];
 }
 
 export type PostType = 'blog' | 'magazine';
@@ -171,22 +211,12 @@ export type ProcurementSlot = (typeof PROCUREMENT_SLOTS)[number];
 
 export type ProcurementStatus = 'pending' | 'partial' | 'done';
 
-/** Suggested day labels, in ritual order. Labels stay free text: a tithi can
- * span two calendar days ("Saptami · Day 2"), and Sandhi Puja gets its own
- * column when the timings call for it. */
-export const DURGA_PUJO_DEFAULT_DAYS = [
-  'Shashthi',
-  'Saptami',
-  'Ashtami',
-  'Sandhi Puja',
-  'Nabami',
-  'Dashami',
-] as const;
-
 /** One day column of a year's procurement sheet. */
 export interface ProcurementDay {
   id: string;
   year: number;
+  /** The puja day this delivery serves; null for free-form columns */
+  pujaDayId: string | null;
   label: string;
   /** Delivery moment for the vendor order — often the evening BEFORE the puja day. */
   date: string | null; // ISO date, optional
@@ -205,6 +235,27 @@ export interface ProcurementCell {
   purchased: boolean;
 }
 
+/** Year-independent suggested quantity for one tithi × slot. */
+export interface ProcurementSuggestion {
+  tithi: PujaTithi | string;
+  slot: ProcurementSlot;
+  quantity: string;
+}
+
+/** Master-list entry: the catalog item plus its suggested quantities. */
+export interface ProcurementMasterItem {
+  id: string;
+  category: string;
+  title: string;
+  nameHi: string | null;
+  nameBn: string | null;
+  details: string | null;
+  suggestedTotal: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  suggestions: ProcurementSuggestion[];
+}
+
 /** A master-catalog item with one year's totals and cells folded in. */
 export interface ProcurementItemView {
   id: string;
@@ -214,6 +265,7 @@ export interface ProcurementItemView {
   nameHi: string | null;
   nameBn: string | null;
   details: string | null; // the sheet's NOTE lines
+  suggestedTotal: string | null; // from the master list
   sortOrder: number;
   isActive: boolean;
   totalQuantity: string | null; // buy-once items have only this
@@ -236,6 +288,7 @@ export interface ProcurementItemInput {
   nameHi: string | null;
   nameBn: string | null;
   details: string | null;
+  suggestedTotal: string | null;
   sortOrder: number;
   isActive: boolean;
 }

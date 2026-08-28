@@ -75,7 +75,16 @@ local `http://localhost:8787`.
 | `GET /budget?year=` · `POST /budget` · `POST /budget/bulk` · `POST /budget/:id/delete` | Season budget lines |
 | `GET /claims` · `POST /claims` · `…/:id/assign` · `…/:id/settle` · `…/:id/reject` · `…/:id/cancel` | Reimbursements (settle writes the vendor expense + link) |
 
-### Procurement (`/api/members/procurement` — reads for all members; writes are core work, active pujo year only)
+### Puja Days & nirghanto finalisation
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/members/puja-days?year=` | The year's canonical days + finalisation state + nirghanto-sync flag |
+| `POST /api/admin/events/:id/nirghanto-finalize` | Admin: declare the nirghanto published & final (or reopen) |
+| `POST /api/admin/events/:id/seed-puja-days` | Admin: create Puja Days from the finalised nirghanto |
+| `POST /api/admin/events/:id/resync-puja-days` | Admin: re-align days after nirghanto edits (orphans reported, never auto-deleted) |
+
+### Procurement (`/api/members/procurement` — reads for all members; catalog/cells are core work, seeding/prefill admin-only, active pujo year only)
 
 The yearly shopping sheet: items × day columns × Morning/Evening
 ([004](004-database.md) §2 "Procurement").
@@ -88,6 +97,10 @@ The yearly shopping sheet: items × day columns × Morning/Evening
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | The year's day columns (delete cascades its cells) |
 | `POST /cells` | Upsert one cell (item × day × slot); blank quantity clears it |
 | `POST /cells/:id/purchased` | Tick / untick while shopping |
+| `GET /master` | The master list: catalog + suggested totals + tithi × slot suggestions |
+| `POST /items/:id/suggestions` | Replace an item's suggested quantities (core) |
+| `POST /days/seed` | **Admin**: create the year's delivery columns from its Puja Days (evening-before 19:00; Sandhi same-morning 10:00) |
+| `POST /days/prefill` | **Admin**: fill totals + cells from the master list, mapping tithis onto the year's actual days; adds only, never overwrites |
 
 ## Admin (`/api/admin` — core/admin read, admin write)
 
@@ -110,7 +123,9 @@ Routes from `web/src/main.tsx`:
 | `/login`, `/profile` | `/api/auth/*`, `/api/oauth/done`, `/api/members/me`, onboarding |
 | `/membersonly` | `/api/members/*` |
 | `/tasks` | `/api/members/tasks/*` |
-| `/procurement` | `/api/members/procurement/*` |
+| `/procurement` | `/api/members/procurement/*`, `/api/members/puja-days` |
+| `/procurement/master` | `/api/members/procurement/master` + item/suggestion writes |
+| `/nirghanto` | timetable routes + `/api/members/puja-days` + admin finalise/seed/resync |
 | `/membership` | `/api/admin/people`, `/api/admin/families` |
 | `/ledger`, `/wallets`, `/sponsorship`, `/reimbursements` | `/api/members/ledger/*` |
 | `/brandcolours` | nothing — the design-system reference page ([012](012-design-system.md)) |
