@@ -386,6 +386,9 @@ export const procurementItemYear = sqliteTable('procurement_item_year', {
   status: text('status', { enum: ['pending', 'partial', 'done'] })
     .notNull()
     .default('pending'),
+  /** Order-by deadline for advance purchases (murti garlands, pottery). */
+  dueDate: text('due_date'), // ISO "YYYY-MM-DD", optional
+  dueTime: text('due_time'), // "HH:MM" 24h, optional
   notes: text('notes'), // "7 mid size pradip not found in the carton", "Purohit will bring"
 })
 

@@ -91,6 +91,8 @@ procurementRoutes.get('/', async (c) => {
           isActive: i.isActive,
           totalQuantity: y?.totalQuantity ?? null,
           status: y?.status ?? 'pending',
+          dueDate: y?.dueDate ?? null,
+          dueTime: y?.dueTime ?? null,
           yearNotes: y?.notes ?? null,
           cells: cells
             .filter((n) => n.itemId === i.id)
@@ -174,6 +176,8 @@ procurementRoutes.post('/items/:id/year', async (c) => {
   const values = {
     totalQuantity: body.totalQuantity?.trim() || null,
     status: STATUSES.includes(body.status) ? body.status : 'pending',
+    dueDate: body.dueDate?.trim() || null,
+    dueTime: body.dueTime?.trim() || null,
     notes: body.notes?.trim() || null,
   }
   const [existing] = await db

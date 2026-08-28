@@ -218,6 +218,9 @@ export interface ProcurementItemView {
   isActive: boolean;
   totalQuantity: string | null; // buy-once items have only this
   status: ProcurementStatus;
+  /** Order-by deadline for advance purchases (murti garlands, pottery). */
+  dueDate: string | null; // ISO date, optional
+  dueTime: string | null; // "HH:MM" 24h, optional
   yearNotes: string | null; // remarks ("Purohit will bring")
   cells: ProcurementCell[];
 }
@@ -241,6 +244,8 @@ export interface ProcurementItemYearInput {
   year: number;
   totalQuantity: string | null;
   status: ProcurementStatus;
+  dueDate: string | null;
+  dueTime: string | null;
   notes: string | null;
 }
 

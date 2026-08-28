@@ -163,7 +163,7 @@ export function Procurement() {
       {canEdit &&
         year &&
         (adding ? (
-          <ItemForm year={year} categories={categories} onClose={() => setAdding(false)} />
+          <ItemForm year={year} days={days} categories={categories} onClose={() => setAdding(false)} />
         ) : (
           <div className="print:hidden">
             <Button size="sm" onClick={() => setAdding(true)}>
@@ -396,7 +396,6 @@ function ItemRow({
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['procurement', year] })
   const [open, setOpen] = useState(false)
   const [editing, setEditing] = useState(false)
-  const [addingCell, setAddingCell] = useState(false)
   const [editingCell, setEditingCell] = useState<string | null>(null)
 
   const purchasedMut = useMutation({
@@ -439,6 +438,12 @@ function ItemRow({
         {item.status !== 'pending' && (
           <Badge variant={item.status === 'done' ? 'durba' : 'genda'}>{STATUS_LABEL[item.status]}</Badge>
         )}
+        {item.status !== 'done' && item.dueDate && (
+          <Badge variant={item.dueDate < new Date().toISOString().slice(0, 10) ? 'palash' : 'outline'}>
+            due {item.dueDate.slice(5)}
+            {item.dueTime ? ` ${item.dueTime}` : ''}
+          </Badge>
+        )}
         {summary && (
           <span
             className={cn(
@@ -457,7 +462,7 @@ function ItemRow({
       {shown && (
         <div className="flex flex-col gap-2 pb-3">
           {editing ? (
-            <ItemForm year={year} categories={categories} initial={item} onClose={() => setEditing(false)} />
+            <ItemForm year={year} days={days} categories={categories} initial={item} onClose={() => setEditing(false)} />
           ) : (
             <>
               {(item.nameHi || item.nameBn) && (
@@ -519,18 +524,9 @@ function ItemRow({
                 ),
               )}
               {canEdit && (
-                <div className="flex flex-wrap gap-2 print:hidden">
-                  {addingCell ? (
-                    <CellForm itemId={item.id} year={year} days={days} onClose={() => setAddingCell(false)} />
-                  ) : days.length > 0 ? (
-                    <Button size="sm" variant="outline" onClick={() => setAddingCell(true)}>
-                      <Plus /> Add day quantity
-                    </Button>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Add the year's days first (Edit days).</p>
-                  )}
-                  <Button size="sm" variant="ghost" onClick={() => setEditing(true)}>
-                    <Pencil /> Edit item
+                <div className="print:hidden">
+                  <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
+                    <Pencil /> Edit item & quantities
                   </Button>
                 </div>
               )}
@@ -542,14 +538,20 @@ function ItemRow({
   )
 }
 
-/** Master fields + the year's Total/status/remarks in one form. */
+/**
+ * The whole association in one form: master fields, the year's total/status/
+ * remarks, an order-by due date+time, and a day × Morning/Evening quantity
+ * grid over the year's day columns — saving upserts every changed cell.
+ */
 function ItemForm({
   year,
+  days,
   categories,
   initial,
   onClose,
 }: {
   year: number
+  days: ProcurementDay[]
   categories: string[]
   initial?: ProcurementItemView
   onClose: () => void
@@ -563,7 +565,17 @@ function ItemForm({
   const [sortOrder, setSortOrder] = useState(String(initial?.sortOrder ?? 1000))
   const [totalQuantity, setTotalQuantity] = useState(initial?.totalQuantity ?? '')
   const [status, setStatus] = useState<ProcurementStatus>(initial?.status ?? 'pending')
+  const [dueDate, setDueDate] = useState(initial?.dueDate ?? '')
+  const [dueTime, setDueTime] = useState(initial?.dueTime ?? '')
   const [yearNotes, setYearNotes] = useState(initial?.yearNotes ?? '')
+  // day-slot grid, keyed "dayId:slot" — seeded from the item's current cells
+  const cellKey = (dayId: string, slot: ProcurementSlot) => `${dayId}:${slot}`
+  const initialGrid = useMemo(() => {
+    const g: Record<string, string> = {}
+    for (const c of initial?.cells ?? []) g[cellKey(c.dayId, c.slot)] = c.quantity
+    return g
+  }, [initial])
+  const [grid, setGrid] = useState<Record<string, string>>(initialGrid)
 
   const save = useMutation({
     mutationFn: async () => {
@@ -577,7 +589,25 @@ function ItemForm({
         isActive: true,
       }
       const id = initial ? (await updateProcurementItem(initial.id, master), initial.id) : (await createProcurementItem(master)).id
-      await saveItemYear(id, { year, totalQuantity: totalQuantity.trim() || null, status, notes: yearNotes.trim() || null })
+      await saveItemYear(id, {
+        year,
+        totalQuantity: totalQuantity.trim() || null,
+        status,
+        dueDate: dueDate || null,
+        dueTime: dueTime || null,
+        notes: yearNotes.trim() || null,
+      })
+      // upsert only the cells that changed; blank clears. Notes on a cell survive.
+      const byKey = new Map((initial?.cells ?? []).map((c) => [cellKey(c.dayId, c.slot), c]))
+      for (const d of days) {
+        for (const slot of PROCUREMENT_SLOTS) {
+          const key = cellKey(d.id, slot)
+          const next = (grid[key] ?? '').trim()
+          const prev = initialGrid[key] ?? ''
+          if (next === prev) continue
+          await saveCell({ itemId: id, dayId: d.id, slot, quantity: next, notes: byKey.get(key)?.notes ?? null })
+        }
+      }
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['procurement', year] })
@@ -659,9 +689,60 @@ function ItemForm({
             <input className={inputCls} inputMode="numeric" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
           </Field>
         </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Order by — due date (optional)">
+            <input className={inputCls} type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          </Field>
+          <Field label="Due time (optional)">
+            <input className={inputCls} type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} />
+          </Field>
+        </div>
         <Field label={`Remarks ${year} (optional)`}>
           <input className={inputCls} value={yearNotes} onChange={(e) => setYearNotes(e.target.value)} placeholder="Purohit will bring" />
         </Field>
+        <div className="flex flex-col gap-1">
+          <p className="text-sm font-medium">Day-wise quantities</p>
+          {days.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Add the year's days first (Edit days) to assign quantities.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full min-w-[28rem] text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-muted-foreground">
+                    <th className="py-1 pr-2 font-medium">Day</th>
+                    <th className="py-1 pr-2 font-medium">Morning</th>
+                    <th className="py-1 font-medium">Evening</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {days.map((d) => (
+                    <tr key={d.id} className="border-t">
+                      <td className="py-1.5 pr-2">
+                        <span className="font-medium">{d.label}</span>
+                        {(d.date || d.time) && (
+                          <span className="ml-1 text-xs text-muted-foreground">
+                            {[d.date, d.time].filter(Boolean).join(' ')}
+                          </span>
+                        )}
+                      </td>
+                      {PROCUREMENT_SLOTS.map((slot) => (
+                        <td key={slot} className="py-1.5 pr-2">
+                          <input
+                            className={inputCls}
+                            value={grid[cellKey(d.id, slot)] ?? ''}
+                            onChange={(e) => setGrid({ ...grid, [cellKey(d.id, slot)]: e.target.value })}
+                            placeholder="—"
+                            aria-label={`${d.label} ${slot} quantity`}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
         {save.error && <p className="text-sm text-destructive">{save.error.message}</p>}
         <div className="flex flex-wrap gap-2">
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending || !category.trim() || !title.trim()}>
