@@ -11,8 +11,12 @@ page (and the doc it points at).
    applied by hand), so `wrangler d1 migrations apply` re-runs `0000_init`
    and dies on "table already exists".
    *Workaround*: apply with `d1 execute --file` — [004-database.md](004-database.md) §4.
-   *Fix*: create and seed `d1_migrations` (rows for 0000–0005) on **both**
-   prod and local; then the scripts work incrementally as designed.
+   *Fix*: create and seed `d1_migrations` (rows for all applied migrations)
+   on **both** prod and local; then the scripts work incrementally as designed.
+   Related debt: the drizzle **meta snapshots** are stale too (none were
+   generated for 0002–0005), so `npm run db:generate` demands interactive
+   conflict resolution and emits wrong diffs — 0006 was hand-written because
+   of this. Regenerating the snapshot chain belongs to the same fix.
 
 2. **No branch protection on `main`.** No rulesets, no protected branches
    (verified via API). Any collaborator push to `main` deploys straight to

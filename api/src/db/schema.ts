@@ -343,3 +343,73 @@ export const budgetLine = sqliteTable('budget_line', {
   notes: text('notes'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6 · Procurement (Durga Pujo shopping lists)
+// Modelled on the samiti's 2024/2025 procurement sheets: a MATRIX of items
+// (grouped in category sections) × per-year day columns, each day split
+// Morning/Evening. `procurement_item` is the year-independent master catalog;
+// `procurement_day` is the year's ordered column list — first-class because
+// a tithi can span two calendar days ("Saptami · Day 2") and Sandhi Puja gets
+// its own column when needed; `procurement_need` is one CELL (item × day ×
+// slot); `procurement_item_year` carries the sheet's per-item Total Quantity,
+// procurement status and remarks. Quantities are free text ("250/500 gm",
+// "1 + 7", "as many as possible") because units never standardise. Core
+// members curate; only the active pujo year is writable — past lists stay as
+// the record of what was actually ordered.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const procurementItem = sqliteTable('procurement_item', {
+  id: text('id').primaryKey(),
+  category: text('category').notNull(), // "Pottery", "Grocery", "Flowers / Garlands"…
+  title: text('title').notNull(), // "Jaba Phool (Red Hibiscus)"
+  details: text('details'), // the sheet's NOTE lines: spec, packaging, warnings
+  sortOrder: integer('sort_order').notNull().default(1000), // drives item AND category ordering
+  isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+/** The sheet's Total Quantity / Procurement Status / remarks columns, per year. */
+export const procurementItemYear = sqliteTable('procurement_item_year', {
+  id: text('id').primaryKey(),
+  itemId: text('item_id')
+    .notNull()
+    .references(() => procurementItem.id, { onDelete: 'cascade' }),
+  year: integer('year').notNull(),
+  totalQuantity: text('total_quantity'), // free text; buy-once items have only this
+  status: text('status', { enum: ['pending', 'partial', 'done'] })
+    .notNull()
+    .default('pending'),
+  notes: text('notes'), // "7 mid size pradip not found in the carton", "Purohit will bring"
+})
+
+/**
+ * One day column of a year's sheet, in nirghanto order. Label is free text so
+ * a two-day tithi ("Saptami · Day 2") or Sandhi Puja fit; `date` optional.
+ */
+export const procurementDay = sqliteTable('procurement_day', {
+  id: text('id').primaryKey(),
+  year: integer('year').notNull(),
+  label: text('label').notNull(), // "Shashthi", "Saptami · Day 2", "Sandhi Puja"
+  date: text('date'), // ISO "YYYY-MM-DD", optional
+  sortOrder: integer('sort_order').notNull().default(1000),
+  notes: text('notes'), // e.g. the Sandhi Puja window
+})
+
+/** One cell: what to buy for one item, one day, one slot. */
+export const procurementNeed = sqliteTable('procurement_need', {
+  id: text('id').primaryKey(),
+  itemId: text('item_id')
+    .notNull()
+    .references(() => procurementItem.id, { onDelete: 'cascade' }),
+  dayId: text('day_id')
+    .notNull()
+    .references(() => procurementDay.id, { onDelete: 'cascade' }),
+  slot: text('slot', { enum: ['morning', 'evening'] })
+    .notNull()
+    .default('morning'),
+  quantity: text('quantity').notNull(), // free text, units included
+  notes: text('notes'),
+  /** Ticked off while shopping — the day view doubles as the market checklist. */
+  purchased: integer('purchased', { mode: 'boolean' }).notNull().default(false),
+})

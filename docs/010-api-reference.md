@@ -75,6 +75,20 @@ local `http://localhost:8787`.
 | `GET /budget?year=` · `POST /budget` · `POST /budget/bulk` · `POST /budget/:id/delete` | Season budget lines |
 | `GET /claims` · `POST /claims` · `…/:id/assign` · `…/:id/settle` · `…/:id/reject` · `…/:id/cancel` | Reimbursements (settle writes the vendor expense + link) |
 
+### Procurement (`/api/members/procurement` — reads for all members; writes are core work, active pujo year only)
+
+The yearly shopping sheet: items × day columns × Morning/Evening
+([004](004-database.md) §2 "Procurement").
+
+| Route | Purpose |
+| --- | --- |
+| `GET /?year=` | `ProcurementView`: the year's day columns + items with totals/status and cells |
+| `POST /items` · `POST /items/:id` | Catalog item create/edit (isActive=false = soft delete) |
+| `POST /items/:id/year` | Upsert the item's Total Quantity / status / remarks for the year |
+| `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | The year's day columns (delete cascades its cells) |
+| `POST /cells` | Upsert one cell (item × day × slot); blank quantity clears it |
+| `POST /cells/:id/purchased` | Tick / untick while shopping |
+
 ## Admin (`/api/admin` — core/admin read, admin write)
 
 | Route | Purpose |
@@ -96,6 +110,7 @@ Routes from `web/src/main.tsx`:
 | `/login`, `/profile` | `/api/auth/*`, `/api/oauth/done`, `/api/members/me`, onboarding |
 | `/membersonly` | `/api/members/*` |
 | `/tasks` | `/api/members/tasks/*` |
+| `/procurement` | `/api/members/procurement/*` |
 | `/membership` | `/api/admin/people`, `/api/admin/families` |
 | `/ledger`, `/wallets`, `/sponsorship`, `/reimbursements` | `/api/members/ledger/*` |
 | `/brandcolours` | nothing — the design-system reference page ([012](012-design-system.md)) |

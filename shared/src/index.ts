@@ -161,6 +161,99 @@ export interface TaskYearInput {
   volunteerIds: string[];
 }
 
+// ── Procurement (Durga Pujo shopping lists) ─────────────────────────────────
+// Modelled on the samiti's 2024/2025 procurement sheets: items × per-year day
+// columns, each day split Morning/Evening, plus a per-item Total Quantity and
+// procurement status.
+
+export const PROCUREMENT_SLOTS = ['morning', 'evening'] as const;
+export type ProcurementSlot = (typeof PROCUREMENT_SLOTS)[number];
+
+export type ProcurementStatus = 'pending' | 'partial' | 'done';
+
+/** Suggested day labels, in ritual order. Labels stay free text: a tithi can
+ * span two calendar days ("Saptami · Day 2"), and Sandhi Puja gets its own
+ * column when the timings call for it. */
+export const DURGA_PUJO_DEFAULT_DAYS = [
+  'Shashthi',
+  'Saptami',
+  'Ashtami',
+  'Sandhi Puja',
+  'Nabami',
+  'Dashami',
+] as const;
+
+/** One day column of a year's procurement sheet. */
+export interface ProcurementDay {
+  id: string;
+  year: number;
+  label: string;
+  date: string | null; // ISO date, optional
+  sortOrder: number;
+  notes: string | null; // e.g. the Sandhi Puja window
+}
+
+/** One cell: quantity for an item on one day, one slot. */
+export interface ProcurementCell {
+  id: string;
+  dayId: string;
+  slot: ProcurementSlot;
+  quantity: string; // free text, units included ("250/500 gm", "1 + 7")
+  notes: string | null;
+  purchased: boolean;
+}
+
+/** A master-catalog item with one year's totals and cells folded in. */
+export interface ProcurementItemView {
+  id: string;
+  category: string;
+  title: string;
+  details: string | null; // the sheet's NOTE lines
+  sortOrder: number;
+  isActive: boolean;
+  totalQuantity: string | null; // buy-once items have only this
+  status: ProcurementStatus;
+  yearNotes: string | null; // remarks ("Purohit will bring")
+  cells: ProcurementCell[];
+}
+
+export interface ProcurementView {
+  days: ProcurementDay[];
+  items: ProcurementItemView[];
+}
+
+export interface ProcurementItemInput {
+  category: string;
+  title: string;
+  details: string | null;
+  sortOrder: number;
+  isActive: boolean;
+}
+
+export interface ProcurementItemYearInput {
+  year: number;
+  totalQuantity: string | null;
+  status: ProcurementStatus;
+  notes: string | null;
+}
+
+export interface ProcurementDayInput {
+  year: number;
+  label: string;
+  date: string | null;
+  sortOrder: number;
+  notes: string | null;
+}
+
+/** Upsert one cell; an empty/blank quantity clears it. */
+export interface ProcurementCellInput {
+  itemId: string;
+  dayId: string;
+  slot: ProcurementSlot;
+  quantity: string;
+  notes: string | null;
+}
+
 /** Light person entry for owner/volunteer pickers. */
 export interface MemberLite {
   id: string;

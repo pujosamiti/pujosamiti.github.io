@@ -8,6 +8,7 @@ import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { readSheetRange } from '../lib/google'
 import { ledgerRoutes } from './ledger'
+import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
 
 function ok<T>(data: T): ApiResult<T> {
@@ -71,6 +72,7 @@ memberRoutes.get('/events', async (c) => {
 
 memberRoutes.route('/tasks', taskRoutes)
 memberRoutes.route('/ledger', ledgerRoutes)
+memberRoutes.route('/procurement', procurementRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.

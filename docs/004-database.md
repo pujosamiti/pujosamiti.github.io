@@ -67,6 +67,18 @@ admin-curated grouping — **it gates nothing**. Key columns:
 `task_assignment` links people per year as `owner` (max 5, app-enforced —
 `TASK_MAX_OWNERS` in shared) or `volunteer`. Soft deletes everywhere.
 
+### Procurement: `procurement_item`, `procurement_item_year`, `procurement_day`, `procurement_need`
+
+The digital form of the samiti's yearly procurement sheet (2024/2025 format):
+items grouped in category sections × per-year day columns, each split
+Morning/Evening. `procurement_day` is first-class per year because a tithi can
+span two calendar days ("Saptami · Day 2") and Sandhi Puja gets its own column
+when the timings call for it. `procurement_need` is one cell (item × day ×
+slot, free-text quantity, per-cell purchased tick for the market run);
+`procurement_item_year` carries the sheet's Total Quantity, status
+(pending/partial/done) and remarks ("Purohit will bring"). Core members
+curate; only the active pujo year is writable.
+
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
 The heart of the system. Design decisions (from the schema comments and the
@@ -146,6 +158,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0003 | `0003_event-notes.sql` | `event.notes` (note above the nirghanto) |
 | 0004 | `0004_person-alt-email.sql` | `person.alt_email` (second sign-in address) |
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
+| 0006 | `0006_procurement.sql` | Procurement: item catalog, per-year day columns, item-year totals/status, day-slot quantity cells |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 
