@@ -5,6 +5,7 @@ import { BrowserRouter, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { RequireMember } from '@/components/RequireMember'
 import { Events } from '@/pages/Events'
 import { DurgaPujaChapter, DurgaPujaIndex } from '@/pages/DurgaPuja'
 import { Home } from '@/pages/Home'
@@ -74,15 +75,20 @@ createRoot(document.getElementById('root')!).render(
               <Route path="membersonly" element={<MembersOnly />} />
               <Route path="login" element={<Login />} />
               <Route path="profile" element={<Profile />} />
-              <Route path="tasks" element={<Tasks />} />
-              <Route path="membership" element={<Membership />} />
-              <Route path="events" element={<Events />} />
-              <Route path="nirghanto" element={<Nirghanto />} />
-              <Route path="ledger" element={<LedgerPage />} />
-              <Route path="wallets" element={<WalletsPage />} />
-              <Route path="sponsorship" element={<SponsorshipPage />} />
-              <Route path="reimbursements" element={<ReimbursementsPage />} />
-              <Route path="brandcolours" element={<BrandColours />} />
+              {/* Everything below requires a signed-in, activated member: a
+                  shared deep link shows the sign-in card and returns to the
+                  same URL after Google. New member-only URLs go inside. */}
+              <Route element={<RequireMember />}>
+                <Route path="tasks" element={<Tasks />} />
+                <Route path="membership" element={<Membership />} />
+                <Route path="events" element={<Events />} />
+                <Route path="nirghanto" element={<Nirghanto />} />
+                <Route path="ledger" element={<LedgerPage />} />
+                <Route path="wallets" element={<WalletsPage />} />
+                <Route path="sponsorship" element={<SponsorshipPage />} />
+                <Route path="reimbursements" element={<ReimbursementsPage />} />
+                <Route path="brandcolours" element={<BrandColours />} />
+              </Route>
               <Route path="*" element={<Home />} />
             </Route>
           </Routes>

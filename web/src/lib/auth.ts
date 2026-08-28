@@ -45,14 +45,19 @@ export const authClient = createAuthClient({
 
 export const { useSession } = authClient
 
-/** Kick off the Google flow; better-auth redirects the browser to Google. */
-export function signInWithGoogle() {
+/**
+ * Kick off the Google flow; better-auth redirects the browser to Google.
+ * `next` is the in-site path to land back on afterwards (a gated page passes
+ * its own URL). The API's /api/oauth/done validates it as a plain same-site
+ * path before use.
+ */
+export function signInWithGoogle(next = '/login') {
   const base = import.meta.env.BASE_URL.replace(/\/$/, '')
-  // Google returns to the API, which bridges the session back to /login
+  // Google returns to the API, which bridges the session back to the site
   return authClient.signIn.social({
     provider: 'google',
-    callbackURL: `${API_URL}/api/oauth/done?to=${encodeURIComponent(`${base}/login`)}`,
-    errorCallbackURL: `${window.location.origin}${base}/login?error=oauth`,
+    callbackURL: `${API_URL}/api/oauth/done?to=${encodeURIComponent(`${base}${next}`)}`,
+    errorCallbackURL: `${window.location.origin}${base}${next}?error=oauth`,
   })
 }
 
