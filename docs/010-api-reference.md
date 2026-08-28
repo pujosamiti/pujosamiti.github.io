@@ -1,0 +1,106 @@
+# API reference
+
+Every route the Worker serves, what gates it, and which frontend page calls
+it. Mount points are in `api/src/index.ts`; response envelope is
+`ApiResult<T>` = `{ ok: true, data }` | `{ ok: false, error }` (types in
+`shared/src/index.ts` — the API contract both sides compile against).
+
+Base URLs: prod `https://pujosamiti-api.pujosamiti.workers.dev`,
+local `http://localhost:8787`.
+
+## Route map
+
+| Mount | File | Gate |
+| --- | --- | --- |
+| `GET /health` | `index.ts` | none |
+| `/api/auth/*` | better-auth handler | its own flows |
+| `/api/oauth` | `routes/oauth.ts` | none (OAuth completion) |
+| `/api/public` | `routes/public.ts` + `routes/posts.ts` | none |
+| `/api/onboarding` | `routes/onboarding.ts` | signed-in user |
+| `/api/members` | `routes/members.ts` (mounts `ledger.ts` at `/ledger`, `tasks.ts` at `/tasks`) | active member ([009](009-auth-and-membership.md) §3) |
+| `/api/admin` | `routes/admin.ts` | core/admin read · admin write |
+
+## Public (no auth)
+
+| Route | Returns | Called by |
+| --- | --- | --- |
+| `GET /health` | `{ok:true}` | monitoring / smoke tests |
+| `GET /api/public/events` | Event list (no purohit phone) | Home, Events, Schedule pages |
+| `GET /api/public/timetable` | Nirghanto rows for the active event | Nirghanto page |
+| `GET /api/public/posts` · `GET /api/public/posts/:slug` | Blog/magazine posts listed from the content **Drive folder** | ⚠️ **dormant — no frontend caller**; needs `CONTENT_DRIVE_FOLDER_ID` (unset in prod) |
+
+## OAuth completion
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/oauth/done` | Lands after the Google flow; hands the session/bearer token back to the SPA |
+
+## Onboarding (signed-in, not yet a member)
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/onboarding/status` | Where am I in the flow? (`OnboardingState`) |
+| `GET /api/onboarding/me` | The self-registered profile |
+| `POST /api/onboarding/profile` | Create/update own person row (`origin='self'`, tier stays `non_member`) |
+| `POST /api/onboarding/leave` | Self-service leave |
+
+## Members (active member required)
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/members/me` | Identity + computed role + portfolio |
+| `GET /api/members/people` | Light people list (pickers) |
+| `GET /api/members/events` | Events **including purohit phone** |
+| `GET /api/members/accounts/:eventId` | Wallet/expense summary read live from the treasurers' **Google Sheet** (`Wallets`/`Expenses` tabs) | ⚠️ **dormant — no frontend caller**; needs `ACCOUNTS_SHEET_ID` (unset in prod); superseded in practice by `/ledger/*` |
+
+### Tasks (`/api/members/tasks` — Puja Planning; writes are member-wide, reads too)
+
+| Route | Purpose |
+| --- | --- |
+| `GET /` | Task catalog + this year's state + assignments (`TaskView`) |
+| `POST /` · `POST /:id` | Create / edit a master task |
+| `POST /:id/year` | Year row: phase, checkdates, notes, owners (max 5) |
+| `POST /:id/skip` | Skip a task this year |
+| `POST /:id/volunteer` | Sign up / withdraw as volunteer |
+
+### Ledger (`/api/members/ledger` — reads for all members; **writes require fin_admin/admin**)
+
+| Route | Purpose |
+| --- | --- |
+| `GET /entries` · `GET /summary?year=` · `GET /spend` | The books: entries, season summary, spend aggregates |
+| `POST /entries` · `POST /entries/:id/update` · `POST /entries/:id/void` | Write/correct/void (48 h hardening window — [004](004-database.md) §2) |
+| `GET /sponsorship?year=` | Items + year state + pledges |
+| `POST /sponsorship/items` · `POST /sponsorship/items/:id/year` | Catalog & yearly pricing |
+| `POST /sponsorship/pledges` · `…/:id/pay` · `…/:id/cancel` | Pledge lifecycle (pay writes the ledger entry) |
+| `GET /budget?year=` · `POST /budget` · `POST /budget/bulk` · `POST /budget/:id/delete` | Season budget lines |
+| `GET /claims` · `POST /claims` · `…/:id/assign` · `…/:id/settle` · `…/:id/reject` · `…/:id/cancel` | Reimbursements (settle writes the vendor expense + link) |
+
+## Admin (`/api/admin` — core/admin read, admin write)
+
+| Route | Purpose |
+| --- | --- |
+| `GET/POST /people` · `POST /people/:id` · `POST /people/:id/tier` · `POST /people/:id/merge` · `DELETE /people/:id` | The membership roll |
+| `GET/POST /families` · `POST /families/:id` | Family groupings |
+| `GET/POST /events` · `POST /events/:id` · `DELETE /events/:id` | Event calendar (incl. purohit fields, notes) |
+| `POST /timetable` · `POST /timetable/:id` · `DELETE /timetable/:id` | Nirghanto rows |
+
+## Frontend pages → API (the reverse map)
+
+Routes from `web/src/main.tsx`:
+
+| Page (URL) | Talks to |
+| --- | --- |
+| `/` Home, `/events`, `/schedule` | `/api/public/events`, `/api/public/timetable` |
+| `/durga-puja`, `/durga-puja/:slug` | **no API** — markdown compiled into the bundle ([011](011-content-and-seo.md)) |
+| `/nirghanto` | `/api/public/timetable` (+ members events for phone if signed in) |
+| `/login`, `/profile` | `/api/auth/*`, `/api/oauth/done`, `/api/members/me`, onboarding |
+| `/membersonly` | `/api/members/*` |
+| `/tasks` | `/api/members/tasks/*` |
+| `/membership` | `/api/admin/people`, `/api/admin/families` |
+| `/ledger`, `/wallets`, `/sponsorship`, `/reimbursements` | `/api/members/ledger/*` |
+| `/brandcolours` | nothing — the design-system reference page ([012](012-design-system.md)) |
+
+Adding a route: define it in the right `routes/*.ts` file (respecting the
+mount's gate), add/extend the contract type in `shared/src/index.ts`, and
+call it through `web/src/lib/api.ts` — the shared types make a mismatch a
+compile error on both sides, which the CI typecheck gate then catches.

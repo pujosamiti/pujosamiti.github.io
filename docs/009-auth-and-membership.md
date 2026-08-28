@@ -1,0 +1,120 @@
+# Auth & membership
+
+How sign-in works (including the iOS story that shaped it), and how the samiti
+decides who sees what. The code: `api/src/auth.ts` (better-auth config),
+`api/src/routes/members.ts` (the member gate), `api/src/routes/admin.ts` (the
+admin gate), `web/src/lib/auth.ts` (client side).
+
+## 1. Sign-in: better-auth on the Worker
+
+better-auth owns `/api/auth/*` on the Worker (mounted in `api/src/index.ts`).
+Providers: **Google** (live) and **Facebook** (configured with placeholder
+credentials — deferred; the button would fail). Sessions, accounts and OAuth
+state live in D1 (`user`, `session`, `account`, `verification` tables).
+
+Signing in creates a `user` row for anyone with a Google account.
+**That grants nothing by itself** — membership is a separate check (§3).
+
+## 2. The iOS cookie problem (why sessions are bearer tokens)
+
+The site lives on GitHub Pages, the API on workers.dev — so every auth cookie
+is **third-party**. Safari and every browser on iOS (including WhatsApp's
+in-app browser), plus Chrome incognito and Firefox, refuse those cookies. The
+portal is used almost entirely from phones, so sign-in must not depend on
+cookies at all. Two measures in `api/src/auth.ts`:
+
+- **`bearer()` plugin** — the app authenticates with
+  `Authorization: Bearer <token>`; the token is kept in localStorage
+  (`pujosamiti.session`, see `web/src/lib/api.ts`). Cookies are still issued
+  and used where browsers allow them; the bearer header covers everyone else.
+- **`skipStateCookieCheck: true`** — drops the OAuth state *cookie* as a
+  second check (iOS discards it mid-flow, which used to break the Google
+  callback). The state itself is still random, stored in the `verification`
+  table, matched on callback and deleted after one use — that remains the
+  actual CSRF protection.
+
+Plus `sameSite: 'none', secure: true` on cookies, and CORS locked to
+`WEB_ORIGIN` with credentials.
+
+Consequence for testing: an OAuth flow must start **and** finish in the same
+browser — fetching the sign-in URL with `curl` and pasting it fails with
+`state_mismatch`.
+
+## 3. The member gate (server-side, always)
+
+Every `/api/members/*` request passes the middleware at the top of
+`members.ts`:
+
+1. Resolve the better-auth session (cookie or bearer). None → 401.
+2. Look up a `person` whose `email` **or `alt_email`** equals the session's
+   email (people can hold two sign-in addresses).
+3. Require `is_active` and `tier ≠ 'non_member'`, else 403
+   ("not a samiti member").
+
+Hiding routes in the React bundle protects nothing — enforcement lives here.
+
+## 4. Roles
+
+Computed per-request from the person row, in priority order
+(`members.ts`):
+
+```
+admin       is_admin = true            — everything
+fin_admin   is_fin_admin = true        — everything money, without the membership roll
+coremember  tier = 'core'              — committee: task planning, admin READS
+member      tier = 'member'            — member content
+(non_member / inactive / no row        — public content only)
+```
+
+Gates in practice:
+
+- **Member content** (`/api/members/*` reads, tasks, ledger *views*): any
+  role above.
+- **The books** (ledger/budget/sponsorship/claims **writes**): `fin_admin`
+  or `admin` only (`ledger.ts` — "anything that writes the books is finance
+  work"). A treasurer needs the books, not the roll; admins hold fin powers
+  implicitly.
+- **Admin routes** (`/api/admin/*` — people, families, events, timetable):
+  middleware admits `core` tier or admins for **reads**; every **write**
+  additionally requires `is_admin` (`requireAdmin`).
+- The purohit's phone number appears only in the members' events feed, never
+  the public one.
+
+## 5. Membership lifecycle
+
+- **The roll is the truth**: `person` rows exist for the whole community
+  (205 at audit time), most with `origin='roster'` — entered by admins or the
+  historical import. Many have no email; they're full members who don't use
+  the site.
+- **Self-registration**: someone signs in → no matching person → the
+  onboarding flow (`/api/onboarding/*` — status/profile/leave) creates a
+  person at `tier='non_member'`, `origin='self'`, and they see the "Almost
+  there" screen.
+- **Activation is manual**: an admin promotes tier (admin UI → `/api/admin/
+  people/:id/tier`, or SQL). Only then does member content open.
+- **Tier meaning**: `core` ≈ committee (typically follows the Durga Pujo
+  subscription ≥ the threshold constant); `member` = regular; promotion is
+  always an explicit admin act — sponsorships never affect tier.
+- **Leaving**: `is_active=false` (soft), or the self-service "leave" endpoint.
+- **Duplicates**: admin merge endpoint (`/people/:id/merge`) folds one person
+  into another.
+
+### Granting access by hand (until/beyond the admin UI)
+
+```sh
+cd api
+npx wrangler d1 execute pujosamiti --remote --command \
+  "UPDATE person SET tier='member' WHERE email='their.email@gmail.com';"
+```
+
+(`--local` for your dev DB — separate databases, the eternal reminder.
+Remember `alt_email` when someone signs in with a second address.)
+
+## 6. Client side
+
+`web/src/lib/api.ts` attaches the bearer token from localStorage to every
+call and sends `credentials: 'include'` for the cookie-capable browsers. The
+`/api/oauth/done` route finishes the popup/redirect dance after Google.
+Member pages (`/membersonly`, `/ledger`, `/wallets`, `/sponsorship`,
+`/reimbursements`, `/tasks`, `/membership`, `/profile`) all fetch through the
+gate; the UI adapts to `me.role` but the server is the enforcer.

@@ -10,6 +10,3 @@ build/
 *.log
 coverage/
 docs/tmp/
-docs/about-puja
-docs/about-puja-v2
-docs/about-puja-v3
