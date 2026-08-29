@@ -382,6 +382,7 @@ export interface BhogCountRow {
   name: string;
   menuId: string;
   count: number;
+  notes: string | null; // the sheet's remark ("already paid for 10 guests")
 }
 
 export interface BhogDayInput {

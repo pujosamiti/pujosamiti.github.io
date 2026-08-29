@@ -406,6 +406,8 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
   const grandPlates = days.reduce((s, d) => s + d.totalCount, 0)
   const money = days.map((d) => (d.perPlateCost != null ? d.totalCount * d.perPlateCost : null))
   const grandMoney = money.some((m) => m != null) ? money.reduce<number>((s, m) => s + (m ?? 0), 0) : null
+  const dayLabel = new Map(days.map((d) => [d.id, d.label]))
+  const noted = (rows ?? []).filter((r) => r.notes)
 
   const title = `Food count — ${event.nameEn} ${event.year}`
   const toCsv = () => {
@@ -415,6 +417,7 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
       ...households.map((p) => [p.name, ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(',')),
       ['Total plates', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
       ['Total INR', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(','),
+      ...(noted.length ? ['', ...noted.map((r) => [`${r.name} — ${dayLabel.get(r.menuId) ?? ''}`, r.notes!].map(esc).join(','))] : []),
     ]
     const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
@@ -441,7 +444,13 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
         .join('')}
       <tr class="total">${cell('Total plates', false)}${days.map((d) => cell(d.totalCount)).join('')}${cell(grandPlates)}</tr>
       <tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>
-    </table></body></html>`)
+    </table>${
+      noted.length
+        ? `<ul style="font-size:12px;margin-top:12px">${noted
+            .map((r) => `<li><b>${r.name}</b> — ${dayLabel.get(r.menuId) ?? ''}: ${r.notes}</li>`)
+            .join('')}</ul>`
+        : ''
+    }</body></html>`)
     w.document.close()
     w.focus()
     w.print()
@@ -495,6 +504,15 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
           </tbody>
         </table>
       </div>
+      {noted.length > 0 && (
+        <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
+          {noted.map((r) => (
+            <li key={`${r.personId}-${r.menuId}`}>
+              <span className="font-medium text-foreground">{r.name}</span> — {dayLabel.get(r.menuId)}: {r.notes}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }

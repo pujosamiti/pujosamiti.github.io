@@ -535,5 +535,7 @@ export const bhogRsvp = sqliteTable('bhog_rsvp', {
     .notNull()
     .references(() => person.id, { onDelete: 'cascade' }),
   count: integer('count').notNull(),
+  /** The sheet's remark column: "already paid for 10 Ashtami guests". */
+  notes: text('notes'),
   updatedAt: text('updated_at').notNull(), // ISO date-time of the last change
 })

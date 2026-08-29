@@ -145,6 +145,7 @@ bhogRoutes.get('/counts', async (c) => {
       name: schema.person.displayName,
       menuId: schema.bhogRsvp.menuId,
       count: schema.bhogRsvp.count,
+      notes: schema.bhogRsvp.notes,
     })
     .from(schema.bhogRsvp)
     .innerJoin(schema.person, eq(schema.person.id, schema.bhogRsvp.personId))
