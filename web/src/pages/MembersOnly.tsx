@@ -137,10 +137,12 @@ export function MembersOnly() {
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Core Members</CardTitle>
+            <CardTitle>Members</CardTitle>
             <CardDescription>
-              Sign in to see the ledger, budgets, sponsorship and task planning. Access is limited to
-              samiti members.
+              Sign in to access the members' area — Bhog &amp; Food Menu, Sponsorship, Wallets, Puja
+              Planning, Ledger, Procurement, Reimbursements, Membership, Nirghanto, Events and Brand
+              Colours — with Food Coupons, the Puja Ritual Volunteer Roster and Cultural Function
+              coming soon. Access is limited to samiti members.
             </CardDescription>
             <Button className="mt-2 self-start" asChild>
               <Link to="/login">
