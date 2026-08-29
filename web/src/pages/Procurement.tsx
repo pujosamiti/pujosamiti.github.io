@@ -12,6 +12,7 @@ import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
@@ -85,7 +86,7 @@ export function Procurement() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -192,7 +193,7 @@ export function Procurement() {
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
       {isPending || !year ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : visible.length === 0 ? (
         <p className="text-sm text-muted-foreground">
           {selectedDay

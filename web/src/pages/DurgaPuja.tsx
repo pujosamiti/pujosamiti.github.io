@@ -1,8 +1,9 @@
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
 import { MarkdownArticle } from '@/components/MarkdownArticle'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Seo } from '@/components/Seo'
 import { Button } from '@/components/ui/button'
 import { parseFrontmatter, slugFromPath, titleFromSlug } from '@/lib/markdown'
@@ -55,7 +56,7 @@ export function DurgaPujaIndex() {
         image={imageUrl(data?.meta.image)}
       />
       {isPending || !data ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         <>
           {data.meta.image && (
@@ -146,7 +147,7 @@ export function DurgaPujaChapter() {
         </span>
       </div>
       {isPending || !data ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         <>
           <header className="flex flex-col gap-1 border-b pb-4">

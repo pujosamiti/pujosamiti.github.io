@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { Navigate, useNavigate } from 'react-router'
 
 import { ProfileForm } from '@/components/Onboarding'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signOut, useSession } from '@/lib/auth'
@@ -22,7 +23,7 @@ export function Profile() {
   if (sessionPending || (session && profilePending)) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }

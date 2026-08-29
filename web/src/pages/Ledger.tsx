@@ -19,6 +19,7 @@ import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
@@ -93,7 +94,7 @@ function CorePage({
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -201,7 +202,7 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
   })
 
   if (isPending || !lines || !spend)
-    return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+    return <LogoSpinner small />
 
   // actuals (totals + entry counts) for the selected and previous seasons
   const actualsFor = (season: number) => {
@@ -502,7 +503,7 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
 function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
   const [seasonYear, setSeasonYear] = useState<number | null>(null)
   const { data: s, isPending } = useSummary(seasonYear)
-  if (isPending || !s) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+  if (isPending || !s) return <LogoSpinner small />
   const isCurrent = s.seasonYear === s.currentSeasonYear
   const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)}`
   const stats: [string, string, string, string?][] = [
@@ -668,7 +669,7 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
 
       {adding && <EntryForm onClose={() => setAdding(false)} />}
       {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">No entries yet.</p>
       ) : (
@@ -1123,7 +1124,7 @@ function SponsorshipTab({
         </span>
       </div>
       {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         categories.map((cat) => {
           const rows = shown.filter((i) => i.category === cat && (isFinAdmin || i.offered))
@@ -1386,7 +1387,7 @@ function ClaimsTab({ myPersonId, isFinAdmin }: { myPersonId: string; isFinAdmin:
       {act.isError && <p className="text-sm text-destructive">{(act.error as Error).message}</p>}
       {adding && <ClaimForm onClose={() => setAdding(false)} />}
       {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : shown.length === 0 ? (
         <p className="text-sm text-muted-foreground">No claims here.</p>
       ) : (

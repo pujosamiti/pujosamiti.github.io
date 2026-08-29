@@ -5,6 +5,7 @@ import { Check, ChevronDown, Loader2, Pencil, Plus, Trash2, X } from 'lucide-rea
 import { useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -36,7 +37,7 @@ export function ProcurementMaster() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -81,7 +82,7 @@ export function ProcurementMaster() {
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
       {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         categories.map((cat) => {
           const catItems = all.filter((i) => i.category === cat)

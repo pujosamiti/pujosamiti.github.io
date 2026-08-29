@@ -6,6 +6,7 @@ import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { BackLink } from '@/components/BackLink'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -68,7 +69,7 @@ export function Membership() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -178,7 +179,7 @@ function PeopleView({
   const [adding, setAdding] = useState(false)
   const shown = people // search happens server-side
 
-  if (loading) return <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+  if (loading) return <LogoSpinner small />
 
   return (
     <section className="flex flex-col gap-3">

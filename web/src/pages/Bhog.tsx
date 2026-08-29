@@ -5,6 +5,7 @@ import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, U
 import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
@@ -53,7 +54,7 @@ export function Bhog() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -112,7 +113,7 @@ export function Bhog() {
       {error && <p className="text-sm text-destructive">{error.message}</p>}
       {isPending && season != null && (
         <div className="flex justify-center py-8">
-          <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+          <LogoSpinner small />
         </div>
       )}
 
@@ -390,7 +391,7 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
   if (isPending)
     return (
       <div className="flex justify-center py-4">
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       </div>
     )
   const people = new Map<string, { name: string; tier: string; counts: Record<string, number> }>()

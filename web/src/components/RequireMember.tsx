@@ -5,6 +5,7 @@ import { useState, type ReactNode } from 'react'
 import { Outlet, useLocation, useSearchParams } from 'react-router'
 
 import { ProfileForm } from '@/components/Onboarding'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signInWithGoogle, signOut } from '@/lib/auth'
@@ -123,7 +124,7 @@ export function SignedInFunnel({ email, onSignOut }: { email: string; onSignOut:
   if (isPending || !ob || (ob.state === 'no_person' && profilePending)) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -191,7 +192,7 @@ export function RequireMember({ children }: { children?: ReactNode }) {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }

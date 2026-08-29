@@ -5,6 +5,7 @@ import { CalendarDays, Check, Loader2, Pencil, Plus, RefreshCw, Search, Trash2 }
 import { useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
@@ -29,7 +30,7 @@ export function Nirghanto() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -124,7 +125,7 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
 
       {adding && <TimetableForm event={selected} entries={entries ?? []} onClose={() => setAdding(false)} />}
       {isPending ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         groups.map(({ key, rows }) => (
           <div key={key} className="flex flex-col gap-2">

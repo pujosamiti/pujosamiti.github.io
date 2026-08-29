@@ -1,8 +1,9 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, Loader2, LogOut } from 'lucide-react'
+import { CheckCircle2, LogOut } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { SignInCard, SignedInFunnel } from '@/components/RequireMember'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,7 +23,7 @@ export function Login() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }

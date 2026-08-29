@@ -5,6 +5,7 @@ import { ArrowDown, CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, S
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
+import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
@@ -64,7 +65,7 @@ export function Tasks() {
   if (sessionPending || memberPending) {
     return (
       <div className="flex justify-center py-16">
-        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner />
       </div>
     )
   }
@@ -134,7 +135,7 @@ export function Tasks() {
 
       {error && <p className="text-sm text-destructive">Failed to load: {error.message}</p>}
       {tasksPending || !year ? (
-        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        <LogoSpinner small />
       ) : (
         <>
           {categories.map((cat) => (

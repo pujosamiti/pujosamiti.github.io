@@ -149,3 +149,20 @@
     text-wrap: balance;
   }
 }
+
+/* The branded loading state: the logo revolving horizontally like a coin
+   (LogoSpinner.tsx). backface stays visible so the "reverse" of the coin
+   shows the mirrored logo mid-turn. */
+@keyframes coin-spin {
+  from {
+    transform: rotateY(0deg);
+  }
+  to {
+    transform: rotateY(360deg);
+  }
+}
+.animate-coin {
+  animation: coin-spin 1.4s linear infinite;
+  transform-style: preserve-3d;
+  backface-visibility: visible;
+}
