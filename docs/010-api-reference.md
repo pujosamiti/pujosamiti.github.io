@@ -51,6 +51,8 @@ local `http://localhost:8787`.
 | `GET /api/members/me` | Identity + computed role + portfolio |
 | `GET /api/members/people` | Light people list (pickers) |
 | `GET /api/members/events` | Events **including purohit phone** |
+| `GET /api/members/people-full` | **Admin/fin_admin**: the counter picker roster — every person, active or not (name, tier, society only) |
+| `POST /api/members/counter-person` | **Admin/fin_admin**: walk-up creation — joins the roll as an active member, `origin='counter'` |
 | `GET /api/members/accounts/:eventId` | Wallet/expense summary read live from the treasurers' **Google Sheet** (`Wallets`/`Expenses` tabs) | ⚠️ **dormant — no frontend caller**; needs `ACCOUNTS_SHEET_ID` (unset in prod); superseded in practice by `/ledger/*` |
 
 ### Tasks (`/api/members/tasks` — Puja Planning; writes are member-wide, reads too)
@@ -114,7 +116,7 @@ One menu per calendar date per event — five occasions a season
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (event/label/date/per-plate ₹/notes) — single-meal events add their one menu here |
 | `POST /days/:id/publish` | Publish/unpublish a day to the members |
 | `POST /days/:id/items` | Replace a day's dishes wholesale |
-| `POST /rsvp` | **Any member**: their household's food count for an event's published days, in one go (`{eventId, counts:[{menuId, count}]}`); resubmitting updates |
+| `POST /rsvp` | **Any member**: their household's food count, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`) — the participation rule then updates the roll |
 | `GET /counts?eventId=` | **Core**: the household-by-household count sheet for one event |
 
 ## Admin (`/api/admin` — core/admin read, admin write)

@@ -15,6 +15,7 @@ import type {
   WalletBalance,
 } from '@pujosamiti/shared'
 import { isCoreRole, CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
+import { applyParticipationRule } from '../lib/roll'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -170,7 +171,13 @@ ledgerRoutes.post('/entries', async (c) => {
     createdBy: c.get('me').personId!,
     createdAt: new Date(),
   })
-  return c.json(ok({ id }))
+  // A recorded contribution updates the roll: ≥ threshold subscription/
+  // sponsorship → core, anything else → member; ex-members reactivate.
+  const rollUpdated =
+    body.kind === 'contribution' && body.personId
+      ? await applyParticipationRule(db, body.personId, { amount: body.amount, category: body.category })
+      : null
+  return c.json(ok({ id, rollUpdated }))
 })
 
 /** Rewrite an entry in place (admin). Kind is immutable — void and re-add instead. */
@@ -496,7 +503,11 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
     await db.delete(schema.ledgerEntry).where(eq(schema.ledgerEntry.id, entryId))
     return c.json({ ok: false, error: 'pledge was settled concurrently' }, 409)
   }
-  return c.json(ok({ id: entryId }))
+  const rollUpdated = await applyParticipationRule(db, pl.personId, {
+    amount: pl.amount,
+    category: 'sponsorship',
+  })
+  return c.json(ok({ id: entryId, rollUpdated }))
 })
 
 ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {

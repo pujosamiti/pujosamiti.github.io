@@ -17,10 +17,12 @@ import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY,
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router'
 
 import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
+import { PersonPicker } from '@/components/PersonPicker'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
@@ -824,14 +826,18 @@ function PersonSelect({
   ariaLabel,
   coreOnly = false,
   exclude = [],
+  everyone = false,
 }: {
   value: string | null
   onChange: (v: string) => void
   ariaLabel: string
   coreOnly?: boolean
   exclude?: string[]
+  /** Counter mode: the whole roll (ex/non-members, inactive) + walk-up creation. */
+  everyone?: boolean
 }) {
   const { data: people } = useMembersLite()
+  if (everyone) return <PersonPicker value={value} onChange={onChange} ariaLabel={ariaLabel} allowCreate />
   const options = (people ?? [])
     .filter((p) => (!coreOnly || p.tier === 'core') && !exclude.includes(p.id))
     .map((p) => ({ value: p.id, label: p.name }))
@@ -906,13 +912,24 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   const [toWalletId, setToWalletId] = useState<string | null>(initial?.toWalletPersonId ?? null)
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [confirming, setConfirming] = useState(false)
+  const [savedFor, setSavedFor] = useState<{ personId: string; rollUpdated: 'core' | 'member' | 'reactivated' | null } | null>(null)
+  const queryClient = useQueryClient()
 
   const save = useMutation({
     mutationFn: (body: LedgerEntryInput) =>
-      post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body),
-    onSuccess: () => {
+      post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body) as Promise<{
+        id: string
+        rollUpdated?: 'core' | 'member' | 'reactivated' | null
+      }>,
+    onSuccess: (r) => {
       invalidate()
-      onClose()
+      // Counter flow: a fresh contribution keeps the panel open with the
+      // roll-update message and a one-tap jump to their food count.
+      if (!editing && kind === 'contribution' && personId) {
+        void queryClient.invalidateQueries({ queryKey: ['people-full'] })
+        void queryClient.invalidateQueries({ queryKey: ['admin-people'] })
+        setSavedFor({ personId, rollUpdated: r.rollUpdated ?? null })
+      } else onClose()
     },
   })
 
@@ -982,7 +999,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           {kind !== 'transfer' && (
             <>
               <Field label={kind === 'contribution' ? 'Contributor (member)' : 'Member (if applicable)'}>
-                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Contributor" />
+                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Contributor" everyone />
               </Field>
               <Field label={kind === 'contribution' ? 'Or from (e.g. Hundi)' : 'Vendor / paid to'}>
                 <input
@@ -1007,6 +1024,19 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           </Field>
         </div>
         {save.isError && <p className="text-sm text-destructive">{(save.error as Error).message}</p>}
+        {savedFor && (
+          <div className="flex flex-wrap items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm">
+            <span className="font-medium">
+              Entry saved.
+              {savedFor.rollUpdated === 'core' && ' They are now a CORE member.'}
+              {savedFor.rollUpdated === 'member' && ' They are now a member.'}
+              {savedFor.rollUpdated === 'reactivated' && ' They are back on the active roll.'}
+            </span>
+            <Button size="sm" variant="outline" asChild>
+              <Link to={`/bhog?count=${savedFor.personId}`}>Take their food count →</Link>
+            </Button>
+          </div>
+        )}
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -1016,7 +1046,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
             {save.isPending && <Loader2 className="animate-spin" />} {editing ? 'Save changes' : 'Save entry'}
           </Button>
           <Button size="sm" variant="outline" onClick={onClose}>
-            Cancel
+            {savedFor ? 'Done' : 'Cancel'}
           </Button>
         </div>
         {editing && (
@@ -1250,7 +1280,7 @@ function PledgeInline({ itemId, year, defaultAmount, onDone }: { itemId: string;
   })
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Pledger" />
+      <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Pledger" everyone />
       <input type="number" min="1" className={`${inputCls} w-24`} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="₹" />
       <Button size="sm" disabled={!personId || !amount || save.isPending} onClick={() => save.mutate()}>
         Save

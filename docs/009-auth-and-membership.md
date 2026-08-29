@@ -115,6 +115,19 @@ Gates in practice:
   there" screen.
 - **Activation is manual**: an admin promotes tier (admin UI → `/api/admin/
   people/:id/tier`, or SQL). Only then does member content open.
+- **The participation rule** (`api/src/lib/roll.ts`, counter entries): when an
+  admin/fin_admin records a food count or a contribution for someone, the
+  roll updates itself — subscription/sponsorship ≥ ₹10,000
+  (`CORE_CONTRIBUTION_THRESHOLD`) → **core**, any other recorded
+  participation → non-member becomes **member**, inactive people reactivate.
+  Upgrades only; nothing auto-demotes. Fires on ledger contribution entries,
+  pledge payments and proxied food counts — not on self-service actions.
+- **Counter entries**: admins/fin_admins carry a full-roster person picker
+  (ex/non-members and inactive included, `/people-full`) on the food-count
+  form and the ledger contributor/pledger fields, plus walk-up creation
+  (`/counter-person`, `origin='counter'`, no email). A fresh contribution
+  offers a one-tap jump to `/bhog?count=<personId>` to take the household's
+  food count immediately.
 - **Tier meaning**: `core` ≈ committee (typically follows the Durga Pujo
   subscription ≥ the threshold constant); `member` = regular; promotion is
   always an explicit admin act — sponsorships never affect tier.

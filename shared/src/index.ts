@@ -150,6 +150,9 @@ export const maskEmail = (e: string | null): string | null =>
   e ? `xxxxxx@${e.split('@')[1] ?? ''}` : null;
 export const isMaskedEmail = (e: string | null | undefined): boolean => !!e && e.startsWith('xxxxxx@');
 
+/** Roles that may record on someone's behalf: counter entries, proxy food counts. */
+export const isProxyRole = (r: MemberRole): boolean => r === 'admin' || r === 'fin_admin';
+
 /** Roles that curate content; member and newsignin are consumers. */
 export const isCoreRole = (r: MemberRole): boolean =>
   r === 'coremember' || r === 'fin_admin' || r === 'admin';
@@ -394,6 +397,36 @@ export interface BhogMenuView {
 export interface BhogRsvpInput {
   eventId: EventId;
   counts: { menuId: string; count: number }[];
+  /** Proxy target (admin/fin_admin only): record for this person instead of self. */
+  personId?: string | null;
+  /** Optional remark stored on the rows saved this submission (proxy mode). */
+  note?: string | null;
+}
+
+// ── Counter entries (recording on someone's behalf) ─────────────────────────
+
+/** Roster row for the counter picker — every person, active or not. */
+export interface PickerPerson {
+  id: string;
+  name: string;
+  tier: FamilyTier;
+  isActive: boolean;
+  society: string | null;
+}
+
+/**
+ * The automatic tier rule for recorded payments: a subscription or
+ * sponsorship of ≥ this amount makes the payer CORE; any smaller recorded
+ * participation (payment or food count) makes a non-member a MEMBER.
+ * Upgrades only — nothing ever demotes automatically.
+ */
+export const CORE_CONTRIBUTION_THRESHOLD = 10000;
+
+/** Walk-up creation at the counter: no email, no sign-in — joins as a member. */
+export interface CounterPersonInput {
+  displayName: string;
+  phone: string | null;
+  society: string | null;
 }
 
 /** One cell of the household-by-household count sheet (core view). */
@@ -467,7 +500,7 @@ export interface ProfileInput {
 
 export interface AdminPerson {
   /** 'self' = registered themselves and awaits activation; 'roster' = on the samiti's rolls */
-  origin: 'roster' | 'self';
+  origin: 'roster' | 'self' | 'counter';
   /** epoch ms — the merge keeps the older record */
   createdAt: number;
   id: string;

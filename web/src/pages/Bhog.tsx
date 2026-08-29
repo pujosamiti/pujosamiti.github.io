@@ -1,8 +1,9 @@
-import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
-import { isCoreRole, menuKindLabel, seasonOf } from '@pujosamiti/shared'
+import type { BhogMenuView, Me, PujoEvent } from '@pujosamiti/shared'
+import { isCoreRole, isProxyRole, menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router'
 
 import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
@@ -24,6 +25,8 @@ import {
   useBhogCounts,
 } from '@/lib/bhog'
 import { useMemberState } from '@/lib/member'
+import { PersonPicker } from '@/components/PersonPicker'
+import { usePickerPeople } from '@/lib/people'
 import { usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
 
@@ -37,6 +40,10 @@ export function Bhog() {
   const me = memberState?.status === 'member' ? memberState.me : null
   const { data: events } = useEvents()
   const [season, setSeason] = useState<number | null>(null)
+  // Counter linkage: /bhog?count=<personId> (from a fresh ledger entry) opens
+  // the food-count form with that person pre-picked.
+  const [searchParams] = useSearchParams()
+  const countFor = searchParams.get('count')
 
   const seasons = useMemo(() => {
     const ss = new Set<number>((events ?? []).map((e) => seasonOf(e.startsOn)))
@@ -123,16 +130,22 @@ export function Bhog() {
         </p>
       )}
       {days &&
-        sections.map((e) => (
+        sections.map((e, i) => (
           <EventSection
             key={e.id}
             event={e}
             season={season!}
             days={byEvent.get(e.id) ?? []}
+            me={me}
             canEdit={canEdit}
             canRsvp={!archival}
             isAdmin={me.role === 'admin'}
             isCore={isCoreRole(me.role)}
+            initialCountFor={
+              countFor && !archival && i === sections.findIndex((x) => (byEvent.get(x.id) ?? []).some((d) => d.isPublished))
+                ? countFor
+                : null
+            }
           />
         ))}
     </div>
@@ -143,22 +156,26 @@ function EventSection({
   event,
   season,
   days,
+  me,
   canEdit,
   canRsvp,
   isAdmin,
   isCore,
+  initialCountFor = null,
 }: {
   event: PujoEvent
   season: number
   days: BhogMenuView[]
+  me: Me
   canEdit: boolean
   canRsvp: boolean
   isAdmin: boolean
   isCore: boolean
+  initialCountFor?: string | null
 }) {
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
-  const [counting, setCounting] = useState(false)
+  const [counting, setCounting] = useState(!!initialCountFor)
   const [showResponses, setShowResponses] = useState(false)
   const kindLabel = menuKindLabel(event.kind)
   const isDurga = event.kind === 'durga-pujo'
@@ -206,7 +223,14 @@ function EventSection({
         </span>
       </div>
       {counting && canRsvp && publishedDays.length > 0 && (
-        <HeadcountForm event={event} season={season} days={publishedDays} onClose={() => setCounting(false)} />
+        <HeadcountForm
+          event={event}
+          season={season}
+          days={publishedDays}
+          me={me}
+          initialPersonId={initialCountFor}
+          onClose={() => setCounting(false)}
+        />
       )}
       {showResponses && isCore && <ResponsesTable event={event} days={days} />}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
@@ -318,17 +342,47 @@ function HeadcountForm({
   event,
   season,
   days,
+  me,
+  initialPersonId = null,
   onClose,
 }: {
   event: PujoEvent
   season: number
   days: BhogMenuView[]
+  me: Me
+  initialPersonId?: string | null
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
-  const [counts, setCounts] = useState<Record<string, string>>(() =>
-    Object.fromEntries(days.map((d) => [d.id, d.myCount != null ? String(d.myCount) : ''])),
-  )
+  const proxy = isProxyRole(me.role)
+  // Counter entry: admins/fin_admins record for any household on the roll
+  const [personId, setPersonId] = useState(initialPersonId ?? me.personId)
+  const [note, setNote] = useState('')
+  const [savedMsg, setSavedMsg] = useState<string | null>(null)
+  const { data: sheetRows } = useBhogCounts(proxy ? event.id : null)
+  const { data: people } = usePickerPeople()
+
+  const countsFor = (pid: string): Record<string, string> =>
+    pid === me.personId
+      ? Object.fromEntries(days.map((d) => [d.id, d.myCount != null ? String(d.myCount) : '']))
+      : Object.fromEntries(
+          days.map((d) => {
+            const row = (sheetRows ?? []).find((r) => r.personId === pid && r.menuId === d.id)
+            return [d.id, row ? String(row.count) : '']
+          }),
+        )
+  const [counts, setCounts] = useState<Record<string, string>>(() => countsFor(personId))
+  const pickPerson = (pid: string) => {
+    setPersonId(pid)
+    setCounts(countsFor(pid))
+    setSavedMsg(null)
+  }
+  // The sheet may arrive after the form opened on someone else (deep link)
+  useEffect(() => {
+    if (personId !== me.personId) setCounts(countsFor(personId))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sheetRows])
+
   const save = useMutation({
     mutationFn: () =>
       submitBhogCounts({
@@ -336,9 +390,27 @@ function HeadcountForm({
         counts: days
           .filter((d) => counts[d.id]?.trim() !== '')
           .map((d) => ({ menuId: d.id, count: Number(counts[d.id]) })),
+        personId: proxy ? personId : undefined,
+        note: proxy ? note.trim() || null : undefined,
       }),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', season] }),
-    onSuccess: onClose,
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: ['bhog', season] })
+      void queryClient.invalidateQueries({ queryKey: ['bhog-counts', event.id] })
+    },
+    onSuccess: (r) => {
+      if (r.rollUpdated) {
+        const name = (people ?? []).find((p) => p.id === personId)?.name ?? 'They'
+        setSavedMsg(
+          r.rollUpdated === 'core'
+            ? `Saved — ${name} is now a CORE member.`
+            : r.rollUpdated === 'member'
+              ? `Saved — ${name} is now a member.`
+              : `Saved — ${name} is back on the active roll.`,
+        )
+        void queryClient.invalidateQueries({ queryKey: ['people-full'] })
+        void queryClient.invalidateQueries({ queryKey: ['admin-people'] })
+      } else onClose()
+    },
   })
 
   return (
@@ -346,11 +418,17 @@ function HeadcountForm({
       <CardHeader>
         <CardTitle>Food count — {event.nameEn}</CardTitle>
         <CardDescription>
-          How many from your household (5 yrs and older) will eat each day? 0 means not coming; leave a
-          day blank to answer later.
+          {proxy
+            ? 'Recording on behalf of a household? Pick the person — their existing counts load for editing. 0 means not coming; blank leaves a day unanswered.'
+            : 'How many from your household (5 yrs and older) will eat each day? 0 means not coming; leave a day blank to answer later.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
+        {proxy && (
+          <Field label="Household">
+            <PersonPicker value={personId} onChange={pickPerson} ariaLabel="Household" allowCreate />
+          </Field>
+        )}
         <div className="flex flex-wrap items-end gap-3">
           {days.map((d) => (
             <Field key={d.id} label={`${d.label} · ${d.date.slice(5)}`}>
@@ -366,12 +444,18 @@ function HeadcountForm({
             </Field>
           ))}
         </div>
+        {proxy && (
+          <Field label="Note">
+            <input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. via WhatsApp, will pay at the pandal" />
+          </Field>
+        )}
+        {savedMsg && <p className="rounded-md bg-accent px-3 py-2 text-sm font-medium">{savedMsg}</p>}
         <div className="flex gap-2">
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             {save.isPending ? <Loader2 className="animate-spin" /> : null} Save count
           </Button>
           <Button size="sm" variant="ghost" onClick={onClose}>
-            Cancel
+            {savedMsg ? 'Done' : 'Cancel'}
           </Button>
         </div>
         {save.error && <p className="text-sm text-destructive">{save.error.message}</p>}

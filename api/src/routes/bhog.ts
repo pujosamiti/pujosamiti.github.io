@@ -1,5 +1,5 @@
 import type { ApiResult, BhogCountRow, BhogDayInput, BhogItemsInput, BhogMenuView, BhogRsvpInput, Me } from '@pujosamiti/shared'
-import { isCoreRole } from '@pujosamiti/shared'
+import { isCoreRole, isProxyRole } from '@pujosamiti/shared'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -7,6 +7,7 @@ import { Hono } from 'hono'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { currentSeason, seasonOf, tithiOf } from '../lib/pujo'
+import { applyParticipationRule } from '../lib/roll'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -104,6 +105,21 @@ bhogRoutes.post('/rsvp', async (c) => {
   if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
   if (seasonOf(ev.startsOn) !== currentSeason())
     return c.json({ ok: false, error: 'this season is closed — counts are the record now' }, 400)
+  // Counter entry: admin/fin_admin may record for anyone on the roll —
+  // households phone in their counts without ever signing in.
+  let targetId = me.personId
+  if (body.personId && body.personId !== me.personId) {
+    if (!isProxyRole(me.role))
+      return c.json({ ok: false, error: 'only admins record counts for someone else' }, 403)
+    const [target] = await db
+      .select({ id: schema.person.id })
+      .from(schema.person)
+      .where(eq(schema.person.id, body.personId))
+      .limit(1)
+    if (!target) return c.json({ ok: false, error: 'person not found' }, 404)
+    targetId = target.id
+  }
+  const note = isProxyRole(me.role) ? body.note?.trim() || null : null
   const menus = await db.select().from(schema.bhogMenu).where(eq(schema.bhogMenu.eventId, ev.id))
   const publishable = new Map(menus.filter((m) => m.isPublished).map((m) => [m.id, m]))
   const now = new Date().toISOString()
@@ -115,20 +131,27 @@ bhogRoutes.post('/rsvp', async (c) => {
     const [existing] = await db
       .select()
       .from(schema.bhogRsvp)
-      .where(and(eq(schema.bhogRsvp.menuId, entry.menuId), eq(schema.bhogRsvp.personId, me.personId)))
+      .where(and(eq(schema.bhogRsvp.menuId, entry.menuId), eq(schema.bhogRsvp.personId, targetId)))
       .limit(1)
-    if (existing) await db.update(schema.bhogRsvp).set({ count, updatedAt: now }).where(eq(schema.bhogRsvp.id, existing.id))
+    if (existing)
+      await db
+        .update(schema.bhogRsvp)
+        .set({ count, updatedAt: now, ...(note ? { notes: note } : {}) })
+        .where(eq(schema.bhogRsvp.id, existing.id))
     else
       await db.insert(schema.bhogRsvp).values({
         id: crypto.randomUUID(),
         menuId: entry.menuId,
-        personId: me.personId,
+        personId: targetId,
         count,
+        notes: note,
         updatedAt: now,
       })
     saved++
   }
-  return c.json(ok({ saved }))
+  // A recorded count is participation — non-members become members
+  const rollUpdated = saved > 0 && isProxyRole(me.role) ? await applyParticipationRule(db, targetId) : null
+  return c.json(ok({ saved, rollUpdated }))
 })
 
 /** The household-by-household count sheet for one event (core). */

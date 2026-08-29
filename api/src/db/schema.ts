@@ -182,7 +182,7 @@ export const person = sqliteTable('person', {
    * and registered themselves. It separates people genuinely awaiting
    * activation from the long tail of non-member names on the rolls.
    */
-  origin: text('origin', { enum: ['roster', 'self'] })
+  origin: text('origin', { enum: ['roster', 'self', 'counter'] })
     .notNull()
     .default('roster'),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),

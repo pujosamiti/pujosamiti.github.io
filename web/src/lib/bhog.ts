@@ -27,7 +27,7 @@ export const publishBhogDay = (id: string, published: boolean) =>
 export const saveBhogItems = (id: string, input: BhogItemsInput) =>
   post(`/api/members/bhog/days/${id}/items`, input) as Promise<{ count: number }>
 export const submitBhogCounts = (input: BhogRsvpInput) =>
-  post('/api/members/bhog/rsvp', input) as Promise<{ saved: number }>
+  post('/api/members/bhog/rsvp', input) as Promise<{ saved: number; rollUpdated: 'core' | 'member' | 'reactivated' | null }>
 
 /** The household-by-household count sheet for one event (core). */
 export function useBhogCounts(eventId: string | null) {

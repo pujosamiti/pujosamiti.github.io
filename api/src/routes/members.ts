@@ -1,5 +1,5 @@
-import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite, PujaDaysView, PujoEvent } from '@pujosamiti/shared'
-import { openMembershipActive } from '@pujosamiti/shared'
+import type { AccountsSummary, ApiResult, CollectorWallet, CounterPersonInput, Me, MemberLite, PickerPerson, PujaDaysView, PujoEvent } from '@pujosamiti/shared'
+import { isProxyRole, openMembershipActive } from '@pujosamiti/shared'
 import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -94,6 +94,54 @@ memberRoutes.get('/people', async (c) => {
     .where(eq(schema.person.isActive, true))
     .orderBy(schema.person.displayName)
   return c.json(ok(rows as MemberLite[]))
+})
+
+/**
+ * The counter picker roster (admin/fin_admin): EVERY person — members,
+ * ex-members, non-members, inactive — so participation can be recorded for
+ * people who never sign in. Names, tier and society only; no contact data.
+ */
+memberRoutes.get('/people-full', async (c) => {
+  if (!isProxyRole(c.get('me').role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const db = drizzle(c.env.DB, { schema })
+  const rows = await db
+    .select({
+      id: schema.person.id,
+      name: schema.person.displayName,
+      tier: schema.person.tier,
+      isActive: schema.person.isActive,
+      society: schema.person.society,
+    })
+    .from(schema.person)
+    .orderBy(schema.person.displayName)
+  return c.json(ok(rows as PickerPerson[]))
+})
+
+/**
+ * Walk-up creation at the counter (admin/fin_admin): someone new pays cash
+ * during the pujo — no sign-in, no email. They join the roll as an active
+ * MEMBER with origin='counter' so these rows are findable for later cleanup
+ * or merging; adding their email later links their Google sign-in.
+ */
+memberRoutes.post('/counter-person', async (c) => {
+  const me = c.get('me')
+  if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const body = (await c.req.json()) as CounterPersonInput
+  if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const id = crypto.randomUUID()
+  await db.insert(schema.person).values({
+    id,
+    displayName: body.displayName.trim(),
+    phone: body.phone?.trim() || null,
+    society: body.society?.trim() || null,
+    tier: 'member',
+    origin: 'counter',
+    isActive: true,
+    notes: `Counter entry, ${new Date().toISOString().slice(0, 10)} (by ${me.name})`,
+    createdAt: new Date(),
+  })
+  return c.json(ok({ id }))
 })
 
 /** Same list as the public feed, but carrying the purohit's phone. */
