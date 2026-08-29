@@ -186,7 +186,7 @@ export function RequireMember({ children }: { children?: ReactNode }) {
 
   const endSession = async () => {
     await signOut()
-    await queryClient.invalidateQueries()
+    queryClient.removeQueries()
   }
 
   if (sessionPending || memberPending) {

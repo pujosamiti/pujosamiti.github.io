@@ -13,7 +13,7 @@ export function Login() {
 
   const endSession = async () => {
     await signOut()
-    await queryClient.invalidateQueries()
+    queryClient.removeQueries()
   }
 
   if (sessionPending || memberPending) {

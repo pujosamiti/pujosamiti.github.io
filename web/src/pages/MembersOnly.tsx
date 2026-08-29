@@ -49,7 +49,9 @@ export function MembersOnly() {
 
   const endSession = async () => {
     await signOut()
-    await queryClient.invalidateQueries()
+    // Purge, don't just invalidate: a stale cached session paired with
+    // fresh signed-out answers briefly renders states that are simply false.
+    queryClient.removeQueries()
   }
 
   if (resolving) {
@@ -103,7 +105,7 @@ export function MembersOnly() {
               </Button>
             </CardHeader>
           </Card>
-        ) : (
+        ) : onboarding?.state === 'awaiting_activation' ? (
           <Card>
             <CardHeader>
               <CardTitle>Registration received — membership pending</CardTitle>
@@ -125,6 +127,12 @@ export function MembersOnly() {
               </div>
             </CardHeader>
           </Card>
+        ) : (
+          // Session and onboarding disagree (mid sign-out, or a failed
+          // fetch) — never guess a state; hold a spinner instead.
+          <div className="flex justify-center py-16">
+            <LogoSpinner />
+          </div>
         )
       ) : (
         <Card>
