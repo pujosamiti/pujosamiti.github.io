@@ -28,10 +28,10 @@ export const memberRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
  * hiding routes in the React bundle protects nothing.
  *
  * OPEN MEMBERSHIP (until 15 Oct 2026, see shared): an active person whose
- * tier is still non_member gets in as NEWSIGNIN — view-only, with exactly
- * one write allowed: their household's food count. Admin activation grants
- * the real role instantly; un-activated people fall back to 403 when the
- * window closes.
+ * tier is still non_member gets in as NEWSIGNIN — view-only with exactly two
+ * writes: their household's food count and their own sponsorship pledge.
+ * Admin activation grants the real role instantly; un-activated people fall
+ * back to 403 when the window closes.
  */
 memberRoutes.use('*', async (c, next) => {
   const auth = createAuth(c.env)
@@ -57,11 +57,18 @@ memberRoutes.use('*', async (c, next) => {
         : p.tier === 'member'
           ? 'member'
           : 'newsignin'
-  // NewSignIn is view-only except the food count — enforced centrally so no
-  // individual write route needs to remember it.
-  if (role === 'newsignin' && c.req.method !== 'GET' && !c.req.path.endsWith('/bhog/rsvp'))
+  // NewSignIn is view-only except two writes — their food count and their
+  // own sponsorship pledge — enforced centrally so no individual write route
+  // needs to remember it.
+  const newSignInWriteOk =
+    c.req.path.endsWith('/bhog/rsvp') || /\/ledger\/sponsorship\/pledges(\/[^/]+\/cancel)?$/.test(c.req.path)
+  if (role === 'newsignin' && c.req.method !== 'GET' && !newSignInWriteOk)
     return c.json(
-      { ok: false, error: 'view-only until an admin activates your membership — you can still submit your food count' },
+      {
+        ok: false,
+        error:
+          'view-only until an admin activates your membership — you can still submit your food count and pledge a sponsorship',
+      },
       403,
     )
   c.set('me', {

@@ -56,9 +56,10 @@ Hiding routes in the React bundle protects nothing — enforcement lives here.
 **⏳ OPEN MEMBERSHIP window (until 15 Oct 2026 IST, inclusive)** —
 `OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active,
 an `is_active` person whose tier is still `non_member` passes the gate with
-the computed role **`newsignin`**: member-level views, and exactly ONE write —
-their household's food count (enforced centrally in the members middleware:
-any non-GET except `/bhog/rsvp` → 403). Onboarding skips "awaiting
+the computed role **`newsignin`**: two pages (Bhog & Food Menu and
+Sponsorship) and exactly TWO writes — their household's food count and their
+own sponsorship pledge (create/cancel; enforced centrally in the members
+middleware: any other non-GET → 403, and non-core pledges are self-only). Onboarding skips "awaiting
 activation" — completing the profile is enough. Stored tiers are untouched:
 new sign-ins register `origin='self'` / `tier='non_member'`, appear under
 **Pending activation** on /membership, and an admin setting their tier
@@ -77,7 +78,7 @@ admin       is_admin = true            — everything
 fin_admin   is_fin_admin = true        — everything money, without the membership roll
 coremember  tier = 'core'              — committee: task planning, admin READS
 member      tier = 'member'            — member content
-newsignin   tier = 'non_member', open  — member VIEWS + food count only (window, §3)
+newsignin   tier = 'non_member', open  — bhog + sponsorship views; food count + own pledge (window, §3)
 (non_member / inactive / no row        — public content only)
 ```
 

@@ -16,11 +16,11 @@ import { Seo } from '@/components/Seo'
 const memberSections = [
   { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: 'durba' },
   { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets', tone: 'genda' },
-  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', tone: 'palash' },
+  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, tone: 'palash' },
   { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
   { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: 'durba' },
-  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', tone: 'genda' },
+  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', newSignInOk: true, tone: 'genda' },
   { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: 'aparajita' },
   { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: 'matir' },
   { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: 'sindoor' },
@@ -35,7 +35,9 @@ export function MembersOnly() {
   // A member never gets into the core sections, so don't dangle them — they
   // just read as a list of locked doors. Signed-out visitors still see the
   // full set with its gate labels, which is what tells them what membership is for.
-  const sections = memberSections.filter((s) => !(s.coreOnly && me && !isCoreRole(me.role)))
+  const sections = memberSections.filter((s) =>
+    me?.role === 'newsignin' ? s.newSignInOk : !(s.coreOnly && me && !isCoreRole(me.role)),
+  )
 
   const endSession = async () => {
     await signOut()
@@ -127,12 +129,16 @@ export function MembersOnly() {
 
       {me?.role === 'newsignin' && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
-          You're in with view access while an admin activates your membership — and you can already
+          You're in with limited access while an admin activates your membership — you can already
           give your household's food count on the{' '}
           <Link to="/bhog" className="underline">
             Bhog &amp; Food Menu
           </Link>{' '}
-          page.
+          page and pledge a{' '}
+          <Link to="/sponsorship" className="underline">
+            sponsorship
+          </Link>
+          .
         </p>
       )}
 

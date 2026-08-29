@@ -427,6 +427,10 @@ ledgerRoutes.post('/sponsorship/pledges', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   if (body.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — pledges only for the active pujo year' }, 400)
+  // Members and new sign-ins pledge for their own household only
+  const pledger = c.get('me')
+  if (!isCoreRole(pledger.role) && body.personId !== pledger.personId)
+    return c.json({ ok: false, error: 'you can only pledge for yourself' }, 403)
   const live = (
     await db
       .select()

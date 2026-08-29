@@ -77,11 +77,14 @@ function useLedgerInvalidate() {
 function CorePage({
   title,
   members = false,
+  newSignIn = false,
   children,
 }: {
   title: string
   /** Open to every member, not just core — the page itself hides what they can't do. */
   members?: boolean
+  /** Also visible to not-yet-activated new sign-ins (open membership). */
+  newSignIn?: boolean
   children: (me: Me) => React.ReactNode
 }) {
   const { memberState, memberPending, sessionPending } = useMemberState()
@@ -94,7 +97,8 @@ function CorePage({
       </div>
     )
   }
-  if (!me || (!isCoreRole(me.role) && !members)) {
+  const allowed = me && (isCoreRole(me.role) || (me.role === 'newsignin' ? newSignIn : members))
+  if (!me || !allowed) {
     return (
       <Card className="mx-auto max-w-md">
         <CardHeader>
@@ -126,7 +130,7 @@ export const WalletsPage = () => (
   </CorePage>
 )
 export const SponsorshipPage = () => (
-  <CorePage title="Sponsorship" members>
+  <CorePage title="Sponsorship" members newSignIn>
     {(me) => (
       <SponsorshipTab
         isFinAdmin={canFinance(me)}

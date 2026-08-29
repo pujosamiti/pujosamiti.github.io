@@ -68,12 +68,12 @@ export function Tasks() {
       </div>
     )
   }
-  if (!me) {
+  if (!me || me.role === 'newsignin') {
     return (
       <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>Members only</CardTitle>
-          <CardDescription>Task distribution is visible to samiti members after sign in.</CardDescription>
+          <CardDescription>Task distribution unlocks when an admin activates your membership.</CardDescription>
         </CardHeader>
       </Card>
     )
