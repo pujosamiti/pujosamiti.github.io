@@ -1,7 +1,7 @@
 import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
 import { menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Loader2, Pencil, Plus, Trash2, Users, UtensilsCrossed } from 'lucide-react'
+import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
@@ -207,7 +207,7 @@ function EventSection({
       {counting && canRsvp && publishedDays.length > 0 && (
         <HeadcountForm event={event} season={season} days={publishedDays} onClose={() => setCounting(false)} />
       )}
-      {showResponses && isCore && <ResponsesTable eventId={event.id} days={days} />}
+      {showResponses && isCore && <ResponsesTable event={event} days={days} />}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
         <p className="text-sm text-muted-foreground">
           No Puja Days for {event.year} yet — finalise the nirghanto and seed them first (Nirghanto page).
@@ -379,9 +379,14 @@ function HeadcountForm({
   )
 }
 
-/** The household-by-household count sheet (core) — rows people, columns days. */
-function ResponsesTable({ eventId, days }: { eventId: string; days: BhogMenuView[] }) {
-  const { data: rows, isPending } = useBhogCounts(eventId)
+const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
+
+/**
+ * The household-by-household count sheet (core) — rows people, columns days,
+ * with the sheet's money math (plates × per-plate ₹) and print/CSV export.
+ */
+function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[] }) {
+  const { data: rows, isPending } = useBhogCounts(event.id)
   if (isPending)
     return (
       <div className="flex justify-center py-4">
@@ -394,34 +399,102 @@ function ResponsesTable({ eventId, days }: { eventId: string; days: BhogMenuView
     p.counts[r.menuId] = r.count
     people.set(r.personId, p)
   }
+  const households = [...people.values()].map((p) => ({
+    ...p,
+    total: days.reduce((s, d) => s + (p.counts[d.id] ?? 0), 0),
+  }))
+  const grandPlates = days.reduce((s, d) => s + d.totalCount, 0)
+  const money = days.map((d) => (d.perPlateCost != null ? d.totalCount * d.perPlateCost : null))
+  const grandMoney = money.some((m) => m != null) ? money.reduce<number>((s, m) => s + (m ?? 0), 0) : null
+
+  const title = `Food count — ${event.nameEn} ${event.year}`
+  const toCsv = () => {
+    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
+    const lines = [
+      ['Household', ...days.map((d) => `${d.label} ${d.date}`), 'Total'].map(esc).join(','),
+      ...households.map((p) => [p.name, ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(',')),
+      ['Total plates', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
+      ['Total INR', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(','),
+    ]
+    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `food-count-${event.id}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+  const printSheet = () => {
+    const w = window.open('', '_blank', 'width=900,height=700')
+    if (!w) return
+    const cell = (v: string | number, right = true) => `<td style="${right ? 'text-align:right;' : ''}">${v}</td>`
+    w.document.write(`<!doctype html><html><head><title>${title}</title><style>
+      body{font-family:Georgia,serif;margin:24px;color:#222}
+      h1{font-size:18px;margin:0 0 12px}
+      table{border-collapse:collapse;width:100%;font-size:13px}
+      th,td{border:1px solid #999;padding:4px 8px}
+      th{background:#f3ede2;text-align:right} th:first-child{text-align:left}
+      tr.total td{background:#f3ede2;font-weight:bold}
+    </style></head><body><h1>${title}</h1><table>
+      <tr><th>Household</th>${days.map((d) => `<th>${d.label}<br>${d.date}</th>`).join('')}<th>Total</th></tr>
+      ${households
+        .map((p) => `<tr>${cell(p.name, false)}${days.map((d) => cell(p.counts[d.id] ?? '—')).join('')}${cell(p.total)}</tr>`)
+        .join('')}
+      <tr class="total">${cell('Total plates', false)}${days.map((d) => cell(d.totalCount)).join('')}${cell(grandPlates)}</tr>
+      <tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>
+    </table></body></html>`)
+    w.document.close()
+    w.focus()
+    w.print()
+  }
+
   return (
-    <div className="overflow-x-auto rounded-md border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-accent/40 text-left">
-            <th className="px-3 py-2 font-medium">Household</th>
-            {days.map((d) => (
-              <th key={d.id} className="px-3 py-2 text-right font-medium">{d.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {[...people.values()].map((p) => (
-            <tr key={p.name} className="border-b last:border-0">
-              <td className="px-3 py-1.5">{p.name}</td>
+    <div className="flex flex-col gap-2">
+      <div className="flex gap-2">
+        <Button size="sm" variant="outline" onClick={printSheet}>
+          <Printer /> Print
+        </Button>
+        <Button size="sm" variant="outline" onClick={toCsv}>
+          <Download /> CSV
+        </Button>
+      </div>
+      <div className="overflow-x-auto rounded-md border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b bg-accent/40 text-left">
+              <th className="px-3 py-2 font-medium">Household</th>
               {days.map((d) => (
-                <td key={d.id} className="px-3 py-1.5 text-right">{p.counts[d.id] ?? '—'}</td>
+                <th key={d.id} className="px-3 py-2 text-right font-medium">{d.label}</th>
               ))}
+              <th className="px-3 py-2 text-right font-medium">Total</th>
             </tr>
-          ))}
-          <tr className="bg-accent/40 font-medium">
-            <td className="px-3 py-1.5">Total plates</td>
-            {days.map((d) => (
-              <td key={d.id} className="px-3 py-1.5 text-right">{d.totalCount}</td>
+          </thead>
+          <tbody>
+            {households.map((p) => (
+              <tr key={p.name} className="border-b last:border-0">
+                <td className="px-3 py-1.5">{p.name}</td>
+                {days.map((d) => (
+                  <td key={d.id} className="px-3 py-1.5 text-right">{p.counts[d.id] ?? '—'}</td>
+                ))}
+                <td className="px-3 py-1.5 text-right font-medium">{p.total}</td>
+              </tr>
             ))}
-          </tr>
-        </tbody>
-      </table>
+            <tr className="bg-accent/40 font-medium">
+              <td className="px-3 py-1.5">Total plates</td>
+              {days.map((d) => (
+                <td key={d.id} className="px-3 py-1.5 text-right">{d.totalCount}</td>
+              ))}
+              <td className="px-3 py-1.5 text-right">{grandPlates}</td>
+            </tr>
+            <tr className="bg-accent/40 font-medium">
+              <td className="px-3 py-1.5">Total ₹</td>
+              {money.map((m, i) => (
+                <td key={days[i].id} className="px-3 py-1.5 text-right">{m != null ? inr(m) : '—'}</td>
+              ))}
+              <td className="px-3 py-1.5 text-right">{grandMoney != null ? inr(grandMoney) : '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
