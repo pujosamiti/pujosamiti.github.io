@@ -1,6 +1,6 @@
 import { isCoreRole } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
-import { BookOpen, CalendarDays, Clock, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
+import { BookOpen, CalendarDays, Clock, Gift, Loader2, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -29,9 +29,16 @@ const memberSections = [
 
 export function MembersOnly() {
   const queryClient = useQueryClient()
-  const { session, memberState } = useMemberState()
-  const { data: onboarding } = useOnboardingState()
+  const { session, sessionPending, memberState, memberPending } = useMemberState()
+  const { data: onboarding, isPending: onboardingPending } = useOnboardingState()
   const me = memberState?.status === 'member' ? memberState.me : null
+  /**
+   * A slow backend used to flash "membership pending" (and the locked-card
+   * grid) at fully activated members: the session resolves from localStorage
+   * almost instantly, while /me and /onboarding/status are still in flight.
+   * Never guess a state — hold a spinner until the answer is actually known.
+   */
+  const resolving = sessionPending || (!!session && (memberPending || (!me && onboardingPending)))
   // A member never gets into the core sections, so don't dangle them — they
   // just read as a list of locked doors. Signed-out visitors still see the
   // full set with its gate labels, which is what tells them what membership is for.
@@ -42,6 +49,14 @@ export function MembersOnly() {
   const endSession = async () => {
     await signOut()
     await queryClient.invalidateQueries()
+  }
+
+  if (resolving) {
+    return (
+      <div className="flex justify-center py-16">
+        <Loader2 className="size-6 animate-spin text-muted-foreground" aria-label="Loading" />
+      </div>
+    )
   }
 
   return (
