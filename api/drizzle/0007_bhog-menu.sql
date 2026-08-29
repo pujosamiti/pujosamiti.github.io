@@ -1,6 +1,6 @@
 CREATE TABLE `bhog_menu` (
 	`id` text PRIMARY KEY NOT NULL,
-	`year` integer NOT NULL,
+	`event_id` text NOT NULL,
 	`puja_day_id` text,
 	`date` text NOT NULL,
 	`label` text NOT NULL,
@@ -9,6 +9,7 @@ CREATE TABLE `bhog_menu` (
 	`notes` text,
 	`is_published` integer DEFAULT false NOT NULL,
 	`sort_order` integer DEFAULT 1000 NOT NULL,
+	FOREIGN KEY (`event_id`) REFERENCES `event`(`id`) ON UPDATE no action ON DELETE cascade,
 	FOREIGN KEY (`puja_day_id`) REFERENCES `puja_day`(`id`) ON UPDATE no action ON DELETE set null
 );
 --> statement-breakpoint

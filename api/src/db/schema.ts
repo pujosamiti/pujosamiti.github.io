@@ -480,22 +480,27 @@ export const procurementNeed = sqliteTable('procurement_need', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 10 · Bhog menu
-// The daily bhog: one menu per calendar DATE (unlike procurement's tithi
-// columns — in crunched 2024 one lunch served "Saptami/Ashtami" together),
-// admin-seeded from the finalised Puja Days, Saptami → Dashami by default.
-// Core members compose dishes and the per-plate cost; publishing makes the
-// day visible to every member. Later features hang off this row: RSVP
-// headcounts and bhog coupons.
+// 10 · Bhog & food menu
+// One menu per calendar DATE per EVENT. Five occasions carry one each season
+// (1 Jul → 30 Jun): Durga Pujo is multi-day (admin-seeded from the finalised
+// Puja Days, Saptami → Dashami; a crunched year serves one lunch for two
+// tithis — 2024's "Saptami/Ashtami"); Kojagari, Bijoya Sammelani, Saraswati
+// and Poila Baishakh are single meals. Kojagari/Saraswati serve "Bhog",
+// Bijoya Sammelani/Poila Baishakh a "Food Menu" — a naming difference the UI
+// carries, not the schema. Core members compose dishes and the per-plate
+// cost; publishing makes the day visible to every member. RSVP headcounts
+// and bhog coupons will hang off this row.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const bhogMenu = sqliteTable('bhog_menu', {
   id: text('id').primaryKey(),
-  year: integer('year').notNull(),
-  /** The (host) puja day this bhog belongs to; NULL for free-form days. */
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id, { onDelete: 'cascade' }),
+  /** The (host) puja day this bhog belongs to; NULL for single-meal events and free-form days. */
   pujaDayId: text('puja_day_id').references(() => pujaDay.id, { onDelete: 'set null' }),
-  date: text('date').notNull(), // ISO — bhog is a physical lunch on a date
-  label: text('label').notNull(), // "Saptami Bhog", "Saptami / Ashtami Bhog"
+  date: text('date').notNull(), // ISO — the meal happens on a date
+  label: text('label').notNull(), // "Saptami Bhog", "Bhog", "Food Menu"
   labelBn: text('label_bn'), // "সপ্তমীর ভোগ"
   perPlateCost: integer('per_plate_cost'), // whole ₹ (160/180/190 in 2024-25), NULL until priced
   notes: text('notes'), // "Mishti Doi +₹20", caterer notes

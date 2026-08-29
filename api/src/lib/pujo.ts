@@ -87,3 +87,15 @@ export async function sandhiRow(db: DB, eventId: string) {
     .where(eq(schema.timetableEntry.eventId, eventId))
   return rows.find((r) => /sandhi/i.test(r.titleEn) || r.titleBn.includes('সন্ধি')) ?? null
 }
+
+/** Samiti season of an ISO date: 1 July → 30 June, named by its starting year. */
+export function seasonOf(iso: string): number {
+  const y = Number(iso.slice(0, 4))
+  const m = Number(iso.slice(5, 7))
+  return m >= 7 ? y : y - 1
+}
+
+/** The season we are in today. */
+export function currentSeason(): number {
+  return seasonOf(new Date().toISOString().slice(0, 10))
+}

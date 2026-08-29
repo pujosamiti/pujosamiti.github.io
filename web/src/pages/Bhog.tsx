@@ -1,4 +1,5 @@
-import type { BhogMenuView } from '@pujosamiti/shared'
+import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
+import { menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarCog, Loader2, Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -25,29 +26,27 @@ import { useEvents } from '@/lib/tasks'
 
 const fmtDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
+const seasonLabel = (s: number) => `${s}–${String(s + 1).slice(2)}`
+const todaySeason = seasonOf(new Date().toISOString().slice(0, 10))
 
 export function Bhog() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
   const { data: events } = useEvents()
-  const [year, setYear] = useState<number | null>(null)
-  const [adding, setAdding] = useState(false)
+  const [season, setSeason] = useState<number | null>(null)
 
-  const years = useMemo(() => {
-    const ys = new Set<number>((events ?? []).filter((e) => e.kind === 'durga-pujo').map((e) => e.year))
-    return [...ys].sort()
+  const seasons = useMemo(() => {
+    const ss = new Set<number>((events ?? []).map((e) => seasonOf(e.startsOn)))
+    return [...ss].sort()
   }, [events])
 
   useEffect(() => {
-    if (year || !events?.length) return
-    const active = events.find((e) => e.isActive && e.kind === 'durga-pujo')
-    setYear(active?.year ?? years[years.length - 1] ?? new Date().getFullYear())
-  }, [events, year, years])
+    if (season != null || seasons.length === 0) return
+    setSeason(seasons.includes(todaySeason) ? todaySeason : seasons[seasons.length - 1])
+  }, [season, seasons])
 
-  const activeYear = (events ?? []).find((e) => e.isActive && e.kind === 'durga-pujo')?.year ?? null
-  const archival = year != null && activeYear != null && year !== activeYear
-
-  const { data: days, isPending, error } = useBhog(me ? year : null)
+  const archival = season != null && season !== todaySeason
+  const { data: days, isPending, error } = useBhog(me ? season : null)
 
   if (sessionPending || memberPending) {
     return (
@@ -61,115 +60,146 @@ export function Bhog() {
       <Card className="mx-auto max-w-md">
         <CardHeader>
           <CardTitle>Members only</CardTitle>
-          <CardDescription>The bhog menu is visible to samiti members after sign in.</CardDescription>
+          <CardDescription>Bhog and food menus are visible to samiti members after sign in.</CardDescription>
         </CardHeader>
       </Card>
     )
   }
 
   const canEdit = me.role !== 'member' && !archival
+  // The season's occasions in calendar order; members see only those with
+  // something published, editors see every occasion as a workspace.
+  const seasonEvents = (events ?? [])
+    .filter((e) => seasonOf(e.startsOn) === season)
+    .sort((a, b) => a.startsOn.localeCompare(b.startsOn))
+  const byEvent = new Map<string, BhogMenuView[]>()
+  for (const d of days ?? []) {
+    const list = byEvent.get(d.eventId) ?? []
+    list.push(d)
+    byEvent.set(d.eventId, list)
+  }
+  const sections = seasonEvents.filter((e) => canEdit || (byEvent.get(e.id)?.length ?? 0) > 0)
 
   return (
     <div className="flex flex-col gap-4">
-      <Seo title="Bhog Menu" description="Daily bhog menu and per-plate cost for samiti members." path="/bhog" noindex />
+      <Seo title="Bhog & Food Menu" description="Menus and per-plate cost for the samiti's occasions." path="/bhog" noindex />
       <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h1 className="text-2xl font-bold">
-          Bhog Menu{year && <span className="text-muted-foreground"> · {year}</span>}
+          Bhog &amp; Food Menu{season != null && <span className="text-muted-foreground"> · {seasonLabel(season)}</span>}
         </h1>
         <SearchSelect
-          options={years.map((y) => ({
-            value: String(y),
-            label: `Durga Pujo ${y}`,
-            hint: (events ?? []).some((e) => e.kind === 'durga-pujo' && e.year === y && e.isActive)
-              ? 'Active'
-              : undefined,
+          options={seasons.map((s) => ({
+            value: String(s),
+            label: `Season ${seasonLabel(s)}`,
+            hint: s === todaySeason ? 'Current' : undefined,
           }))}
-          value={year ? String(year) : null}
-          onChange={(v) => setYear(Number(v))}
-          ariaLabel="Durga Pujo year"
+          value={season != null ? String(season) : null}
+          onChange={(v) => setSeason(Number(v))}
+          ariaLabel="Season (1 July – 30 June)"
         />
       </div>
 
       {archival && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
-          Durga Pujo {year} is closed — this menu is the record of what was served, kept read-only.
+          Season {season != null && seasonLabel(season)} is closed — these menus are the record of what
+          was served, kept read-only.
         </p>
       )}
 
       {error && <p className="text-sm text-destructive">{error.message}</p>}
-      {isPending && year && (
+      {isPending && season != null && (
         <div className="flex justify-center py-8">
           <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
         </div>
       )}
 
-      {days && year && (
-        <>
-          {canEdit && (
-            <EditorBar year={year} days={days} isAdmin={me.role === 'admin'} adding={adding} setAdding={setAdding} />
-          )}
-          {adding && canEdit && <DayForm year={year} onClose={() => setAdding(false)} />}
-          {days.length === 0 && !canEdit && (
-            <p className="py-8 text-center text-sm text-muted-foreground">
-              The {year} bhog menu isn't published yet — check back closer to the pujo.
-            </p>
-          )}
-          <div className="grid gap-4 sm:grid-cols-2">
-            {days.map((d) => (
-              <DayCard key={d.id} year={year} day={d} canEdit={canEdit} />
-            ))}
-          </div>
-        </>
+      {days && sections.length === 0 && (
+        <p className="py-8 text-center text-sm text-muted-foreground">
+          No menus published for this season yet — check back closer to the events.
+        </p>
       )}
+      {days &&
+        sections.map((e) => (
+          <EventSection key={e.id} event={e} season={season!} days={byEvent.get(e.id) ?? []} canEdit={canEdit} isAdmin={me.role === 'admin'} />
+        ))}
     </div>
   )
 }
 
-/** Seed (admin) / add-day controls above the cards. */
-function EditorBar({
-  year,
+function EventSection({
+  event,
+  season,
   days,
+  canEdit,
   isAdmin,
-  adding,
-  setAdding,
 }: {
-  year: number
+  event: PujoEvent
+  season: number
   days: BhogMenuView[]
+  canEdit: boolean
   isAdmin: boolean
-  adding: boolean
-  setAdding: (v: boolean) => void
 }) {
   const queryClient = useQueryClient()
-  const { data: pujaDays } = usePujaDays(year)
+  const [adding, setAdding] = useState(false)
+  const kindLabel = menuKindLabel(event.kind)
+  const isDurga = event.kind === 'durga-pujo'
+  const { data: pujaDays } = usePujaDays(isDurga && canEdit ? event.year : null)
   const seed = useMutation({
-    mutationFn: () => seedBhogDays(year),
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', year] }),
+    mutationFn: () => seedBhogDays(event.id),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', season] }),
   })
+
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {days.length === 0 &&
-        isAdmin &&
-        ((pujaDays?.days.length ?? 0) > 0 ? (
-          <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
-            {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
+    <section className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-baseline gap-2 border-b pb-1">
+        <h2 className="text-lg font-semibold">{event.nameEn}</h2>
+        <span className="text-sm text-muted-foreground">{event.nameBn}</span>
+        <Badge variant="outline">{kindLabel}</Badge>
+        {canEdit && days.length === 0 && !isDurga && (
+          <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAdding(!adding)}>
+            <Plus /> Add the {kindLabel.toLowerCase()}
           </Button>
-        ) : (
-          <p className="text-sm text-muted-foreground">
-            No Puja Days for {year} yet — finalise the nirghanto and seed them first (Nirghanto page).
-          </p>
-        ))}
-      <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
-        <Plus /> Add a day
-      </Button>
+        )}
+        {canEdit && (days.length > 0 || isDurga) && (
+          <span className="ml-auto flex gap-2">
+            {isAdmin && isDurga && days.length === 0 && (pujaDays?.days.length ?? 0) > 0 && (
+              <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
+                {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
+              </Button>
+            )}
+            <Button size="sm" variant="ghost" onClick={() => setAdding(!adding)}>
+              <Plus /> Add a day
+            </Button>
+          </span>
+        )}
+      </div>
+      {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
+        <p className="text-sm text-muted-foreground">
+          No Puja Days for {event.year} yet — finalise the nirghanto and seed them first (Nirghanto page).
+        </p>
+      )}
       {seed.error && <p className="text-sm text-destructive">{seed.error.message}</p>}
-    </div>
+      {adding && canEdit && (
+        <DayForm
+          season={season}
+          eventId={event.id}
+          defaults={{ label: kindLabel, date: event.startsOn }}
+          onClose={() => setAdding(false)}
+        />
+      )}
+      <div className="grid gap-4 sm:grid-cols-2">
+        {days.map((d) => (
+          <DayCard key={d.id} season={season} day={d} canEdit={canEdit} />
+        ))}
+      </div>
+    </section>
   )
 }
 
-function DayCard({ year, day, canEdit }: { year: number; day: BhogMenuView; canEdit: boolean }) {
+function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; canEdit: boolean }) {
   const queryClient = useQueryClient()
-  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['bhog', year] })
+  const invalidate = () => queryClient.invalidateQueries({ queryKey: ['bhog', season] })
   const [editing, setEditing] = useState(false)
   const publish = useMutation({
     mutationFn: () => publishBhogDay(day.id, !day.isPublished),
@@ -177,7 +207,7 @@ function DayCard({ year, day, canEdit }: { year: number; day: BhogMenuView; canE
   })
   const remove = useMutation({ mutationFn: () => deleteBhogDay(day.id), onSettled: invalidate })
 
-  if (editing) return <DayForm year={year} initial={day} onClose={() => setEditing(false)} />
+  if (editing) return <DayForm season={season} eventId={day.eventId} initial={day} onClose={() => setEditing(false)} />
 
   return (
     <Card>
@@ -235,12 +265,24 @@ function DayCard({ year, day, canEdit }: { year: number; day: BhogMenuView; canE
   )
 }
 
-/** Create/edit one bhog day: labels, date, cost, notes, dishes (one per line). */
-function DayForm({ year, initial, onClose }: { year: number; initial?: BhogMenuView; onClose: () => void }) {
+/** Create/edit one menu day: labels, date, cost, notes, dishes (one per line). */
+function DayForm({
+  season,
+  eventId,
+  initial,
+  defaults,
+  onClose,
+}: {
+  season: number
+  eventId: BhogMenuView['eventId']
+  initial?: BhogMenuView
+  defaults?: { label: string; date: string }
+  onClose: () => void
+}) {
   const queryClient = useQueryClient()
-  const [label, setLabel] = useState(initial?.label ?? '')
+  const [label, setLabel] = useState(initial?.label ?? defaults?.label ?? '')
   const [labelBn, setLabelBn] = useState(initial?.labelBn ?? '')
-  const [date, setDate] = useState(initial?.date ?? '')
+  const [date, setDate] = useState(initial?.date ?? defaults?.date ?? '')
   const [cost, setCost] = useState(initial?.perPlateCost != null ? String(initial.perPlateCost) : '')
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [dishes, setDishes] = useState(
@@ -250,7 +292,7 @@ function DayForm({ year, initial, onClose }: { year: number; initial?: BhogMenuV
   const save = useMutation({
     mutationFn: async () => {
       const input = {
-        year,
+        eventId,
         label: label.trim(),
         labelBn: labelBn.trim() || null,
         date,
@@ -268,14 +310,14 @@ function DayForm({ year, initial, onClose }: { year: number; initial?: BhogMenuV
         .filter((i) => i.title)
       await saveBhogItems(id, { items })
     },
-    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', year] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', season] }),
     onSuccess: onClose,
   })
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{initial ? `Edit ${initial.label}` : 'New bhog day'}</CardTitle>
+        <CardTitle>{initial ? `Edit ${initial.label}` : 'New menu day'}</CardTitle>
         <CardDescription>
           One dish per line — add the Bengali name after a "|" (e.g. "Khichuri | খিচুড়ি").
         </CardDescription>

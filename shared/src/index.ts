@@ -320,7 +320,22 @@ export interface ProcurementCellInput {
   notes: string | null;
 }
 
-// ── Bhog menu (daily menu + per-plate cost, published to members) ───────────
+// ── Bhog & food menus (per-event daily menus + per-plate cost) ──────────────
+
+/**
+ * Which events serve a "Bhog" vs a "Food Menu" — a naming convention the
+ * samiti uses: pujas offer bhog, the social occasions a food menu.
+ */
+export const FOOD_MENU_KINDS: EventKind[] = ['bijoya-sammelani', 'poila-baishakh'];
+export const menuKindLabel = (kind: EventKind): 'Bhog' | 'Food Menu' =>
+  FOOD_MENU_KINDS.includes(kind) ? 'Food Menu' : 'Bhog';
+
+/** Samiti season of an ISO date: 1 July → 30 June, named by its starting year. */
+export const seasonOf = (iso: string): number => {
+  const y = Number(iso.slice(0, 4));
+  const m = Number(iso.slice(5, 7));
+  return m >= 7 ? y : y - 1;
+};
 
 /** One dish on a day's menu, in serving order. */
 export interface BhogMenuItem {
@@ -331,16 +346,17 @@ export interface BhogMenuItem {
 }
 
 /**
- * One bhog day: a menu per calendar DATE (a crunched year serves one lunch
- * for two tithis — 2024's "Saptami/Ashtami"). Draft until published; members
- * see only published days, editors see everything.
+ * One menu day of an event: per calendar DATE (a crunched year serves one
+ * lunch for two tithis — 2024's "Saptami/Ashtami"); single-meal events carry
+ * exactly one. Draft until published; members see only published days,
+ * editors see everything.
  */
 export interface BhogMenuView {
   id: string;
-  year: number;
+  eventId: EventId;
   pujaDayId: string | null; // host Puja Day, when seeded from one
   date: string; // ISO
-  label: string; // "Saptami Bhog"
+  label: string; // "Saptami Bhog", "Bhog", "Food Menu"
   labelBn: string | null;
   perPlateCost: number | null; // whole ₹ (160/180/190 in 2024-25)
   notes: string | null; // "Mishti Doi +₹20"
@@ -350,7 +366,7 @@ export interface BhogMenuView {
 }
 
 export interface BhogDayInput {
-  year: number;
+  eventId: EventId;
   label: string;
   labelBn: string | null;
   date: string;

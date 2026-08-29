@@ -100,16 +100,20 @@ list**: `suggested_total` plus tithi × slot `procurement_suggestion` rows
 maps suggestions onto the year's actual days — both Ashtamis in an Adhik
 Diba year — never overwriting existing values.
 
-### Bhog menu: `bhog_menu`, `bhog_menu_item`
+### Bhog & food menus: `bhog_menu`, `bhog_menu_item`
 
-The daily bhog: **one menu per calendar DATE** (unlike procurement's tithi
-columns — crunched 2024 served one lunch for "Saptami/Ashtami"), admin-seeded
-from the finalised Puja Days, Saptami → Dashami by default (Devi Baran and
-Bodhon days get none). Each day carries bilingual dish rows (`bhog_menu_item`,
-cascade), a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and
-an `is_published` flag: drafts are core-editor-only, published days are
-visible to every member. RSVP headcounts and bhog coupons will hang off this
-row.
+**One menu per calendar DATE per EVENT.** Five occasions carry menus each
+season (1 Jul → 30 Jun): Durga Pujo is multi-day — admin-seeded from the
+finalised Puja Days, Saptami → Dashami, one lunch per date (crunched 2024
+served "Saptami/Ashtami" together) — while Kojagari, Bijoya Sammelani,
+Saraswati and Poila Baishakh are single meals core members add directly.
+Kojagari/Saraswati serve "Bhog", Bijoya Sammelani/Poila Baishakh a "Food
+Menu" — a naming difference the UI carries (`menuKindLabel` in shared), not
+the schema. Each day carries bilingual dish rows (`bhog_menu_item`, cascade),
+a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and an
+`is_published` flag: drafts are core-editor-only, published days are visible
+to every member. Only the current season is writable. RSVP headcounts and
+bhog coupons will hang off this row.
 
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 

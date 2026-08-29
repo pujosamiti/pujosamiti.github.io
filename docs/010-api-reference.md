@@ -102,16 +102,16 @@ The yearly shopping sheet: items × day columns × Morning/Evening
 | `POST /days/seed` | **Admin**: create the year's delivery columns from its Puja Days (evening-before 19:00; Sandhi same-morning 10:00) |
 | `POST /days/prefill` | **Admin**: fill totals + cells from the master list, mapping tithis onto the year's actual days; adds only, never overwrites |
 
-### Bhog menu (`/api/members/bhog` — published days for all members; drafts and writes are core work, active year only)
+### Bhog & food menus (`/api/members/bhog` — published days for all members; drafts and writes are core work, current season only)
 
-One menu per calendar date with dishes and per-plate cost
-([004](004-database.md) §2 "Bhog menu").
+One menu per calendar date per event — five occasions a season
+([004](004-database.md) §2 "Bhog & food menus").
 
 | Route | Purpose |
 | --- | --- |
-| `GET /?year=` | The year's bhog days (`BhogMenuView[]`) — members get published only, editors everything |
-| `POST /days/seed` | **Admin**: create bhog days from the Puja Days, Saptami → Dashami, one per calendar date |
-| `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (label/date/per-plate ₹/notes) |
+| `GET /?season=` | The season's menu days across its events (`BhogMenuView[]`) — members get published only, editors everything |
+| `POST /days/seed` | **Admin**: create a Durga Pujo event's bhog days from its Puja Days, Saptami → Dashami, one per calendar date (`{eventId}`) |
+| `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (event/label/date/per-plate ₹/notes) — single-meal events add their one menu here |
 | `POST /days/:id/publish` | Publish/unpublish a day to the members |
 | `POST /days/:id/items` | Replace a day's dishes wholesale |
 

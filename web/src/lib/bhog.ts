@@ -4,20 +4,20 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
 
-export function useBhog(year: number | null) {
+export function useBhog(season: number | null) {
   const { memberState } = useMemberState()
   return useQuery({
-    queryKey: ['bhog', year],
-    queryFn: () => api<BhogMenuView[]>(`/api/members/bhog?year=${year}`),
-    enabled: memberState?.status === 'member' && !!year,
+    queryKey: ['bhog', season],
+    queryFn: () => api<BhogMenuView[]>(`/api/members/bhog?season=${season}`),
+    enabled: memberState?.status === 'member' && season != null,
   })
 }
 
 const post = (path: string, body: unknown) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-export const seedBhogDays = (year: number) =>
-  post('/api/members/bhog/days/seed', { year }) as Promise<{ created: number }>
+export const seedBhogDays = (eventId: string) =>
+  post('/api/members/bhog/days/seed', { eventId }) as Promise<{ created: number }>
 export const createBhogDay = (input: BhogDayInput) =>
   post('/api/members/bhog/days', input) as Promise<{ id: string }>
 export const updateBhogDay = (id: string, input: BhogDayInput) => post(`/api/members/bhog/days/${id}`, input)
