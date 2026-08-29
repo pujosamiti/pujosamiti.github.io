@@ -264,6 +264,28 @@ function DayManager({ year, days, isAdmin }: { year: number; days: ProcurementDa
           adjust any day after seeding. A tithi spanning two calendar days gets two columns
           ("Ashtami · Day 2"). Removing a day removes its quantities.
         </CardDescription>
+        {isAdmin && (
+          <div className="flex flex-wrap items-center gap-2 pt-2">
+            {days.length === 0 ? (
+              (pujaDays?.days.length ?? 0) > 0 ? (
+                <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
+                  {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed from Puja Days
+                </Button>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No Puja Days for {year} yet — finalise the nirghanto and seed them first (Nirghanto page).
+                </p>
+              )
+            ) : (
+              <Button size="sm" onClick={() => prefill.mutate()} disabled={prefill.isPending}>
+                {prefill.isPending ? <Loader2 className="animate-spin" /> : <Plus />} Prefill quantities from master list
+              </Button>
+            )}
+            {(seed.error || prefill.error) && (
+              <p className="text-sm text-destructive">{(seed.error ?? prefill.error)!.message}</p>
+            )}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="flex flex-col gap-2">
         {days.map((d) =>
@@ -286,29 +308,7 @@ function DayManager({ year, days, isAdmin }: { year: number; days: ProcurementDa
             </div>
           ),
         )}
-        {isAdmin && (
-          <div className="flex flex-wrap items-center gap-2 border-b pb-3">
-            {days.length === 0 ? (
-              (pujaDays?.days.length ?? 0) > 0 ? (
-                <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
-                  {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed from Puja Days
-                </Button>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No Puja Days for {year} yet — finalise the nirghanto and seed them first (Nirghanto page).
-                </p>
-              )
-            ) : (
-              <Button size="sm" variant="outline" onClick={() => prefill.mutate()} disabled={prefill.isPending}>
-                {prefill.isPending ? <Loader2 className="animate-spin" /> : <Plus />} Prefill quantities from master list
-              </Button>
-            )}
-            {(seed.error || prefill.error) && (
-              <p className="text-sm text-destructive">{(seed.error ?? prefill.error)!.message}</p>
-            )}
-          </div>
-        )}
-        <div className="flex flex-wrap items-end gap-2">
+        <div className="flex flex-wrap items-end gap-2 border-t pt-3">
           <Field label="Day">
             <input className={inputCls} list="procurement-day-suggestions" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Saptami · Day 2" />
             <datalist id="procurement-day-suggestions">
