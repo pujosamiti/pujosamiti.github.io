@@ -380,6 +380,7 @@ export interface BhogRsvpInput {
 export interface BhogCountRow {
   personId: string;
   name: string;
+  tier: FamilyTier; // Core vs Member tag on the response
   menuId: string;
   count: number;
   notes: string | null; // the sheet's remark ("already paid for 10 guests")

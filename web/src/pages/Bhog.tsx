@@ -2,7 +2,7 @@ import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
 import { menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, UtensilsCrossed } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { Fragment, useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
 import { Field, inputCls } from '@/components/form'
@@ -393,16 +393,16 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
         <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
       </div>
     )
-  const people = new Map<string, { name: string; counts: Record<string, number> }>()
+  const people = new Map<string, { name: string; tier: string; counts: Record<string, number> }>()
   for (const r of rows ?? []) {
-    const p = people.get(r.personId) ?? { name: r.name, counts: {} }
+    const p = people.get(r.personId) ?? { name: r.name, tier: r.tier, counts: {} }
     p.counts[r.menuId] = r.count
     people.set(r.personId, p)
   }
-  const households = [...people.values()].map((p) => ({
-    ...p,
-    total: days.reduce((s, d) => s + (p.counts[d.id] ?? 0), 0),
-  }))
+  // The sheet's layout: core members as the top section, members below
+  const households = [...people.values()]
+    .map((p) => ({ ...p, total: days.reduce((s, d) => s + (p.counts[d.id] ?? 0), 0) }))
+    .sort((a, b) => (a.tier === b.tier ? a.name.localeCompare(b.name) : a.tier === 'core' ? -1 : 1))
   const grandPlates = days.reduce((s, d) => s + d.totalCount, 0)
   const money = days.map((d) => (d.perPlateCost != null ? d.totalCount * d.perPlateCost : null))
   const grandMoney = money.some((m) => m != null) ? money.reduce<number>((s, m) => s + (m ?? 0), 0) : null
@@ -413,10 +413,12 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
   const toCsv = () => {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
     const lines = [
-      ['Household', ...days.map((d) => `${d.label} ${d.date}`), 'Total'].map(esc).join(','),
-      ...households.map((p) => [p.name, ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(',')),
-      ['Total plates', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
-      ['Total INR', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(','),
+      ['Household', 'Tier', ...days.map((d) => `${d.label} ${d.date}`), 'Total'].map(esc).join(','),
+      ...households.map((p) =>
+        [p.name, p.tier === 'core' ? 'Core' : 'Member', ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(','),
+      ),
+      ['Total plates', '', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
+      ['Total INR', '', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(','),
       ...(noted.length ? ['', ...noted.map((r) => [`${r.name} — ${dayLabel.get(r.menuId) ?? ''}`, r.notes!].map(esc).join(','))] : []),
     ]
     const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
@@ -440,7 +442,7 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
     </style></head><body><h1>${title}</h1><table>
       <tr><th>Household</th>${days.map((d) => `<th>${d.label}<br>${d.date}</th>`).join('')}<th>Total</th></tr>
       ${households
-        .map((p) => `<tr>${cell(p.name, false)}${days.map((d) => cell(p.counts[d.id] ?? '—')).join('')}${cell(p.total)}</tr>`)
+        .map((p) => `<tr>${cell(`${p.name}${p.tier === 'core' ? ' <small>(Core)</small>' : ''}`, false)}${days.map((d) => cell(p.counts[d.id] ?? '—')).join('')}${cell(p.total)}</tr>`)
         .join('')}
       <tr class="total">${cell('Total plates', false)}${days.map((d) => cell(d.totalCount)).join('')}${cell(grandPlates)}</tr>
       <tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>
@@ -478,14 +480,28 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
             </tr>
           </thead>
           <tbody>
-            {households.map((p) => (
-              <tr key={p.name} className="border-b last:border-0">
-                <td className="px-3 py-1.5">{p.name}</td>
+            {households.map((p, i) => (
+              <Fragment key={p.name}>
+                {(i === 0 || households[i - 1].tier !== p.tier) && (
+                  <tr className="border-b bg-accent/20">
+                    <td colSpan={days.length + 2} className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {p.tier === 'core' ? 'Core members' : 'Members'}
+                    </td>
+                  </tr>
+                )}
+              <tr className="border-b last:border-0">
+                <td className="px-3 py-1.5">
+                  {p.name}{' '}
+                  <Badge variant={p.tier === 'core' ? 'durba' : 'outline'} className="ml-1">
+                    {p.tier === 'core' ? 'Core' : 'Member'}
+                  </Badge>
+                </td>
                 {days.map((d) => (
                   <td key={d.id} className="px-3 py-1.5 text-right">{p.counts[d.id] ?? '—'}</td>
                 ))}
                 <td className="px-3 py-1.5 text-right font-medium">{p.total}</td>
               </tr>
+              </Fragment>
             ))}
             <tr className="bg-accent/40 font-medium">
               <td className="px-3 py-1.5">Total plates</td>

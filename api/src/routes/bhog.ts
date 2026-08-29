@@ -143,6 +143,7 @@ bhogRoutes.get('/counts', async (c) => {
     .select({
       personId: schema.bhogRsvp.personId,
       name: schema.person.displayName,
+      tier: schema.person.tier,
       menuId: schema.bhogRsvp.menuId,
       count: schema.bhogRsvp.count,
       notes: schema.bhogRsvp.notes,
