@@ -7,7 +7,7 @@ import type {
 } from '@pujosamiti/shared'
 import { PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Check, ChevronDown, ListChecks, Loader2, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
+import { CalendarCog, Check, ChevronDown, ListChecks, Loader2, Minus, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -41,6 +41,11 @@ const STATUS_LABEL: Record<ProcurementStatus, string> = {
   pending: 'Pending',
   partial: 'Partial',
   done: 'Done',
+}
+const STATUS_CYCLE: Record<ProcurementStatus, ProcurementStatus> = {
+  pending: 'partial',
+  partial: 'done',
+  done: 'pending',
 }
 
 export function Procurement() {
@@ -454,7 +459,6 @@ function ItemRow({
       saveCell({ itemId: item.id, dayId: cell.dayId, slot: cell.slot, quantity: '', notes: null }),
     onSettled: invalidate,
   })
-
   const dayById = new Map(days.map((d) => [d.id, d]))
   const ordered = [...item.cells].sort((a, b) => {
     const da = dayById.get(a.dayId)
@@ -465,6 +469,27 @@ function ItemRow({
     )
   })
   const allBought = ordered.length > 0 && ordered.every((c) => c.purchased)
+  // One tap on the row's round control: day view buys the whole day,
+  // all-days view cycles the item's status.
+  const buyDay = useMutation({
+    mutationFn: async () => {
+      const target = !allBought
+      await Promise.all(ordered.filter((c) => c.purchased !== target).map((c) => setCellPurchased(c.id, target)))
+    },
+    onSettled: invalidate,
+  })
+  const cycleStatus = useMutation({
+    mutationFn: () =>
+      saveItemYear(item.id, {
+        year,
+        totalQuantity: item.totalQuantity,
+        status: STATUS_CYCLE[item.status],
+        dueDate: item.dueDate,
+        dueTime: item.dueTime,
+        notes: item.yearNotes,
+      }),
+    onSettled: invalidate,
+  })
   // Line summary: the day view reads like the order sheet; all-days shows the total
   const summary = dayFiltered
     ? ordered.map((c) => `${SLOT_LABEL[c.slot]} ${c.quantity}`).join(' · ')
@@ -475,12 +500,46 @@ function ItemRow({
 
   return (
     <div className="px-3">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="flex w-full items-center gap-2 py-2 text-left"
-        aria-expanded={shown}
-      >
+      <div className="flex w-full items-center gap-2 py-2">
+        {canEdit && dayFiltered && ordered.length > 0 && (
+          <button
+            type="button"
+            onClick={() => buyDay.mutate()}
+            disabled={buyDay.isPending}
+            aria-label={allBought ? `Mark ${item.title} not purchased` : `Mark ${item.title} purchased`}
+            className={
+              allBought
+                ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-white'
+                : 'flex size-5 shrink-0 items-center justify-center rounded border border-input'
+            }
+          >
+            {allBought && <Check className="size-3.5" />}
+          </button>
+        )}
+        {canEdit && !dayFiltered && (
+          <button
+            type="button"
+            onClick={() => cycleStatus.mutate()}
+            disabled={cycleStatus.isPending}
+            aria-label={`${item.title}: ${STATUS_LABEL[item.status]} — tap to change`}
+            title={`${STATUS_LABEL[item.status]} — tap to change`}
+            className={cn(
+              'flex size-5 shrink-0 items-center justify-center rounded border',
+              item.status === 'done' && 'border-durba bg-durba text-white',
+              item.status === 'partial' && 'border-genda bg-genda text-secondary-foreground',
+              item.status === 'pending' && 'border-input',
+            )}
+          >
+            {item.status === 'done' && <Check className="size-3.5" />}
+            {item.status === 'partial' && <Minus className="size-3.5" />}
+          </button>
+        )}
+        <button
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          aria-expanded={shown}
+        >
         <span className="min-w-0 flex-1 truncate text-sm font-medium">{item.title}</span>
         {item.status !== 'pending' && (
           <Badge variant={item.status === 'done' ? 'durba' : 'genda'}>{STATUS_LABEL[item.status]}</Badge>
@@ -505,7 +564,8 @@ function ItemRow({
           className={cn('size-4 shrink-0 text-muted-foreground transition-transform', shown && 'rotate-180')}
           aria-hidden="true"
         />
-      </button>
+        </button>
+      </div>
       {shown && (
         <div className="flex flex-col gap-2 pb-3">
           {editing ? (
