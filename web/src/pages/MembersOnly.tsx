@@ -19,7 +19,7 @@ const memberSections = [
   { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', tone: 'palash' },
   { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
-  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Members only', to: '/procurement', tone: 'durba' },
+  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: 'durba' },
   { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', tone: 'genda' },
   { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: 'aparajita' },
   { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: 'matir' },

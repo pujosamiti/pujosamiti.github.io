@@ -34,6 +34,13 @@ function ok<T>(data: T): ApiResult<T> {
  */
 export const procurementRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
+// The whole workspace — reads included — is committee-only (user decision,
+// 29 Aug 2026): vendor lists and quantities are not member-facing content.
+procurementRoutes.use('*', async (c, next) => {
+  if (!isCoreRole(c.get('me').role)) return c.json({ ok: false, error: 'core members only' }, 403)
+  await next()
+})
+
 const canEdit = (me: Me) => isCoreRole(me.role)
 const STATUSES: ProcurementStatus[] = ['pending', 'partial', 'done']
 

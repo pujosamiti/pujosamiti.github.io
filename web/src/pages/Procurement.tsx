@@ -89,12 +89,12 @@ export function Procurement() {
       </div>
     )
   }
-  if (!me) {
+  if (!me || !isCoreRole(me.role)) {
     return (
       <Card className="mx-auto max-w-md">
         <CardHeader>
-          <CardTitle>Members only</CardTitle>
-          <CardDescription>Procurement lists are visible to samiti members after sign in.</CardDescription>
+          <CardTitle>Core members only</CardTitle>
+          <CardDescription>Procurement lists are the committee's workspace.</CardDescription>
         </CardHeader>
       </Card>
     )

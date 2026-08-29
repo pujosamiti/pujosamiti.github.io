@@ -84,7 +84,7 @@ local `http://localhost:8787`.
 | `POST /api/admin/events/:id/seed-puja-days` | Admin: create Puja Days from the finalised nirghanto |
 | `POST /api/admin/events/:id/resync-puja-days` | Admin: re-align days after nirghanto edits (orphans reported, never auto-deleted) |
 
-### Procurement (`/api/members/procurement` — reads for all members; catalog/cells are core work, seeding/prefill admin-only, active pujo year only)
+### Procurement (`/api/members/procurement` — CORE-ONLY, reads included; seeding/prefill admin-only, active pujo year only)
 
 The yearly shopping sheet: items × day columns × Morning/Evening
 ([004](004-database.md) §2 "Procurement").
