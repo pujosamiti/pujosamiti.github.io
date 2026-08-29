@@ -38,7 +38,7 @@ onboardingRoutes.get('/status', async (c) => {
     .where(or(eq(schema.person.email, c.get('email')), eq(schema.person.altEmail, c.get('email'))))
     .limit(1)
   // Inactive = left the portal: they re-register (profile form) like a new user.
-  // Open membership (until 15 Oct 2026): a completed profile is enough —
+  // Open membership (until 30 Oct 2026): a completed profile is enough —
   // nobody waits for activation while the window is open.
   const state: OnboardingState = !p || !p.isActive
     ? { state: 'no_person' }

@@ -53,7 +53,7 @@ Every `/api/members/*` request passes the middleware at the top of
 
 Hiding routes in the React bundle protects nothing — enforcement lives here.
 
-**⏳ OPEN MEMBERSHIP window (until 15 Oct 2026 IST, inclusive)** —
+**⏳ OPEN MEMBERSHIP window (until 30 Oct 2026 IST, inclusive)** —
 `OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active,
 an `is_active` person whose tier is still `non_member` passes the gate with
 the computed role **`newsignin`**: two pages (Bhog & Food Menu and

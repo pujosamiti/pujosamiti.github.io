@@ -99,7 +99,7 @@ export function Membership() {
 
       {openMembershipActive() && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
-          <span className="font-medium text-foreground">Open membership until 15 Oct 2026</span> — everyone
+          <span className="font-medium text-foreground">Open membership until 30 Oct 2026</span> — everyone
           who signs in and completes their profile gets in as a <span className="font-medium text-foreground">new
           sign-in</span>: view access plus their food count, nothing else. They land under Pending
           activation; setting a tier here upgrades them instantly, and the un-activated lose access when

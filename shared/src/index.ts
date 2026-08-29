@@ -443,7 +443,7 @@ export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
  * real role instantly, and un-activated people lose access when the window
  * closes.
  */
-export const OPEN_MEMBERSHIP_UNTIL = '2026-10-15'; // inclusive
+export const OPEN_MEMBERSHIP_UNTIL = '2026-10-30'; // inclusive
 export const openMembershipActive = (): boolean =>
   new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10) <= OPEN_MEMBERSHIP_UNTIL;
 

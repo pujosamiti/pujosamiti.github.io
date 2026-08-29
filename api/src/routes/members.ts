@@ -27,7 +27,7 @@ export const memberRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
  * person whose tier isn't non_member. Enforcement lives here on the server —
  * hiding routes in the React bundle protects nothing.
  *
- * OPEN MEMBERSHIP (until 15 Oct 2026, see shared): an active person whose
+ * OPEN MEMBERSHIP (until 30 Oct 2026, see shared): an active person whose
  * tier is still non_member gets in as NEWSIGNIN — view-only with exactly two
  * writes: their household's food count and their own sponsorship pledge.
  * Admin activation grants the real role instantly; un-activated people fall
