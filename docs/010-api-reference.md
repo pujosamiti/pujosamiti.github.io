@@ -102,6 +102,19 @@ The yearly shopping sheet: items × day columns × Morning/Evening
 | `POST /days/seed` | **Admin**: create the year's delivery columns from its Puja Days (evening-before 19:00; Sandhi same-morning 10:00) |
 | `POST /days/prefill` | **Admin**: fill totals + cells from the master list, mapping tithis onto the year's actual days; adds only, never overwrites |
 
+### Bhog menu (`/api/members/bhog` — published days for all members; drafts and writes are core work, active year only)
+
+One menu per calendar date with dishes and per-plate cost
+([004](004-database.md) §2 "Bhog menu").
+
+| Route | Purpose |
+| --- | --- |
+| `GET /?year=` | The year's bhog days (`BhogMenuView[]`) — members get published only, editors everything |
+| `POST /days/seed` | **Admin**: create bhog days from the Puja Days, Saptami → Dashami, one per calendar date |
+| `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (label/date/per-plate ₹/notes) |
+| `POST /days/:id/publish` | Publish/unpublish a day to the members |
+| `POST /days/:id/items` | Replace a day's dishes wholesale |
+
 ## Admin (`/api/admin` — core/admin read, admin write)
 
 | Route | Purpose |
@@ -125,6 +138,7 @@ Routes from `web/src/main.tsx`:
 | `/tasks` | `/api/members/tasks/*` |
 | `/procurement` | `/api/members/procurement/*`, `/api/members/puja-days` |
 | `/procurement/master` | `/api/members/procurement/master` + item/suggestion writes |
+| `/bhog` | `/api/members/bhog/*`, `/api/members/puja-days` |
 | `/nirghanto` | timetable routes + `/api/members/puja-days` + admin finalise/seed/resync |
 | `/membership` | `/api/admin/people`, `/api/admin/families` |
 | `/ledger`, `/wallets`, `/sponsorship`, `/reimbursements` | `/api/members/ledger/*` |

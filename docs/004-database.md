@@ -100,6 +100,17 @@ list**: `suggested_total` plus tithi × slot `procurement_suggestion` rows
 maps suggestions onto the year's actual days — both Ashtamis in an Adhik
 Diba year — never overwriting existing values.
 
+### Bhog menu: `bhog_menu`, `bhog_menu_item`
+
+The daily bhog: **one menu per calendar DATE** (unlike procurement's tithi
+columns — crunched 2024 served one lunch for "Saptami/Ashtami"), admin-seeded
+from the finalised Puja Days, Saptami → Dashami by default (Devi Baran and
+Bodhon days get none). Each day carries bilingual dish rows (`bhog_menu_item`,
+cascade), a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and
+an `is_published` flag: drafts are core-editor-only, published days are
+visible to every member. RSVP headcounts and bhog coupons will hang off this
+row.
+
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
 The heart of the system. Design decisions (from the schema comments and the
@@ -180,6 +191,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0004 | `0004_person-alt-email.sql` | `person.alt_email` (second sign-in address) |
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
 | 0006 | `0006_puja-days-procurement.sql` | Puja Days (`puja_day`, `event.nirghanto_finalized_on`) + the full procurement suite (catalog with vendor names & master-list suggestions, item-years with due date/time, puja-day-linked delivery columns, quantity cells) |
+| 0007 | `0007_bhog-menu.sql` | Bhog menu (`bhog_menu` per calendar date + `bhog_menu_item` dishes) |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

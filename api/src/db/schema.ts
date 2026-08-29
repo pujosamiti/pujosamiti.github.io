@@ -478,3 +478,39 @@ export const procurementNeed = sqliteTable('procurement_need', {
   /** Ticked off while shopping — the day view doubles as the market checklist. */
   purchased: integer('purchased', { mode: 'boolean' }).notNull().default(false),
 })
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 10 · Bhog menu
+// The daily bhog: one menu per calendar DATE (unlike procurement's tithi
+// columns — in crunched 2024 one lunch served "Saptami/Ashtami" together),
+// admin-seeded from the finalised Puja Days, Saptami → Dashami by default.
+// Core members compose dishes and the per-plate cost; publishing makes the
+// day visible to every member. Later features hang off this row: RSVP
+// headcounts and bhog coupons.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const bhogMenu = sqliteTable('bhog_menu', {
+  id: text('id').primaryKey(),
+  year: integer('year').notNull(),
+  /** The (host) puja day this bhog belongs to; NULL for free-form days. */
+  pujaDayId: text('puja_day_id').references(() => pujaDay.id, { onDelete: 'set null' }),
+  date: text('date').notNull(), // ISO — bhog is a physical lunch on a date
+  label: text('label').notNull(), // "Saptami Bhog", "Saptami / Ashtami Bhog"
+  labelBn: text('label_bn'), // "সপ্তমীর ভোগ"
+  perPlateCost: integer('per_plate_cost'), // whole ₹ (160/180/190 in 2024-25), NULL until priced
+  notes: text('notes'), // "Mishti Doi +₹20", caterer notes
+  /** Draft until published; members see only published days. */
+  isPublished: integer('is_published', { mode: 'boolean' }).notNull().default(false),
+  sortOrder: integer('sort_order').notNull().default(1000),
+})
+
+/** One dish on a day's menu, in serving order. */
+export const bhogMenuItem = sqliteTable('bhog_menu_item', {
+  id: text('id').primaryKey(),
+  menuId: text('menu_id')
+    .notNull()
+    .references(() => bhogMenu.id, { onDelete: 'cascade' }),
+  title: text('title').notNull(), // "Khichuri"
+  titleBn: text('title_bn'), // "খিচুড়ি"
+  sortOrder: integer('sort_order').notNull().default(1000),
+})

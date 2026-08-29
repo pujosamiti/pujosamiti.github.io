@@ -8,6 +8,7 @@ import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { readSheetRange } from '../lib/google'
 import { deriveDaysFromNirghanto } from '../lib/pujo'
+import { bhogRoutes } from './bhog'
 import { ledgerRoutes } from './ledger'
 import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
@@ -98,6 +99,7 @@ memberRoutes.get('/puja-days', async (c) => {
 memberRoutes.route('/tasks', taskRoutes)
 memberRoutes.route('/ledger', ledgerRoutes)
 memberRoutes.route('/procurement', procurementRoutes)
+memberRoutes.route('/bhog', bhogRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.

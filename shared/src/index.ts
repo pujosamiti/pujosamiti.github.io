@@ -320,6 +320,50 @@ export interface ProcurementCellInput {
   notes: string | null;
 }
 
+// ── Bhog menu (daily menu + per-plate cost, published to members) ───────────
+
+/** One dish on a day's menu, in serving order. */
+export interface BhogMenuItem {
+  id: string;
+  title: string; // "Khichuri"
+  titleBn: string | null; // "খিচুড়ি"
+  sortOrder: number;
+}
+
+/**
+ * One bhog day: a menu per calendar DATE (a crunched year serves one lunch
+ * for two tithis — 2024's "Saptami/Ashtami"). Draft until published; members
+ * see only published days, editors see everything.
+ */
+export interface BhogMenuView {
+  id: string;
+  year: number;
+  pujaDayId: string | null; // host Puja Day, when seeded from one
+  date: string; // ISO
+  label: string; // "Saptami Bhog"
+  labelBn: string | null;
+  perPlateCost: number | null; // whole ₹ (160/180/190 in 2024-25)
+  notes: string | null; // "Mishti Doi +₹20"
+  isPublished: boolean;
+  sortOrder: number;
+  items: BhogMenuItem[];
+}
+
+export interface BhogDayInput {
+  year: number;
+  label: string;
+  labelBn: string | null;
+  date: string;
+  perPlateCost: number | null;
+  notes: string | null;
+  sortOrder: number;
+}
+
+/** Replace a day's dishes wholesale (the editor is a lines textarea). */
+export interface BhogItemsInput {
+  items: { title: string; titleBn: string | null }[];
+}
+
 /** Light person entry for owner/volunteer pickers. */
 export interface MemberLite {
   id: string;

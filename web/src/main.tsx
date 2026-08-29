@@ -13,6 +13,7 @@ import { Login } from '@/pages/Login'
 import { MembersOnly } from '@/pages/MembersOnly'
 import { Membership } from '@/pages/Membership'
 import { BrandColours } from '@/pages/BrandColours'
+import { Bhog } from '@/pages/Bhog'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Procurement } from '@/pages/Procurement'
@@ -84,6 +85,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="tasks" element={<Tasks />} />
                 <Route path="procurement" element={<Procurement />} />
                 <Route path="procurement/master" element={<ProcurementMaster />} />
+                <Route path="bhog" element={<Bhog />} />
                 <Route path="membership" element={<Membership />} />
                 <Route path="events" element={<Events />} />
                 <Route path="nirghanto" element={<Nirghanto />} />

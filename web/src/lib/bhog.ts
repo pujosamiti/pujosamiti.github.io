@@ -1,0 +1,28 @@
+import type { BhogDayInput, BhogItemsInput, BhogMenuView } from '@pujosamiti/shared'
+import { useQuery } from '@tanstack/react-query'
+
+import { api } from '@/lib/api'
+import { useMemberState } from '@/lib/member'
+
+export function useBhog(year: number | null) {
+  const { memberState } = useMemberState()
+  return useQuery({
+    queryKey: ['bhog', year],
+    queryFn: () => api<BhogMenuView[]>(`/api/members/bhog?year=${year}`),
+    enabled: memberState?.status === 'member' && !!year,
+  })
+}
+
+const post = (path: string, body: unknown) =>
+  api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
+
+export const seedBhogDays = (year: number) =>
+  post('/api/members/bhog/days/seed', { year }) as Promise<{ created: number }>
+export const createBhogDay = (input: BhogDayInput) =>
+  post('/api/members/bhog/days', input) as Promise<{ id: string }>
+export const updateBhogDay = (id: string, input: BhogDayInput) => post(`/api/members/bhog/days/${id}`, input)
+export const deleteBhogDay = (id: string) => post(`/api/members/bhog/days/${id}/delete`, {})
+export const publishBhogDay = (id: string, published: boolean) =>
+  post(`/api/members/bhog/days/${id}/publish`, { published })
+export const saveBhogItems = (id: string, input: BhogItemsInput) =>
+  post(`/api/members/bhog/days/${id}/items`, input) as Promise<{ count: number }>
