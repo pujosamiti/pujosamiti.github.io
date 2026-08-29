@@ -363,6 +363,25 @@ export interface BhogMenuView {
   isPublished: boolean;
   sortOrder: number;
   items: BhogMenuItem[];
+  /** This member's household headcount for the day; null = not answered yet. */
+  myCount: number | null;
+  /** Everyone's plates so far, and how many households have answered. */
+  totalCount: number;
+  responses: number;
+}
+
+/** One member's headcounts for an event's published days — Durga Puja in one go. */
+export interface BhogRsvpInput {
+  eventId: EventId;
+  counts: { menuId: string; count: number }[];
+}
+
+/** One cell of the household-by-household count sheet (core view). */
+export interface BhogCountRow {
+  personId: string;
+  name: string;
+  menuId: string;
+  count: number;
 }
 
 export interface BhogDayInput {

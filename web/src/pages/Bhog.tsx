@@ -1,7 +1,7 @@
 import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
 import { menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Loader2, Pencil, Plus, Trash2, UtensilsCrossed } from 'lucide-react'
+import { CalendarCog, Loader2, Pencil, Plus, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
@@ -17,8 +17,10 @@ import {
   publishBhogDay,
   saveBhogItems,
   seedBhogDays,
+  submitBhogCounts,
   updateBhogDay,
   useBhog,
+  useBhogCounts,
 } from '@/lib/bhog'
 import { useMemberState } from '@/lib/member'
 import { usePujaDays } from '@/lib/pujaDays'
@@ -121,7 +123,16 @@ export function Bhog() {
       )}
       {days &&
         sections.map((e) => (
-          <EventSection key={e.id} event={e} season={season!} days={byEvent.get(e.id) ?? []} canEdit={canEdit} isAdmin={me.role === 'admin'} />
+          <EventSection
+            key={e.id}
+            event={e}
+            season={season!}
+            days={byEvent.get(e.id) ?? []}
+            canEdit={canEdit}
+            canRsvp={!archival}
+            isAdmin={me.role === 'admin'}
+            isCore={me.role !== 'member'}
+          />
         ))}
     </div>
   )
@@ -132,18 +143,25 @@ function EventSection({
   season,
   days,
   canEdit,
+  canRsvp,
   isAdmin,
+  isCore,
 }: {
   event: PujoEvent
   season: number
   days: BhogMenuView[]
   canEdit: boolean
+  canRsvp: boolean
   isAdmin: boolean
+  isCore: boolean
 }) {
   const queryClient = useQueryClient()
   const [adding, setAdding] = useState(false)
+  const [counting, setCounting] = useState(false)
+  const [showResponses, setShowResponses] = useState(false)
   const kindLabel = menuKindLabel(event.kind)
   const isDurga = event.kind === 'durga-pujo'
+  const publishedDays = days.filter((d) => d.isPublished)
   const { data: pujaDays } = usePujaDays(isDurga && canEdit ? event.year : null)
   const seed = useMutation({
     mutationFn: () => seedBhogDays(event.id),
@@ -156,24 +174,40 @@ function EventSection({
         <h2 className="text-lg font-semibold">{event.nameEn}</h2>
         <span className="text-sm text-muted-foreground">{event.nameBn}</span>
         <Badge variant="outline">{kindLabel}</Badge>
-        {canEdit && days.length === 0 && !isDurga && (
-          <Button size="sm" variant="outline" className="ml-auto" onClick={() => setAdding(!adding)}>
-            <Plus /> Add the {kindLabel.toLowerCase()}
-          </Button>
-        )}
-        {canEdit && (days.length > 0 || isDurga) && (
-          <span className="ml-auto flex gap-2">
-            {isAdmin && isDurga && days.length === 0 && (pujaDays?.days.length ?? 0) > 0 && (
-              <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
-                {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
-              </Button>
-            )}
-            <Button size="sm" variant="ghost" onClick={() => setAdding(!adding)}>
-              <Plus /> Add a day
+        <span className="ml-auto flex flex-wrap gap-2">
+          {canRsvp && publishedDays.length > 0 && (
+            <Button size="sm" onClick={() => setCounting(!counting)}>
+              <Users /> {publishedDays.some((d) => d.myCount != null) ? 'Update food count' : 'Give food count'}
             </Button>
-          </span>
-        )}
+          )}
+          {isCore && days.some((d) => d.responses > 0) && (
+            <Button size="sm" variant="outline" onClick={() => setShowResponses(!showResponses)}>
+              {showResponses ? 'Hide responses' : 'Responses'}
+            </Button>
+          )}
+          {canEdit && days.length === 0 && !isDurga && (
+            <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
+              <Plus /> Add the {kindLabel.toLowerCase()}
+            </Button>
+          )}
+          {canEdit && (days.length > 0 || isDurga) && (
+            <>
+              {isAdmin && isDurga && days.length === 0 && (pujaDays?.days.length ?? 0) > 0 && (
+                <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
+                  {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
+                </Button>
+              )}
+              <Button size="sm" variant="ghost" onClick={() => setAdding(!adding)}>
+                <Plus /> Add a day
+              </Button>
+            </>
+          )}
+        </span>
       </div>
+      {counting && canRsvp && publishedDays.length > 0 && (
+        <HeadcountForm event={event} season={season} days={publishedDays} onClose={() => setCounting(false)} />
+      )}
+      {showResponses && isCore && <ResponsesTable eventId={event.id} days={days} />}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
         <p className="text-sm text-muted-foreground">
           No Puja Days for {event.year} yet — finalise the nirghanto and seed them first (Nirghanto page).
@@ -243,6 +277,16 @@ function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; 
           <p className="text-sm text-muted-foreground">Menu to be announced.</p>
         )}
         {day.notes && <p className="text-sm text-shiuli">{day.notes}</p>}
+        {(day.myCount != null || day.responses > 0) && (
+          <p className="text-sm text-muted-foreground">
+            {day.myCount != null && (
+              <span className="font-medium text-foreground">Your count: {day.myCount}</span>
+            )}
+            {day.myCount != null && day.responses > 0 && ' · '}
+            {day.responses > 0 &&
+              `${day.totalCount} plate${day.totalCount === 1 ? '' : 's'} from ${day.responses} household${day.responses === 1 ? '' : 's'} so far`}
+          </p>
+        )}
         {canEdit && (
           <div className="flex flex-wrap gap-2 border-t pt-3">
             <Button size="sm" variant="outline" onClick={() => setEditing(true)}>
@@ -262,6 +306,123 @@ function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; 
         )}
       </CardContent>
     </Card>
+  )
+}
+
+/**
+ * The household's headcount for an event's published days, submitted in one
+ * go — the digital "Bhog Count" columns of the food-coupon-details sheet.
+ */
+function HeadcountForm({
+  event,
+  season,
+  days,
+  onClose,
+}: {
+  event: PujoEvent
+  season: number
+  days: BhogMenuView[]
+  onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [counts, setCounts] = useState<Record<string, string>>(() =>
+    Object.fromEntries(days.map((d) => [d.id, d.myCount != null ? String(d.myCount) : ''])),
+  )
+  const save = useMutation({
+    mutationFn: () =>
+      submitBhogCounts({
+        eventId: event.id,
+        counts: days
+          .filter((d) => counts[d.id]?.trim() !== '')
+          .map((d) => ({ menuId: d.id, count: Number(counts[d.id]) })),
+      }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['bhog', season] }),
+    onSuccess: onClose,
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Food count — {event.nameEn}</CardTitle>
+        <CardDescription>
+          How many from your household (5 yrs and older) will eat each day? 0 means not coming; leave a
+          day blank to answer later.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-end gap-3">
+          {days.map((d) => (
+            <Field key={d.id} label={`${d.label} · ${d.date.slice(5)}`}>
+              <input
+                className={inputCls}
+                type="number"
+                min="0"
+                max="99"
+                inputMode="numeric"
+                value={counts[d.id] ?? ''}
+                onChange={(e) => setCounts({ ...counts, [d.id]: e.target.value })}
+              />
+            </Field>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
+            {save.isPending ? <Loader2 className="animate-spin" /> : null} Save count
+          </Button>
+          <Button size="sm" variant="ghost" onClick={onClose}>
+            Cancel
+          </Button>
+        </div>
+        {save.error && <p className="text-sm text-destructive">{save.error.message}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The household-by-household count sheet (core) — rows people, columns days. */
+function ResponsesTable({ eventId, days }: { eventId: string; days: BhogMenuView[] }) {
+  const { data: rows, isPending } = useBhogCounts(eventId)
+  if (isPending)
+    return (
+      <div className="flex justify-center py-4">
+        <Loader2 className="size-5 animate-spin text-muted-foreground" aria-label="Loading" />
+      </div>
+    )
+  const people = new Map<string, { name: string; counts: Record<string, number> }>()
+  for (const r of rows ?? []) {
+    const p = people.get(r.personId) ?? { name: r.name, counts: {} }
+    p.counts[r.menuId] = r.count
+    people.set(r.personId, p)
+  }
+  return (
+    <div className="overflow-x-auto rounded-md border">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-accent/40 text-left">
+            <th className="px-3 py-2 font-medium">Household</th>
+            {days.map((d) => (
+              <th key={d.id} className="px-3 py-2 text-right font-medium">{d.label}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {[...people.values()].map((p) => (
+            <tr key={p.name} className="border-b last:border-0">
+              <td className="px-3 py-1.5">{p.name}</td>
+              {days.map((d) => (
+                <td key={d.id} className="px-3 py-1.5 text-right">{p.counts[d.id] ?? '—'}</td>
+              ))}
+            </tr>
+          ))}
+          <tr className="bg-accent/40 font-medium">
+            <td className="px-3 py-1.5">Total plates</td>
+            {days.map((d) => (
+              <td key={d.id} className="px-3 py-1.5 text-right">{d.totalCount}</td>
+            ))}
+          </tr>
+        </tbody>
+      </table>
+    </div>
   )
 }
 

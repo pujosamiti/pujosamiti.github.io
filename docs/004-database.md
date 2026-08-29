@@ -100,7 +100,7 @@ list**: `suggested_total` plus tithi × slot `procurement_suggestion` rows
 maps suggestions onto the year's actual days — both Ashtamis in an Adhik
 Diba year — never overwriting existing values.
 
-### Bhog & food menus: `bhog_menu`, `bhog_menu_item`
+### Bhog & food menus: `bhog_menu`, `bhog_menu_item`, `bhog_rsvp`
 
 **One menu per calendar DATE per EVENT.** Five occasions carry menus each
 season (1 Jul → 30 Jun): Durga Pujo is multi-day — admin-seeded from the
@@ -112,8 +112,14 @@ Menu" — a naming difference the UI carries (`menuKindLabel` in shared), not
 the schema. Each day carries bilingual dish rows (`bhog_menu_item`, cascade),
 a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and an
 `is_published` flag: drafts are core-editor-only, published days are visible
-to every member. Only the current season is writable. RSVP headcounts and
-bhog coupons will hang off this row.
+to every member. Only the current season is writable.
+
+`bhog_rsvp` is the **food count** — the digital food-coupon-details sheet:
+one row per (menu day × person), the signed-in member answering for their
+household ("Bhog Count, 5+ yrs"), unique-indexed, 0 a valid answer. Any
+active member submits — Durga Puja's days in one go — and resubmitting
+updates; core members read the household-by-household sheet. Bhog coupons
+will build on these counts.
 
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
@@ -195,7 +201,8 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0004 | `0004_person-alt-email.sql` | `person.alt_email` (second sign-in address) |
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
 | 0006 | `0006_puja-days-procurement.sql` | Puja Days (`puja_day`, `event.nirghanto_finalized_on`) + the full procurement suite (catalog with vendor names & master-list suggestions, item-years with due date/time, puja-day-linked delivery columns, quantity cells) |
-| 0007 | `0007_bhog-menu.sql` | Bhog menu (`bhog_menu` per calendar date + `bhog_menu_item` dishes) |
+| 0007 | `0007_bhog-menu.sql` | Bhog & food menus (`bhog_menu` per event per calendar date + `bhog_menu_item` dishes) |
+| 0008 | `0008_bhog-rsvp.sql` | Food count (`bhog_rsvp`, unique per menu day × person) |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

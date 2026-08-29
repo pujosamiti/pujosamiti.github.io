@@ -1,4 +1,4 @@
-import type { BhogDayInput, BhogItemsInput, BhogMenuView } from '@pujosamiti/shared'
+import type { BhogCountRow, BhogDayInput, BhogItemsInput, BhogMenuView, BhogRsvpInput } from '@pujosamiti/shared'
 import { useQuery } from '@tanstack/react-query'
 
 import { api } from '@/lib/api'
@@ -26,3 +26,15 @@ export const publishBhogDay = (id: string, published: boolean) =>
   post(`/api/members/bhog/days/${id}/publish`, { published })
 export const saveBhogItems = (id: string, input: BhogItemsInput) =>
   post(`/api/members/bhog/days/${id}/items`, input) as Promise<{ count: number }>
+export const submitBhogCounts = (input: BhogRsvpInput) =>
+  post('/api/members/bhog/rsvp', input) as Promise<{ saved: number }>
+
+/** The household-by-household count sheet for one event (core). */
+export function useBhogCounts(eventId: string | null) {
+  const { memberState } = useMemberState()
+  return useQuery({
+    queryKey: ['bhog-counts', eventId],
+    queryFn: () => api<BhogCountRow[]>(`/api/members/bhog/counts?eventId=${eventId}`),
+    enabled: memberState?.status === 'member' && !!eventId,
+  })
+}

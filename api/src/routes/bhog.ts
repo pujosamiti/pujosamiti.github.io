@@ -1,5 +1,5 @@
-import type { ApiResult, BhogDayInput, BhogItemsInput, BhogMenuView, Me } from '@pujosamiti/shared'
-import { asc, eq, inArray } from 'drizzle-orm'
+import type { ApiResult, BhogCountRow, BhogDayInput, BhogItemsInput, BhogMenuView, BhogRsvpInput, Me } from '@pujosamiti/shared'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -60,22 +60,97 @@ bhogRoutes.get('/', async (c) => {
         .where(inArray(schema.bhogMenuItem.menuId, visible.map((d) => d.id)))
         .orderBy(asc(schema.bhogMenuItem.sortOrder))
     : []
-  const view: BhogMenuView[] = visible.map((d) => ({
-    id: d.id,
-    eventId: d.eventId as BhogMenuView['eventId'],
-    pujaDayId: d.pujaDayId,
-    date: d.date,
-    label: d.label,
-    labelBn: d.labelBn,
-    perPlateCost: d.perPlateCost,
-    notes: d.notes,
-    isPublished: d.isPublished,
-    sortOrder: d.sortOrder,
-    items: items
-      .filter((i) => i.menuId === d.id)
-      .map((i) => ({ id: i.id, title: i.title, titleBn: i.titleBn, sortOrder: i.sortOrder })),
-  }))
+  const rsvps = visible.length
+    ? await db
+        .select()
+        .from(schema.bhogRsvp)
+        .where(inArray(schema.bhogRsvp.menuId, visible.map((d) => d.id)))
+    : []
+  const view: BhogMenuView[] = visible.map((d) => {
+    const dayRsvps = rsvps.filter((r) => r.menuId === d.id)
+    return {
+      id: d.id,
+      eventId: d.eventId as BhogMenuView['eventId'],
+      pujaDayId: d.pujaDayId,
+      date: d.date,
+      label: d.label,
+      labelBn: d.labelBn,
+      perPlateCost: d.perPlateCost,
+      notes: d.notes,
+      isPublished: d.isPublished,
+      sortOrder: d.sortOrder,
+      items: items
+        .filter((i) => i.menuId === d.id)
+        .map((i) => ({ id: i.id, title: i.title, titleBn: i.titleBn, sortOrder: i.sortOrder })),
+      myCount: dayRsvps.find((r) => r.personId === me.personId)?.count ?? null,
+      totalCount: dayRsvps.reduce((s, r) => s + r.count, 0),
+      responses: dayRsvps.length,
+    }
+  })
   return c.json(ok(view))
+})
+
+/**
+ * Food count: any active member submits their household's headcount for an
+ * event's PUBLISHED days — Durga Puja in one go, single-meal events as one
+ * row. 0 is a valid answer; resubmitting updates.
+ */
+bhogRoutes.post('/rsvp', async (c) => {
+  const body = (await c.req.json()) as BhogRsvpInput
+  const me = c.get('me')
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, body.eventId ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (seasonOf(ev.startsOn) !== currentSeason())
+    return c.json({ ok: false, error: 'this season is closed — counts are the record now' }, 400)
+  const menus = await db.select().from(schema.bhogMenu).where(eq(schema.bhogMenu.eventId, ev.id))
+  const publishable = new Map(menus.filter((m) => m.isPublished).map((m) => [m.id, m]))
+  const now = new Date().toISOString()
+  let saved = 0
+  for (const entry of body.counts ?? []) {
+    if (!publishable.has(entry.menuId)) continue
+    const count = Math.floor(Number(entry.count))
+    if (!Number.isFinite(count) || count < 0 || count > 99) continue
+    const [existing] = await db
+      .select()
+      .from(schema.bhogRsvp)
+      .where(and(eq(schema.bhogRsvp.menuId, entry.menuId), eq(schema.bhogRsvp.personId, me.personId)))
+      .limit(1)
+    if (existing) await db.update(schema.bhogRsvp).set({ count, updatedAt: now }).where(eq(schema.bhogRsvp.id, existing.id))
+    else
+      await db.insert(schema.bhogRsvp).values({
+        id: crypto.randomUUID(),
+        menuId: entry.menuId,
+        personId: me.personId,
+        count,
+        updatedAt: now,
+      })
+    saved++
+  }
+  return c.json(ok({ saved }))
+})
+
+/** The household-by-household count sheet for one event (core). */
+bhogRoutes.get('/counts', async (c) => {
+  const me = c.get('me')
+  if (!canEdit(me)) return c.json({ ok: false, error: 'core members only' }, 403)
+  const eventId = c.req.query('eventId')
+  if (!eventId) return c.json({ ok: false, error: 'eventId query param required' }, 400)
+  const db = drizzle(c.env.DB, { schema })
+  const menus = await db.select({ id: schema.bhogMenu.id }).from(schema.bhogMenu).where(eq(schema.bhogMenu.eventId, eventId))
+  if (menus.length === 0) return c.json(ok([] as BhogCountRow[]))
+  const rows = await db
+    .select({
+      personId: schema.bhogRsvp.personId,
+      name: schema.person.displayName,
+      menuId: schema.bhogRsvp.menuId,
+      count: schema.bhogRsvp.count,
+    })
+    .from(schema.bhogRsvp)
+    .innerJoin(schema.person, eq(schema.person.id, schema.bhogRsvp.personId))
+    .where(inArray(schema.bhogRsvp.menuId, menus.map((m) => m.id)))
+    .orderBy(asc(schema.person.displayName))
+  return c.json(ok(rows as BhogCountRow[]))
 })
 
 /** Tithis that get bhog by default — Devi Baran and Bodhon days don't. */

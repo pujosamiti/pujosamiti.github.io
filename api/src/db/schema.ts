@@ -519,3 +519,21 @@ export const bhogMenuItem = sqliteTable('bhog_menu_item', {
   titleBn: text('title_bn'), // "খিচুড়ি"
   sortOrder: integer('sort_order').notNull().default(1000),
 })
+
+/**
+ * Food count: one household's headcount for one menu day, keyed by the
+ * signed-in member's person row (the digital food-coupon-details sheet —
+ * one row per family per day, "Bhog Count (5+ yrs)"). Any active member
+ * responds for their household; 0 is a valid answer ("not coming").
+ */
+export const bhogRsvp = sqliteTable('bhog_rsvp', {
+  id: text('id').primaryKey(),
+  menuId: text('menu_id')
+    .notNull()
+    .references(() => bhogMenu.id, { onDelete: 'cascade' }),
+  personId: text('person_id')
+    .notNull()
+    .references(() => person.id, { onDelete: 'cascade' }),
+  count: integer('count').notNull(),
+  updatedAt: text('updated_at').notNull(), // ISO date-time of the last change
+})
