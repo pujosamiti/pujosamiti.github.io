@@ -62,7 +62,22 @@ export function PersonPicker({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex items-center gap-2">
-        <SearchSelect align="left" options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />
+        <SearchSelect
+          align="left"
+          options={options}
+          value={value}
+          onChange={onChange}
+          ariaLabel={ariaLabel}
+          onCreate={
+            allowCreate
+              ? (typed) => {
+                  setName(typed)
+                  setCreating(true)
+                }
+              : undefined
+          }
+          createLabel={(typed) => `New person “${typed}”`}
+        />
         {allowCreate && (
           <Button type="button" size="sm" variant="outline" onClick={() => setCreating(!creating)}>
             <UserPlus /> New

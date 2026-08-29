@@ -1,4 +1,4 @@
-import { Check, ChevronsUpDown, Search } from 'lucide-react'
+import { Check, ChevronsUpDown, Search, UserPlus } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { inputCls } from '@/components/form'
@@ -23,6 +23,8 @@ export function SearchSelect({
   ariaLabel,
   align = 'right',
   className,
+  onCreate,
+  createLabel = (query) => `New: “${query}”`,
 }: {
   options: SearchSelectOption[]
   value: string | null
@@ -30,6 +32,12 @@ export function SearchSelect({
   ariaLabel: string
   align?: 'left' | 'right'
   className?: string
+  /**
+   * Counter flow: whenever something is typed, the last row offers creating
+   * it — so "search, not found, add" is one motion with nothing retyped.
+   */
+  onCreate?: (query: string) => void
+  createLabel?: (query: string) => string
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -40,6 +48,8 @@ export function SearchSelect({
   const selected = options.find((o) => o.value === value) ?? null
   const needle = q.trim().toLowerCase()
   const shown = needle ? options.filter((o) => o.label.toLowerCase().includes(needle)) : options
+  const creatable = !!onCreate && q.trim().length > 0
+  const rows = shown.length + (creatable ? 1 : 0)
 
   useEffect(() => {
     if (!open) return
@@ -67,22 +77,28 @@ export function SearchSelect({
     setOpen(false)
   }
 
+  const createNow = () => {
+    onCreate?.(q.trim())
+    setOpen(false)
+  }
+
   const onKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowDown') {
       e.preventDefault()
-      setHi((h) => Math.min(h + 1, shown.length - 1))
+      setHi((h) => Math.min(h + 1, rows - 1))
     } else if (e.key === 'ArrowUp') {
       e.preventDefault()
       setHi((h) => Math.max(h - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
       if (shown[hi]) pick(shown[hi].value)
+      else if (creatable) createNow()
     } else if (e.key === 'Escape') {
       setOpen(false)
     }
   }
 
-  const highlighted = Math.min(hi, Math.max(0, shown.length - 1))
+  const highlighted = Math.min(hi, Math.max(0, rows - 1))
 
   return (
     <div ref={rootRef} className={cn('relative', className)}>
@@ -120,7 +136,9 @@ export function SearchSelect({
             />
           </div>
           <ul role="listbox" aria-label={ariaLabel} className="max-h-60 overflow-auto p-1">
-            {shown.length === 0 && <li className="px-2 py-1.5 text-sm text-muted-foreground">No match</li>}
+            {shown.length === 0 && !creatable && (
+              <li className="px-2 py-1.5 text-sm text-muted-foreground">No match</li>
+            )}
             {shown.map((o, i) => (
               <li key={o.value} role="option" aria-selected={o.value === value}>
                 <button
@@ -140,6 +158,23 @@ export function SearchSelect({
                 </button>
               </li>
             ))}
+            {creatable && (
+              <li role="option" aria-selected={false}>
+                <button
+                  type="button"
+                  className={cn(
+                    'flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-left text-sm font-medium',
+                    highlighted === shown.length && 'bg-accent text-accent-foreground',
+                    shown.length === 0 && 'text-primary',
+                  )}
+                  onMouseEnter={() => setHi(shown.length)}
+                  onClick={createNow}
+                >
+                  <UserPlus className="size-4 shrink-0" aria-hidden="true" />
+                  {createLabel(q.trim())}
+                </button>
+              </li>
+            )}
           </ul>
         </div>
       )}
