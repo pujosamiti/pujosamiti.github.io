@@ -827,17 +827,20 @@ function PersonSelect({
   coreOnly = false,
   exclude = [],
   everyone = false,
+  allowCreate = false,
 }: {
   value: string | null
   onChange: (v: string) => void
   ariaLabel: string
   coreOnly?: boolean
   exclude?: string[]
-  /** Counter mode: the whole roll (ex/non-members, inactive) + walk-up creation. */
+  /** Counter mode: the whole roll (ex/non-members, inactive). */
   everyone?: boolean
+  /** Offer walk-up creation (contributions only). */
+  allowCreate?: boolean
 }) {
   const { data: people } = useMembersLite()
-  if (everyone) return <PersonPicker value={value} onChange={onChange} ariaLabel={ariaLabel} allowCreate />
+  if (everyone) return <PersonPicker value={value} onChange={onChange} ariaLabel={ariaLabel} allowCreate={allowCreate} />
   const options = (people ?? [])
     .filter((p) => (!coreOnly || p.tier === 'core') && !exclude.includes(p.id))
     .map((p) => ({ value: p.id, label: p.name }))
@@ -950,8 +953,13 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 
   const switchKind = (k: LedgerKind) => {
     setKind(k)
-    setCategory(k === 'contribution' ? 'subscription' : '')
+    setCategory(k === 'contribution' ? 'subscription' : k === 'expense' ? Object.keys(EXPENSE_TAXONOMY)[0] : '')
     setSubCategory('')
+    // Nothing carries over between kinds — a stale contributor must not
+    // become an accidental "reimbursed to" on an expense.
+    setPersonId(null)
+    setCounterparty('')
+    if (k !== 'transfer') setToWalletId(null)
   }
 
   return (
@@ -996,27 +1004,50 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
             />
           </Field>
           <CategoryFields {...{ kind, category, setCategory, subCategory, setSubCategory }} />
-          {kind !== 'transfer' && (
+          {kind === 'contribution' && (
             <>
-              <Field label={kind === 'contribution' ? 'Contributor (member)' : 'Member (if applicable)'}>
-                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Contributor" everyone />
+              <Field label="Contributor">
+                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Contributor" everyone allowCreate />
               </Field>
-              <Field label={kind === 'contribution' ? 'Or from (e.g. Hundi)' : 'Vendor / paid to'}>
+              <Field label="Or from (e.g. Hundi)">
                 <input
                   className={inputCls}
                   value={counterparty}
                   onChange={(e) => setCounterparty(e.target.value)}
-                  placeholder={kind === 'contribution' ? 'Hundi' : 'Calcutta Sweets'}
+                  placeholder="Hundi"
                 />
               </Field>
             </>
           )}
-          <Field label={kind === 'transfer' ? 'From wallet' : 'Wallet (who holds/paid the cash)'}>
-            <PersonSelect value={walletId} onChange={setWalletId} ariaLabel="Wallet" />
+          {kind === 'expense' && (
+            <>
+              <Field label="Vendor / paid to">
+                <input
+                  className={inputCls}
+                  value={counterparty}
+                  onChange={(e) => setCounterparty(e.target.value)}
+                  placeholder="Calcutta Sweets"
+                />
+              </Field>
+              <Field label="Reimbursed to (member) — when paying a member back">
+                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Reimbursed to" everyone />
+              </Field>
+            </>
+          )}
+          <Field
+            label={
+              kind === 'transfer'
+                ? 'From wallet (core member)'
+                : kind === 'contribution'
+                  ? 'Received by — wallet (core member)'
+                  : 'Paid from — wallet (core member)'
+            }
+          >
+            <PersonSelect value={walletId} onChange={setWalletId} ariaLabel="Wallet" coreOnly />
           </Field>
           {kind === 'transfer' && (
-            <Field label="To wallet">
-              <PersonSelect value={toWalletId} onChange={setToWalletId} ariaLabel="To wallet" exclude={walletId ? [walletId] : []} />
+            <Field label="To wallet (core member)">
+              <PersonSelect value={toWalletId} onChange={setToWalletId} ariaLabel="To wallet" coreOnly exclude={walletId ? [walletId] : []} />
             </Field>
           )}
           <Field label="Notes">
@@ -1305,7 +1336,7 @@ function PayPledgeInline({ pledgeId, onDone }: { pledgeId: string; onDone: () =>
   })
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <PersonSelect value={walletId} onChange={setWalletId} ariaLabel="Received by (wallet)" />
+      <PersonSelect value={walletId} onChange={setWalletId} ariaLabel="Received by (wallet)" coreOnly />
       <Button size="sm" disabled={!walletId || save.isPending} onClick={() => save.mutate()}>
         Received
       </Button>
