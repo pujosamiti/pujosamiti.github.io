@@ -14,7 +14,7 @@ import type {
   SpendRow,
   WalletBalance,
 } from '@pujosamiti/shared'
-import { CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
+import { isCoreRole, CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -59,7 +59,7 @@ const MEMBER_OPEN: [string, RegExp][] = [
 ]
 
 ledgerRoutes.use('*', async (c, next) => {
-  if (c.get('me').role === 'member') {
+  if (!isCoreRole(c.get('me').role)) {
     const open = MEMBER_OPEN.some(([method, path]) => method === c.req.method && path.test(c.req.path))
     if (!open) return c.json({ ok: false, error: 'core members only' }, 403)
   }
@@ -501,7 +501,7 @@ ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {
   if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
   // Members may pledge, so they may take it back — but only their own.
   const me = c.get('me')
-  if (me.role === 'member' && pl.personId !== me.personId)
+  if (!isCoreRole(me.role) && pl.personId !== me.personId)
     return c.json({ ok: false, error: 'you can only cancel your own pledge' }, 403)
   if (pl.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — cancellations only for the active pujo year' }, 400)

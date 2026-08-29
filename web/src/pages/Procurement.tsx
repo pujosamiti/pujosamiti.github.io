@@ -5,7 +5,7 @@ import type {
   ProcurementSlot,
   ProcurementStatus,
 } from '@pujosamiti/shared'
-import { PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
+import { isCoreRole, PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarCog, Check, ChevronDown, ListChecks, Loader2, Minus, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router'
@@ -100,7 +100,7 @@ export function Procurement() {
     )
   }
 
-  const canEdit = me.role !== 'member' && !archival
+  const canEdit = isCoreRole(me.role) && !archival
   const days = data?.days ?? []
   const all = data?.items ?? []
   const selectedDay = days.find((d) => d.id === dayId) ?? null

@@ -1,5 +1,5 @@
 import type { ApiResult, Me, TaskMasterInput, TaskPhase, TaskView, TaskYearInput } from '@pujosamiti/shared'
-import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
+import { isCoreRole, TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { and, asc, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -23,7 +23,7 @@ const PHASES: TaskPhase[] = ['todo', 'in_progress', 'completed']
  */
 export const taskRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
-const canEdit = (me: Me) => me.role !== 'member'
+const canEdit = (me: Me) => isCoreRole(me.role)
 
 taskRoutes.get('/', async (c) => {
   const year = Number(c.req.query('year'))

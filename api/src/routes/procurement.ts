@@ -11,7 +11,7 @@ import type {
   ProcurementSuggestion,
   ProcurementView,
 } from '@pujosamiti/shared'
-import { PROCUREMENT_SLOTS } from '@pujosamiti/shared'
+import { isCoreRole, PROCUREMENT_SLOTS } from '@pujosamiti/shared'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -34,7 +34,7 @@ function ok<T>(data: T): ApiResult<T> {
  */
 export const procurementRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
-const canEdit = (me: Me) => me.role !== 'member'
+const canEdit = (me: Me) => isCoreRole(me.role)
 const STATUSES: ProcurementStatus[] = ['pending', 'partial', 'done']
 
 const asSlot = (v: unknown): ProcurementSlot =>

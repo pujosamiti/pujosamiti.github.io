@@ -1,5 +1,5 @@
 import type { BhogMenuView, PujoEvent } from '@pujosamiti/shared'
-import { menuKindLabel, seasonOf } from '@pujosamiti/shared'
+import { isCoreRole, menuKindLabel, seasonOf } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, UtensilsCrossed } from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
@@ -68,7 +68,7 @@ export function Bhog() {
     )
   }
 
-  const canEdit = me.role !== 'member' && !archival
+  const canEdit = isCoreRole(me.role) && !archival
   // The season's occasions in calendar order; members see only those with
   // something published, editors see every occasion as a workspace.
   const seasonEvents = (events ?? [])
@@ -131,7 +131,7 @@ export function Bhog() {
             canEdit={canEdit}
             canRsvp={!archival}
             isAdmin={me.role === 'admin'}
-            isCore={me.role !== 'member'}
+            isCore={isCoreRole(me.role)}
           />
         ))}
     </div>

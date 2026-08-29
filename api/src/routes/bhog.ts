@@ -1,4 +1,5 @@
 import type { ApiResult, BhogCountRow, BhogDayInput, BhogItemsInput, BhogMenuView, BhogRsvpInput, Me } from '@pujosamiti/shared'
+import { isCoreRole } from '@pujosamiti/shared'
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -22,7 +23,7 @@ function ok<T>(data: T): ApiResult<T> {
  */
 export const bhogRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
-const canEdit = (me: Me) => me.role !== 'member'
+const canEdit = (me: Me) => isCoreRole(me.role)
 
 type DB = ReturnType<typeof drizzle<typeof schema>>
 

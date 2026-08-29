@@ -1,5 +1,5 @@
 import type { AdminEventInput, EventKind, PujoEvent } from '@pujosamiti/shared'
-import { EVENT_KINDS } from '@pujosamiti/shared'
+import { isCoreRole, EVENT_KINDS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Loader2, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -27,7 +27,7 @@ export function Events() {
   const me = memberState?.status === 'member' ? memberState.me : null
   const [q, setQ] = useState('')
 
-  const allowed = me && me.role !== 'member'
+  const allowed = me && isCoreRole(me.role)
   const canEdit = me?.role === 'admin'
 
   const { data: events, error } = useQuery({

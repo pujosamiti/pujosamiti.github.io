@@ -27,10 +27,11 @@ export const memberRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
  * person whose tier isn't non_member. Enforcement lives here on the server —
  * hiding routes in the React bundle protects nothing.
  *
- * OPEN MEMBERSHIP (until 15 Oct 2026, see shared): any active person gets in
- * and acts as core, whatever their stored tier — approval is deferred, not
- * removed. The stored tier stays authoritative for the admin roll and takes
- * over when the window closes.
+ * OPEN MEMBERSHIP (until 15 Oct 2026, see shared): an active person whose
+ * tier is still non_member gets in as NEWSIGNIN — view-only, with exactly
+ * one write allowed: their household's food count. Admin activation grants
+ * the real role instantly; un-activated people fall back to 403 when the
+ * window closes.
  */
 memberRoutes.use('*', async (c, next) => {
   const auth = createAuth(c.env)
@@ -47,19 +48,29 @@ memberRoutes.use('*', async (c, next) => {
   if (!p || !p.isActive || (!open && p.tier === 'non_member'))
     return c.json({ ok: false, error: 'not a samiti member' }, 403)
 
+  const role: Me['role'] = p.isAdmin
+    ? 'admin'
+    : p.isFinAdmin
+      ? 'fin_admin'
+      : p.tier === 'core'
+        ? 'coremember'
+        : p.tier === 'member'
+          ? 'member'
+          : 'newsignin'
+  // NewSignIn is view-only except the food count — enforced centrally so no
+  // individual write route needs to remember it.
+  if (role === 'newsignin' && c.req.method !== 'GET' && !c.req.path.endsWith('/bhog/rsvp'))
+    return c.json(
+      { ok: false, error: 'view-only until an admin activates your membership — you can still submit your food count' },
+      403,
+    )
   c.set('me', {
     id: session.user.id,
     personId: p.id,
     name: p.displayName,
     email: session.user.email,
     image: session.user.image ?? null,
-    role: p.isAdmin
-      ? 'admin'
-      : p.isFinAdmin
-        ? 'fin_admin'
-        : open || p.tier === 'core'
-          ? 'coremember'
-          : 'member',
+    role,
     portfolio: p.portfolio,
   })
   await next()

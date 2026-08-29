@@ -1,5 +1,5 @@
 import type { ProcurementMasterItem, ProcurementSlot } from '@pujosamiti/shared'
-import { PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
+import { isCoreRole, PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Check, ChevronDown, Loader2, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -51,7 +51,7 @@ export function ProcurementMaster() {
     )
   }
 
-  const canEdit = me.role !== 'member'
+  const canEdit = isCoreRole(me.role)
   const all = items ?? []
   const categories = [...new Set(all.map((i) => i.category))]
 

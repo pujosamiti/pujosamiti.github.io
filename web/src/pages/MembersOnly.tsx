@@ -1,3 +1,4 @@
+import { isCoreRole } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, Clock, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
@@ -34,7 +35,7 @@ export function MembersOnly() {
   // A member never gets into the core sections, so don't dangle them — they
   // just read as a list of locked doors. Signed-out visitors still see the
   // full set with its gate labels, which is what tells them what membership is for.
-  const sections = memberSections.filter((s) => !(s.coreOnly && me?.role === 'member'))
+  const sections = memberSections.filter((s) => !(s.coreOnly && me && !isCoreRole(me.role)))
 
   const endSession = async () => {
     await signOut()
@@ -54,7 +55,7 @@ export function MembersOnly() {
           </CardHeader>
           <CardContent className="flex items-center justify-between gap-3">
             <div className="flex gap-2">
-              <Badge>{me.role}</Badge>
+              <Badge>{me.role === 'newsignin' ? 'new sign-in' : me.role}</Badge>
               {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
             </div>
             <div className="flex gap-2">
@@ -124,9 +125,20 @@ export function MembersOnly() {
         </Card>
       )}
 
+      {me?.role === 'newsignin' && (
+        <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
+          You're in with view access while an admin activates your membership — and you can already
+          give your household's food count on the{' '}
+          <Link to="/bhog" className="underline">
+            Bhog &amp; Food Menu
+          </Link>{' '}
+          page.
+        </p>
+      )}
+
       <div className="grid gap-3 sm:grid-cols-2">
         {sections.map(({ icon: Icon, title, desc, gate, to, coreOnly, tone }) => {
-          const unlocked = !!me && !!to && (!coreOnly || me.role !== 'member')
+          const unlocked = !!me && !!to && (!coreOnly || isCoreRole(me.role))
           const suffix = !me ? ` — ${gate}` : unlocked ? '' : coreOnly ? ' — Core members only' : ' — coming soon'
           const card = (
             <Card

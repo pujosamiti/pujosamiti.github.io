@@ -132,7 +132,17 @@ export interface Post extends PostSummary {
  * 'fin_admin' runs the money — ledger, budgets, sponsorship pricing, claim
  * rejection — without touching membership. 'admin' holds everything.
  */
-export type MemberRole = 'member' | 'coremember' | 'fin_admin' | 'admin';
+/**
+ * newsignin: signed in and profile completed, but not yet activated by an
+ * admin (person: origin='self', tier='non_member', active). View-only member
+ * access plus ONE write — their household's food count. Computed per-request,
+ * so an admin activation upgrades them instantly.
+ */
+export type MemberRole = 'newsignin' | 'member' | 'coremember' | 'fin_admin' | 'admin';
+
+/** Roles that curate content; member and newsignin are consumers. */
+export const isCoreRole = (r: MemberRole): boolean =>
+  r === 'coremember' || r === 'fin_admin' || r === 'admin';
 
 export interface Me {
   id: string;
@@ -415,11 +425,13 @@ export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
 
 /**
  * OPEN MEMBERSHIP window for the 2026 season: everyone who signs in and
- * completes their profile acts as a CORE member through this IST date,
- * without waiting for admin activation. Stored tiers are untouched — new
- * sign-ins still register as origin='self' / tier='non_member', so the
- * admin's "Pending activation" list keeps recording who hasn't been
- * approved, and the tiers admins set take over when the window closes.
+ * completes their profile gets in immediately as a NEWSIGNIN (view-only +
+ * food count) through this IST date, without waiting for admin activation.
+ * Stored tiers are untouched — new sign-ins register as origin='self' /
+ * tier='non_member', so the admin's "Pending activation" list keeps
+ * recording who hasn't been approved; activating someone there grants their
+ * real role instantly, and un-activated people lose access when the window
+ * closes.
  */
 export const OPEN_MEMBERSHIP_UNTIL = '2026-10-15'; // inclusive
 export const openMembershipActive = (): boolean =>

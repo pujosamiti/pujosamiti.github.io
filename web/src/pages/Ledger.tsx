@@ -13,7 +13,7 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -94,7 +94,7 @@ function CorePage({
       </div>
     )
   }
-  if (!me || (me.role === 'member' && !members)) {
+  if (!me || (!isCoreRole(me.role) && !members)) {
     return (
       <Card className="mx-auto max-w-md">
         <CardHeader>

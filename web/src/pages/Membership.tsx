@@ -1,5 +1,5 @@
 import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, FamilyTier } from '@pujosamiti/shared'
-import { openMembershipActive } from '@pujosamiti/shared'
+import { isCoreRole, openMembershipActive } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, UserMinus, Users } from 'lucide-react'
@@ -39,7 +39,7 @@ export function Membership() {
     return () => clearTimeout(t)
   }, [q])
 
-  const allowed = me && me.role !== 'member'
+  const allowed = me && isCoreRole(me.role)
   const canEdit = me?.role === 'admin'
 
   const { data: people, isPending: peoplePending, error } = useQuery({
@@ -99,8 +99,10 @@ export function Membership() {
       {openMembershipActive() && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
           <span className="font-medium text-foreground">Open membership until 15 Oct 2026</span> — everyone
-          who signs in and completes their profile acts as a core member for now. New sign-ins still land
-          under Pending activation; the tiers you set here take over when the window closes.
+          who signs in and completes their profile gets in as a <span className="font-medium text-foreground">new
+          sign-in</span>: view access plus their food count, nothing else. They land under Pending
+          activation; setting a tier here upgrades them instantly, and the un-activated lose access when
+          the window closes.
         </p>
       )}
 

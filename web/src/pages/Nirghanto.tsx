@@ -1,4 +1,5 @@
 import type { AdminTimetableInput, PujoEvent, TimeTableEntry } from '@pujosamiti/shared'
+import { isCoreRole } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CalendarDays, Check, Loader2, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
@@ -21,7 +22,7 @@ export function Nirghanto() {
   const me = memberState?.status === 'member' ? memberState.me : null
   const [q, setQ] = useState('')
 
-  const allowed = me && me.role !== 'member'
+  const allowed = me && isCoreRole(me.role)
   const canEdit = me?.role === 'admin'
   const { data: events } = useEvents()
 

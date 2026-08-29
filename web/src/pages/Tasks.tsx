@@ -1,5 +1,5 @@
 import type { MemberLite, TaskCheck, TaskPhase, TaskView } from '@pujosamiti/shared'
-import { TASK_MAX_OWNERS } from '@pujosamiti/shared'
+import { isCoreRole, TASK_MAX_OWNERS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, CalendarCheck, EyeOff, HandHelping, Loader2, Pencil, Plus, Search, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -79,7 +79,7 @@ export function Tasks() {
     )
   }
 
-  const canEdit = me.role !== 'member' && !archival
+  const canEdit = isCoreRole(me.role) && !archival
   const active = (tasks ?? []).filter((t) => !t.skipped)
   const skipped = (tasks ?? []).filter((t) => t.skipped)
   const categories = [...new Set(active.map((t) => t.category))]
@@ -388,7 +388,7 @@ function TaskForm({
   const queryClient = useQueryClient()
   const { memberState } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
-  const masterEditable = me?.role !== 'member'
+  const masterEditable = !!me && isCoreRole(me.role)
 
   const [category, setCategory] = useState(task?.category ?? '')
   const [title, setTitle] = useState(task?.title ?? '')

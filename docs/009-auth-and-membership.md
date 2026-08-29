@@ -54,14 +54,18 @@ Every `/api/members/*` request passes the middleware at the top of
 Hiding routes in the React bundle protects nothing — enforcement lives here.
 
 **⏳ OPEN MEMBERSHIP window (until 15 Oct 2026 IST, inclusive)** —
-`OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active:
-any `is_active` person passes the gate regardless of tier, and everyone's
-*effective* role is at least `coremember` (admin/fin_admin still win).
-Onboarding skips "awaiting activation" — completing the profile is enough.
-Stored tiers are untouched: new sign-ins still register `origin='self'` /
-`tier='non_member'`, keep appearing under **Pending activation** on
-/membership, and the tiers admins set there take over the moment the window
-closes. To end the window early, move the date back and deploy.
+`OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active,
+an `is_active` person whose tier is still `non_member` passes the gate with
+the computed role **`newsignin`**: member-level views, and exactly ONE write —
+their household's food count (enforced centrally in the members middleware:
+any non-GET except `/bhog/rsvp` → 403). Onboarding skips "awaiting
+activation" — completing the profile is enough. Stored tiers are untouched:
+new sign-ins register `origin='self'` / `tier='non_member'`, appear under
+**Pending activation** on /membership, and an admin setting their tier
+upgrades them instantly (roles are computed per-request). Un-activated
+people fall back to 403 when the window closes; to end it early, move the
+date back and deploy. Role checks throughout the code use `isCoreRole()` —
+never `role !== 'member'`, which `newsignin` would slip past.
 
 ## 4. Roles
 
@@ -73,6 +77,7 @@ admin       is_admin = true            — everything
 fin_admin   is_fin_admin = true        — everything money, without the membership roll
 coremember  tier = 'core'              — committee: task planning, admin READS
 member      tier = 'member'            — member content
+newsignin   tier = 'non_member', open  — member VIEWS + food count only (window, §3)
 (non_member / inactive / no row        — public content only)
 ```
 
