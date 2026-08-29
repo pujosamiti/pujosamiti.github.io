@@ -53,6 +53,16 @@ Every `/api/members/*` request passes the middleware at the top of
 
 Hiding routes in the React bundle protects nothing — enforcement lives here.
 
+**⏳ OPEN MEMBERSHIP window (until 15 Oct 2026 IST, inclusive)** —
+`OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active:
+any `is_active` person passes the gate regardless of tier, and everyone's
+*effective* role is at least `coremember` (admin/fin_admin still win).
+Onboarding skips "awaiting activation" — completing the profile is enough.
+Stored tiers are untouched: new sign-ins still register `origin='self'` /
+`tier='non_member'`, keep appearing under **Pending activation** on
+/membership, and the tiers admins set there take over the moment the window
+closes. To end the window early, move the date back and deploy.
+
 ## 4. Roles
 
 Computed per-request from the person row, in priority order

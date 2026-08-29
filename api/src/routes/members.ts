@@ -1,4 +1,5 @@
 import type { AccountsSummary, ApiResult, CollectorWallet, Me, MemberLite, PujaDaysView, PujoEvent } from '@pujosamiti/shared'
+import { openMembershipActive } from '@pujosamiti/shared'
 import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -25,6 +26,11 @@ export const memberRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
  * Signing in is not enough: the account's email must belong to an active
  * person whose tier isn't non_member. Enforcement lives here on the server —
  * hiding routes in the React bundle protects nothing.
+ *
+ * OPEN MEMBERSHIP (until 15 Oct 2026, see shared): any active person gets in
+ * and acts as core, whatever their stored tier — approval is deferred, not
+ * removed. The stored tier stays authoritative for the admin roll and takes
+ * over when the window closes.
  */
 memberRoutes.use('*', async (c, next) => {
   const auth = createAuth(c.env)
@@ -37,7 +43,8 @@ memberRoutes.use('*', async (c, next) => {
     .from(schema.person)
     .where(or(eq(schema.person.email, session.user.email), eq(schema.person.altEmail, session.user.email)))
     .limit(1)
-  if (!p || !p.isActive || p.tier === 'non_member')
+  const open = openMembershipActive()
+  if (!p || !p.isActive || (!open && p.tier === 'non_member'))
     return c.json({ ok: false, error: 'not a samiti member' }, 403)
 
   c.set('me', {
@@ -46,7 +53,13 @@ memberRoutes.use('*', async (c, next) => {
     name: p.displayName,
     email: session.user.email,
     image: session.user.image ?? null,
-    role: p.isAdmin ? 'admin' : p.isFinAdmin ? 'fin_admin' : p.tier === 'core' ? 'coremember' : 'member',
+    role: p.isAdmin
+      ? 'admin'
+      : p.isFinAdmin
+        ? 'fin_admin'
+        : open || p.tier === 'core'
+          ? 'coremember'
+          : 'member',
     portfolio: p.portfolio,
   })
   await next()

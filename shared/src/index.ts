@@ -413,6 +413,18 @@ export interface MemberLite {
 export type FamilyTier = 'non_member' | 'member' | 'core';
 export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
 
+/**
+ * OPEN MEMBERSHIP window for the 2026 season: everyone who signs in and
+ * completes their profile acts as a CORE member through this IST date,
+ * without waiting for admin activation. Stored tiers are untouched — new
+ * sign-ins still register as origin='self' / tier='non_member', so the
+ * admin's "Pending activation" list keeps recording who hasn't been
+ * approved, and the tiers admins set take over when the window closes.
+ */
+export const OPEN_MEMBERSHIP_UNTIL = '2026-10-15'; // inclusive
+export const openMembershipActive = (): boolean =>
+  new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10) <= OPEN_MEMBERSHIP_UNTIL;
+
 /** Where a signed-in user stands: member, registered-but-waiting, or new. */
 export type OnboardingState =
   | { state: 'member' }

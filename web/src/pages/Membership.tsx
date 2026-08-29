@@ -1,4 +1,5 @@
 import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, FamilyTier } from '@pujosamiti/shared'
+import { openMembershipActive } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, UserMinus, Users } from 'lucide-react'
@@ -94,6 +95,14 @@ export function Membership() {
       <Seo title="Membership" description="Samiti membership register." path="/membership" noindex />
       <BackLink />
       <h1 className="text-2xl font-bold">Membership</h1>
+
+      {openMembershipActive() && (
+        <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
+          <span className="font-medium text-foreground">Open membership until 15 Oct 2026</span> — everyone
+          who signs in and completes their profile acts as a core member for now. New sign-ins still land
+          under Pending activation; the tiers you set here take over when the window closes.
+        </p>
+      )}
 
       <div className="flex flex-wrap gap-2">
         {tabs.map(({ key, label, icon: Icon, count }) => (
