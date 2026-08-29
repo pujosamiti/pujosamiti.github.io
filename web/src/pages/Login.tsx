@@ -1,12 +1,8 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, LogOut } from 'lucide-react'
-import { Link } from 'react-router'
+import { Navigate } from 'react-router'
 
 import { SignInCard, SignedInFunnel } from '@/components/RequireMember'
 import { LogoSpinner } from '@/components/LogoSpinner'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { Seo } from '@/components/Seo'
@@ -28,47 +24,9 @@ export function Login() {
     )
   }
 
-  // ── Signed in, on the allowlist ───────────────────────────────────────────
+  // ── Signed in, on the allowlist: nothing to do here — go to the member area
   if (session && memberState?.status === 'member') {
-    const { me } = memberState
-    return (
-      <div className="mx-auto flex max-w-md flex-col gap-4">
-        <Card>
-          <CardHeader>
-            <CheckCircle2 className="size-6 text-primary" aria-hidden="true" />
-            <CardTitle>স্বাগতম, {me.name}</CardTitle>
-            <CardDescription>You're signed in as a samiti member.</CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-3">
-            <div className="flex items-center gap-3">
-              {me.image && (
-                <img
-                  src={me.image}
-                  alt=""
-                  referrerPolicy="no-referrer"
-                  className="size-10 rounded-full border"
-                />
-              )}
-              <div className="min-w-0">
-                <p className="truncate text-sm font-medium">{me.email}</p>
-                <div className="mt-1 flex gap-2">
-                  <Badge>{me.role}</Badge>
-                  {me.portfolio && <Badge variant="genda">{me.portfolio}</Badge>}
-                </div>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              <Button asChild>
-                <Link to="/membersonly">Member area</Link>
-              </Button>
-              <Button variant="outline" onClick={endSession}>
-                <LogOut /> Sign out
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    return <Navigate to="/membersonly" replace />
   }
 
   // ── Signed in, but not (yet) a member: the onboarding funnel ──────────────
