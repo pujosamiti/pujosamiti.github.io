@@ -844,7 +844,7 @@ function PersonSelect({
   const options = (people ?? [])
     .filter((p) => (!coreOnly || p.tier === 'core') && !exclude.includes(p.id))
     .map((p) => ({ value: p.id, label: p.name }))
-  return <SearchSelect align="left" options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />
+  return <SearchSelect align="left" fullWidth options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />
 }
 
 function CategoryFields({
@@ -1029,8 +1029,8 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
                   placeholder="Calcutta Sweets"
                 />
               </Field>
-              <Field label="Reimbursed to (member) — when paying a member back">
-                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Reimbursed to" everyone />
+              <Field label="Reimbursed to (core member) — when paying one back">
+                <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Reimbursed to" coreOnly />
               </Field>
             </>
           )}

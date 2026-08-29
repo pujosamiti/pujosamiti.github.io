@@ -25,6 +25,7 @@ export function SearchSelect({
   className,
   onCreate,
   createLabel = (query) => `New: “${query}”`,
+  fullWidth = false,
 }: {
   options: SearchSelectOption[]
   value: string | null
@@ -38,6 +39,8 @@ export function SearchSelect({
    */
   onCreate?: (query: string) => void
   createLabel?: (query: string) => string
+  /** Span the parent like a normal form input (form fields, not toolbars). */
+  fullWidth?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -104,7 +107,7 @@ export function SearchSelect({
     <div ref={rootRef} className={cn('relative', className)}>
       <button
         type="button"
-        className={`${inputCls} flex w-auto items-center justify-between gap-2 text-left`}
+        className={cn(inputCls, 'flex items-center justify-between gap-2 text-left', fullWidth ? 'w-full' : 'w-auto')}
         onClick={() => (open ? setOpen(false) : openPanel())}
         aria-label={ariaLabel}
         aria-expanded={open}
@@ -116,7 +119,8 @@ export function SearchSelect({
       {open && (
         <div
           className={cn(
-            'absolute z-30 mt-1 w-56 rounded-md border bg-popover text-popover-foreground shadow-md',
+            'absolute z-30 mt-1 rounded-md border bg-popover text-popover-foreground shadow-md',
+            fullWidth ? 'w-full min-w-56' : 'w-56',
             align === 'right' ? 'right-0' : 'left-0',
           )}
         >

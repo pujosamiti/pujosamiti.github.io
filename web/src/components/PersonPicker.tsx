@@ -1,6 +1,6 @@
 import type { FamilyTier } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Loader2, UserPlus } from 'lucide-react'
+import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
@@ -60,30 +60,24 @@ export function PersonPicker({
   }))
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <SearchSelect
-          align="left"
-          options={options}
-          value={value}
-          onChange={onChange}
-          ariaLabel={ariaLabel}
-          onCreate={
-            allowCreate
-              ? (typed) => {
-                  setName(typed)
-                  setCreating(true)
-                }
-              : undefined
-          }
-          createLabel={(typed) => `New person “${typed}”`}
-        />
-        {allowCreate && (
-          <Button type="button" size="sm" variant="outline" onClick={() => setCreating(!creating)}>
-            <UserPlus /> New
-          </Button>
-        )}
-      </div>
+    <div className="flex w-full flex-col gap-2">
+      <SearchSelect
+        align="left"
+        fullWidth
+        options={options}
+        value={value}
+        onChange={onChange}
+        ariaLabel={ariaLabel}
+        onCreate={
+          allowCreate
+            ? (typed) => {
+                setName(typed)
+                setCreating(true)
+              }
+            : undefined
+        }
+        createLabel={(typed) => `New person “${typed}”`}
+      />
       {creating && (
         <div className="flex flex-col gap-2 rounded-md border bg-accent/30 p-3">
           <p className="text-xs text-muted-foreground">
