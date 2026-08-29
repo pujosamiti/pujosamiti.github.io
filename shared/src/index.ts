@@ -134,11 +134,21 @@ export interface Post extends PostSummary {
  */
 /**
  * newsignin: signed in and profile completed, but not yet activated by an
- * admin (person: origin='self', tier='non_member', active). View-only member
- * access plus ONE write — their household's food count. Computed per-request,
- * so an admin activation upgrades them instantly.
+ * admin (person: origin='self', tier='non_member', active). View-only access
+ * to bhog and sponsorship plus TWO writes — their household's food count and
+ * their own pledge. Computed per-request, so an admin activation upgrades
+ * them instantly.
  */
 export type MemberRole = 'newsignin' | 'member' | 'coremember' | 'fin_admin' | 'admin';
+
+/**
+ * Email privacy: sign-in addresses are used ONLY to recognise the sign-in.
+ * They are never shown to anyone — admins included — and the samiti never
+ * sends email. Displays get the masked form ("xxxxxx@gmail.com").
+ */
+export const maskEmail = (e: string | null): string | null =>
+  e ? `xxxxxx@${e.split('@')[1] ?? ''}` : null;
+export const isMaskedEmail = (e: string | null | undefined): boolean => !!e && e.startsWith('xxxxxx@');
 
 /** Roles that curate content; member and newsignin are consumers. */
 export const isCoreRole = (r: MemberRole): boolean =>

@@ -95,6 +95,13 @@ Gates in practice:
   additionally requires `is_admin` (`requireAdmin`).
 - The purohit's phone number appears only in the members' events feed, never
   the public one.
+- **Sign-in emails are private, admins included**: the admin people API masks
+  them (`maskEmail` → "xxxxxx@gmail.com"; full addresses never leave the
+  Worker). The admin edit form round-trips the masked value, which the update
+  route treats as "unchanged" (`isMaskedEmail`) — typing a full address still
+  sets/replaces it. Search-by-email still works (matching is server-side).
+  The samiti sends no email of any kind; addresses exist only to recognise
+  sign-ins. The SignInCard says all this to first-time users.
 
 ## 5. Membership lifecycle
 

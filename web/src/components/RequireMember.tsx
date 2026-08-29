@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 import logoBw from '@/assets/logo-bw.png'
-import { AlertTriangle, Hourglass, Loader2, LogOut, RefreshCw } from 'lucide-react'
+import { AlertTriangle, Hourglass, Loader2, LogOut, RefreshCw, ShieldCheck } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Outlet, useLocation, useSearchParams } from 'react-router'
 
@@ -95,9 +95,17 @@ export function SignInCard({
             Facebook — coming soon
           </Button>
           <p className="text-xs text-muted-foreground">
-            Anyone can sign in, but member content unlocks only for emails on the samiti's member
-            list. No password is ever stored by the samiti.
+            No password is ever stored by the samiti.
           </p>
+          <div className="flex items-start gap-2 rounded-md bg-accent p-3 text-xs text-muted-foreground">
+            <ShieldCheck className="mt-0.5 size-4 shrink-0 text-durba" aria-hidden="true" />
+            <p>
+              <span className="font-medium text-foreground">Your email stays private.</span> It is
+              used only to recognise your sign-in — nobody sees it, not even admins (they see it
+              masked, like <span className="font-mono">xxxxxx@gmail.com</span>). The samiti never
+              sends you email or uses your address anywhere else.
+            </p>
+          </div>
         </CardContent>
       </Card>
     </>

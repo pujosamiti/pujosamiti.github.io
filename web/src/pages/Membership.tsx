@@ -474,7 +474,7 @@ function PersonForm({
               <input className={inputCls} value={form.displayName} onChange={(e) => set({ displayName: e.target.value })} required />
             </Field>
             <Field label="Email (empty = no site login)">
-              <input className={inputCls} type="email" value={form.email ?? ''} onChange={(e) => set({ email: e.target.value || null })} />
+              <input className={inputCls} type="email" value={form.email ?? ''} onChange={(e) => set({ email: e.target.value || null })} placeholder="masked for privacy — type a full address to change" />
             </Field>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

@@ -9,7 +9,7 @@ import type {
   FamilyTier,
   PujoEvent,
 } from '@pujosamiti/shared'
-import { EVENT_KINDS } from '@pujosamiti/shared'
+import { isMaskedEmail, maskEmail, EVENT_KINDS } from '@pujosamiti/shared'
 import { desc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -64,8 +64,8 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
     familyId: p.familyId,
     familyName,
     displayName: p.displayName,
-    email: p.email,
-    altEmail: p.altEmail,
+    email: maskEmail(p.email),
+    altEmail: maskEmail(p.altEmail),
     society: p.society,
     residenceDetail: p.residenceDetail,
     workplace: p.workplace,
@@ -173,8 +173,8 @@ adminRoutes.post('/people', async (c) => {
   const body = (await c.req.json()) as AdminPersonInput
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
   const db = drizzle(c.env.DB, { schema })
-  const email = body.email?.trim() || null
-  const altEmail = body.altEmail?.trim() || null
+  const email = isMaskedEmail(body.email) ? null : body.email?.trim() || null
+  const altEmail = isMaskedEmail(body.altEmail) ? null : body.altEmail?.trim() || null
   const clash = await emailClash(db, [email, altEmail])
   if (clash) return c.json({ ok: false, error: clash }, 409)
   const id = crypto.randomUUID()
@@ -193,8 +193,14 @@ adminRoutes.post('/people/:id', async (c) => {
   if (!p) return c.json({ ok: false, error: 'person not found' }, 404)
   if (id === c.get('adminPersonId') && (!body.isAdmin || !body.isActive))
     return c.json({ ok: false, error: 'you cannot deactivate or de-admin yourself' }, 400)
-  const email = body.email?.trim() || null
-  const altEmail = body.altEmail?.trim() || null
+  // The form round-trips MASKED addresses — a masked value means "unchanged"
+  const [existing] = await db
+    .select({ email: schema.person.email, altEmail: schema.person.altEmail })
+    .from(schema.person)
+    .where(eq(schema.person.id, id))
+    .limit(1)
+  const email = isMaskedEmail(body.email) ? (existing?.email ?? null) : body.email?.trim() || null
+  const altEmail = isMaskedEmail(body.altEmail) ? (existing?.altEmail ?? null) : body.altEmail?.trim() || null
   const clash = await emailClash(db, [email, altEmail], id)
   if (clash) return c.json({ ok: false, error: clash }, 409)
   await db.update(schema.person).set({ email, altEmail, ...personValues(body) }).where(eq(schema.person.id, id))
