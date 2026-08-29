@@ -95,7 +95,7 @@ The yearly shopping sheet: items × day columns × Morning/Evening
 | `POST /items` · `POST /items/:id` | Catalog item create/edit (isActive=false = soft delete) |
 | `POST /items/:id/year` | Upsert the item's Total Quantity / status / remarks for the year |
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | The year's day columns (delete cascades its cells) |
-| `POST /cells` | Upsert one cell (item × day × slot); blank quantity clears it |
+| `POST /cells` | Upsert one cell (item × day × slot); a blank quantity clears it, and the blank is remembered so prefill never resurrects it |
 | `POST /cells/:id/purchased` | Tick / untick while shopping |
 | `GET /master` | The master list: catalog + suggested totals + tithi × slot suggestions |
 | `POST /items/:id/suggestions` | Replace an item's suggested quantities (core) |

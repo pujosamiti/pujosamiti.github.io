@@ -428,7 +428,13 @@ procurementRoutes.post('/cells', async (c) => {
   const [existing] = await db.select().from(schema.procurementNeed).where(where).limit(1)
   const quantity = body.quantity?.trim() ?? ''
   if (!quantity) {
-    if (existing) await db.delete(schema.procurementNeed).where(eq(schema.procurementNeed.id, existing.id))
+    // A blank keeps the row as a deliberate empty: prefill sees it and won't
+    // resurrect the master suggestion. Nothing to remember if it never existed.
+    if (existing)
+      await db
+        .update(schema.procurementNeed)
+        .set({ quantity: '', notes: body.notes?.trim() || null, purchased: false })
+        .where(eq(schema.procurementNeed.id, existing.id))
     return c.json(ok({ cleared: true }))
   }
   if (existing) {

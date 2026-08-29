@@ -99,9 +99,13 @@ export function Procurement() {
   const days = data?.days ?? []
   const all = data?.items ?? []
   const selectedDay = days.find((d) => d.id === dayId) ?? null
-  // Day view: only that day's cells, only items that have any (the order sheet)
+  // Day view: only that day's cells, only items that have any (the order sheet).
+  // Blank cells are deliberate clears kept for prefill's sake — never shown.
   const visible = all
-    .map((i) => ({ ...i, cells: selectedDay ? i.cells.filter((c) => c.dayId === selectedDay.id) : i.cells }))
+    .map((i) => ({
+      ...i,
+      cells: i.cells.filter((c) => c.quantity !== '' && (!selectedDay || c.dayId === selectedDay.id)),
+    }))
     .filter((i) => !selectedDay || i.cells.length > 0)
   const categories = [...new Set(visible.map((i) => i.category))]
 
@@ -283,6 +287,13 @@ function DayManager({ year, days, isAdmin }: { year: number; days: ProcurementDa
             )}
             {(seed.error || prefill.error) && (
               <p className="text-sm text-destructive">{(seed.error ?? prefill.error)!.message}</p>
+            )}
+            {prefill.data && (
+              <p className="text-sm text-muted-foreground">
+                {prefill.data.totals || prefill.data.cells
+                  ? `Prefilled ${prefill.data.totals} total${prefill.data.totals === 1 ? '' : 's'} and ${prefill.data.cells} ${prefill.data.cells === 1 ? 'quantity' : 'quantities'} from the master list.`
+                  : 'Nothing to add — the sheet already reflects the master list.'}
+              </p>
             )}
           </div>
         )}
