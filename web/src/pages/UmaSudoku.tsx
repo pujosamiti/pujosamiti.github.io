@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { DIGIT_TONES } from '@/lib/uma'
 import { cn } from '@/lib/utils'
 
 /**
@@ -18,7 +19,7 @@ const BOX_C = 3
 const CELLS = N * N
 const BLANKS = 14
 /** One tone per digit — the board doubles as a colour swatch. */
-const TONES = ['jaba', 'genda', 'durba', 'sharat', 'jarul', 'padma'] as const
+const TONES = DIGIT_TONES
 
 const shuffle = <T,>(xs: T[]): T[] => {
   const a = [...xs]

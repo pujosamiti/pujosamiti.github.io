@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import {
+  DIGIT_TONES,
   mediaUrl,
   readMyReactions,
   sendReaction,
@@ -132,7 +133,51 @@ function ArticleCard({ a }: { a: UmaArticleCard }) {
   )
 }
 
+/**
+ * ধাঁধা has no articles — the section IS the game — so the issue's grid would
+ * skip it entirely. This card stands in for it, and lands in the same slot the
+ * section chips put it in.
+ */
+function GameCard() {
+  return (
+    <Link to="/uma/bibhag/games">
+      <Card className="h-full overflow-hidden pt-0 transition-shadow hover:shadow-md">
+        <div className="flex aspect-video w-full items-center justify-center gap-1.5 [background:color-mix(in_srgb,var(--genda)_12%,var(--card))]">
+          {DIGIT_TONES.map((tone, v) => (
+            <span
+              key={tone}
+              style={{ '--tone': `var(--${tone})` } as React.CSSProperties}
+              className="flex size-8 items-center justify-center rounded-md border text-base font-bold [background:color-mix(in_srgb,var(--tone)_24%,var(--card))] sm:size-10 sm:text-lg"
+            >
+              {v + 1}
+            </span>
+          ))}
+        </div>
+        <CardHeader>
+          <span className="text-xs font-medium" style={{ color: 'var(--genda)' }}>
+            ধাঁধা · Games &amp; Puzzles
+          </span>
+          <CardTitle className="font-serif text-lg leading-snug">উমা Mini Sudoku</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            ছয়ে ছয়ে ছোট্ট এক ধাঁধা — প্রতিটি সারি, কলাম আর ২×৩ ঘরে ১ থেকে ৬ বসাতে হবে।
+          </p>
+          <p className="line-clamp-3 text-sm text-muted-foreground">
+            A little 6×6: every row, column and box needs the digits 1 to 6 exactly once. No guessing
+            ever needed.
+          </p>
+          <p className="pt-1 text-xs font-medium text-primary">খেলুন · Play</p>
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
 function IssueBlock({ issue, articles }: { issue: UmaIssueCard; articles: UmaArticleCard[] }) {
+  // Slot the puzzle where ধাঁধা sits in the section order, not at the end
+  const order = UMA_SECTIONS.map((s) => s.id) as string[]
+  const gamesAt = order.indexOf('games')
+  const beforeGames = articles.filter((a) => order.indexOf(a.section) < gamesAt)
+  const afterGames = articles.filter((a) => order.indexOf(a.section) > gamesAt)
   const cover = mediaUrl(issue.coverImage)
   return (
     <section className="flex flex-col gap-3">
@@ -160,7 +205,11 @@ function IssueBlock({ issue, articles }: { issue: UmaIssueCard; articles: UmaArt
         </Card>
       )}
       <div className="grid gap-3 sm:grid-cols-2">
-        {articles.map((a) => (
+        {beforeGames.map((a) => (
+          <ArticleCard key={a.slug} a={a} />
+        ))}
+        <GameCard />
+        {afterGames.map((a) => (
           <ArticleCard key={a.slug} a={a} />
         ))}
       </div>

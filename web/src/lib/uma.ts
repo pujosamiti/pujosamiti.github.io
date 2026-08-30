@@ -16,6 +16,12 @@ import { api, API_URL } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
 
 /**
+ * One brand tone per Sudoku digit — shared by the board itself and the card
+ * that advertises it on the issue page, so 3 is the same green in both.
+ */
+export const DIGIT_TONES = ['jaba', 'genda', 'durba', 'sharat', 'jarul', 'padma'] as const
+
+/**
  * Two kinds of image live in these rows, both stored origin-relative so the
  * same row works on local and prod: uploads served by the Worker out of R2
  * ("/api/public/uma/media/…"), and art shipped with the site itself
