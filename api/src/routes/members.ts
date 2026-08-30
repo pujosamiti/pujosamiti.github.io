@@ -13,6 +13,7 @@ import { bhogRoutes } from './bhog'
 import { ledgerRoutes } from './ledger'
 import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
+import { umaDeskRoutes } from './uma'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -79,6 +80,7 @@ memberRoutes.use('*', async (c, next) => {
     image: session.user.image ?? null,
     role,
     portfolio: p.portfolio,
+    umaRole: p.umaRole,
   })
   await next()
 })
@@ -179,6 +181,7 @@ memberRoutes.route('/tasks', taskRoutes)
 memberRoutes.route('/ledger', ledgerRoutes)
 memberRoutes.route('/procurement', procurementRoutes)
 memberRoutes.route('/bhog', bhogRoutes)
+memberRoutes.route('/uma', umaDeskRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.

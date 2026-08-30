@@ -12,7 +12,10 @@
       "migrations_dir": "drizzle"
     }
   ],
-  // Uncomment after `wrangler r2 bucket create pujosamiti-files`
+  // Media uploads (Uma article images) need R2. To switch them on: enable R2
+  // in the Cloudflare dashboard, run `npx wrangler r2 bucket create
+  // pujosamiti-files`, then uncomment the line below and redeploy. Until then
+  // the upload routes answer 503 and article art ships in web/public/uma-media.
   // "r2_buckets": [{ "binding": "FILES", "bucket_name": "pujosamiti-files" }],
   "vars": {
     // Public, non-secret config. Secrets go in .dev.vars locally and

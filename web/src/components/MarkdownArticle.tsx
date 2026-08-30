@@ -11,10 +11,13 @@ import { Link } from 'react-router'
 export function MarkdownArticle({
   markdown,
   resolveLink,
+  resolveImage,
 }: {
   markdown: string
   /** Map a markdown href (e.g. "04-mahalaya.md") to a route; return null to keep as-is */
   resolveLink?: (href: string) => string | null
+  /** Map an image src (e.g. an API-relative Uma media path) to a full URL; return null to keep as-is */
+  resolveImage?: (src: string) => string | null
 }) {
   return (
     <article className="prose prose-stone max-w-none dark:prose-invert prose-headings:font-serif prose-h1:text-primary prose-a:text-primary prose-blockquote:border-l-shiuli prose-blockquote:not-italic prose-th:whitespace-nowrap">
@@ -37,6 +40,10 @@ export function MarkdownArticle({
                 <table>{children}</table>
               </div>
             )
+          },
+          img({ src, alt }) {
+            const mapped = (typeof src === 'string' && resolveImage?.(src)) || src
+            return <img src={mapped as string} alt={alt ?? ''} loading="lazy" className="rounded-lg" />
           },
         }}
       >

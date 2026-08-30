@@ -21,6 +21,8 @@ import { ProcurementMaster } from '@/pages/ProcurementMaster'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
+import { UmaArticle, UmaHome, UmaIssue, UmaSectionPage } from '@/pages/Uma'
+import { UmaDesk } from '@/pages/UmaDesk'
 
 import { captureTokenFromUrl } from '@/lib/auth'
 
@@ -75,6 +77,11 @@ createRoot(document.getElementById('root')!).render(
               <Route path="schedule" element={<Schedule />} />
               <Route path="durga-puja" element={<DurgaPujaIndex />} />
               <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
+              {/* Uma — the magazine is fully public (SEO + WhatsApp sharing) */}
+              <Route path="uma" element={<UmaHome />} />
+              <Route path="uma/sankhya/:number" element={<UmaIssue />} />
+              <Route path="uma/bibhag/:section" element={<UmaSectionPage />} />
+              <Route path="uma/:slug" element={<UmaArticle />} />
               <Route path="membersonly" element={<MembersOnly />} />
               <Route path="login" element={<Login />} />
               <Route path="profile" element={<Profile />} />
@@ -93,6 +100,7 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="wallets" element={<WalletsPage />} />
                 <Route path="sponsorship" element={<SponsorshipPage />} />
                 <Route path="reimbursements" element={<ReimbursementsPage />} />
+                <Route path="uma-desk" element={<UmaDesk />} />
                 <Route path="brandcolours" element={<BrandColours />} />
               </Route>
               <Route path="*" element={<Home />} />

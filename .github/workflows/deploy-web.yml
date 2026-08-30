@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths: ['web/**', 'shared/**', '.github/workflows/deploy-web.yml']
   workflow_dispatch:
+  # Fired by the Worker when a Uma sankhya is (un)published, so the new
+  # articles get prerendered HTML for crawlers within minutes.
+  repository_dispatch:
+    types: [uma-publish]
 
 permissions:
   contents: read

@@ -1,6 +1,6 @@
 import { isCoreRole } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
-import { BookOpen, CalendarDays, Clock, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
+import { BookOpen, CalendarDays, Clock, Feather, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
 
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,7 @@ const memberSections = [
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
   { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: 'durba' },
   { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', newSignInOk: true, tone: 'genda' },
+  { icon: Feather, title: 'Uma · Editorial Desk', desc: "The magazine's queue, sankhyas and publishing", gate: 'Uma editors only', to: '/uma-desk', editorsOnly: true, tone: 'palash' },
   { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: 'aparajita' },
   { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: 'matir' },
   { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: 'sindoor' },
@@ -43,9 +44,12 @@ export function MembersOnly() {
   // A member never gets into the core sections, so don't dangle them — they
   // just read as a list of locked doors. Signed-out visitors still see the
   // full set with its gate labels, which is what tells them what membership is for.
-  const sections = memberSections.filter((s) =>
-    me?.role === 'newsignin' ? s.newSignInOk : !(s.coreOnly && me && !isCoreRole(me.role)),
-  )
+  const sections = memberSections.filter((s) => {
+    // The editorial desk shows only to its masthead (and admins) once signed in;
+    // signed-out visitors still see it listed with its gate label.
+    if (s.editorsOnly && me && !(me.role === 'admin' || me.umaRole)) return false
+    return me?.role === 'newsignin' ? s.newSignInOk : !(s.coreOnly && me && !isCoreRole(me.role))
+  })
 
   const endSession = async () => {
     await signOut()

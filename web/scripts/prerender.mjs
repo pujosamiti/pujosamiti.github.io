@@ -72,6 +72,28 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
   })
 }
 
+// ── Uma: routes live in the Worker's D1, fetched at build time ──────────────
+// Publishing a Sankhya fires repository_dispatch → this build reruns → each
+// article gets real HTML with its own OG tags + Article JSON-LD. Best-effort:
+// if the API is unreachable the build still ships (articles render client-side
+// and the /uma home route below keeps its tags).
+const API = process.env.VITE_API_URL || 'https://pujosamiti-api.pujosamiti.workers.dev'
+try {
+  const res = await fetch(`${API}/api/public/uma/prerender`, { signal: AbortSignal.timeout(15000) })
+  const body = await res.json()
+  if (!body.ok) throw new Error(body.error)
+  for (const r of body.data) ROUTES.push({ ...r, title: `${r.title} ${TITLE_SUFFIX}` })
+  console.log(`uma: ${body.data.length} routes from ${API}`)
+} catch (e) {
+  console.warn('uma prerender skipped (API unreachable?):', e.message)
+  ROUTES.push({
+    path: '/uma',
+    title: `Uma · উমা — the samiti magazine ${TITLE_SUFFIX}`,
+    description:
+      'Uma (উমা) — the Magarpatta pujo samiti magazine: stories, poetry, commentary, mythology, recipes, travel and art.',
+  })
+}
+
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 const template = readFileSync(join(dist, 'index.html'), 'utf8')
 
@@ -96,6 +118,9 @@ for (const r of ROUTES) {
   )
   if (r.image) html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${esc(r.image)}" />`)
   html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${ORIGIN}${r.path}" />`)
+  if (r.type === 'article') html = html.replace(/<meta property="og:type" content="[^"]*" \/>/, `<meta property="og:type" content="article" />`)
+  if (r.jsonLd)
+    html = html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(r.jsonLd)}</script></head>`)
   const out = join(dist, ...r.path.split('/').filter(Boolean), 'index.html')
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(out, html)

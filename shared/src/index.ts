@@ -109,23 +109,6 @@ export interface PujaDaysView {
   days: PujaDay[];
 }
 
-export type PostType = 'blog' | 'magazine';
-
-export interface PostSummary {
-  slug: string;
-  type: PostType;
-  title: string;
-  author: string | null;
-  eventId: EventId | null;
-  publishedAt: string;
-  excerpt: string | null;
-}
-
-export interface Post extends PostSummary {
-  /** Markdown, rendered client-side with react-markdown */
-  body: string;
-}
-
 // ── Members & auth ──────────────────────────────────────────────────────────
 
 /**
@@ -167,6 +150,8 @@ export interface Me {
   role: MemberRole;
   /** Portfolio, if held by a core member — e.g. "Treasurer", "Cultural Secretary" */
   portfolio: string | null;
+  /** Seat on the Uma masthead, when held — gates the editorial desk */
+  umaRole: UmaRole | null;
 }
 
 // ── Task distribution (Core Members feature) ────────────────────────────────
@@ -791,6 +776,174 @@ export interface SpendRow {
   total: number;
   /** how many entries make up the total */
   n: number;
+}
+
+// ── Uma (উমা) — the samiti's magazine ───────────────────────────────────────
+// A Sankhya is one issue; there is no fixed cadence — the chief editor opens
+// one when enough accepted material has piled up (fortnightly to monthly).
+// The magazine itself is fully PUBLIC (that is what makes SEO and WhatsApp
+// sharing real); only the editorial desk is gated. Submissions arrive out of
+// band (WhatsApp/email to the editors, as Word/txt/markdown/PDF + photos) and
+// a dev converts them into drafts; editors accept/hold/reject in the app.
+
+// Order is editorial (the samiti's chosen sequence), not alphabetical —
+// it drives the section chips and every section listing.
+export const UMA_SECTIONS = [
+  { id: 'art', en: 'Art', bn: 'শিল্পকলা' },
+  { id: 'fashion', en: 'Fashion', bn: 'ফ্যাশন' },
+  { id: 'stories', en: 'Stories', bn: 'গল্প' },
+  { id: 'games', en: 'Games & Puzzles', bn: 'ধাঁধা' },
+  { id: 'travel', en: 'Travel', bn: 'ভ্রমণ' },
+  { id: 'recipes', en: 'Recipes', bn: 'হেঁশেল' },
+  { id: 'health', en: 'Health', bn: 'স্বাস্থ্য' },
+  { id: 'mythology', en: 'Mythology & Puja Rituals', bn: 'পুরাণ ও আচার' },
+  { id: 'poetry', en: 'Poetry', bn: 'কবিতা' },
+  { id: 'commentary', en: 'Commentary', bn: 'সমকাল' },
+] as const;
+export type UmaSectionId = (typeof UMA_SECTIONS)[number]['id'];
+export const umaSection = (id: string) => UMA_SECTIONS.find((s) => s.id === id);
+
+/**
+ * The masthead: exactly one chief editor and up to two editors, all core
+ * members, assigned by an admin. Editors run the queue (accept/hold/reject
+ * and copy-edit); the chief editor additionally composes and publishes
+ * Sankhyas. Admins hold both implicitly (they are the devs doing intake).
+ */
+export type UmaRole = 'chief_editor' | 'editor';
+export const UMA_MAX_EDITORS = 2;
+
+/**
+ * draft      — dev still converting; not yet in the editors' queue
+ * in_review  — waiting for an editor's verdict
+ * accepted   — slotted into a (still unpublished) Sankhya
+ * held       — parked; any editor can pull it into a later Sankhya
+ * rejected   — with the editor's note
+ * published  — live on the public site (set by publishing its Sankhya)
+ */
+export type UmaArticleStatus = 'draft' | 'in_review' | 'accepted' | 'held' | 'rejected' | 'published';
+
+/** Claps are Medium-style: tap repeatedly, capped per reader. Hearts are one per reader. */
+export const UMA_MAX_CLAPS = 21;
+
+/** Public card — everything a listing needs, no body. */
+export interface UmaArticleCard {
+  slug: string;
+  section: UmaSectionId;
+  title: string;
+  titleBn: string | null;
+  authorName: string;
+  /** Byline in Bengali script; shown when reading the বাংলা version */
+  authorNameBn: string | null;
+  isGuest: boolean;
+  excerpt: string | null;
+  /** API path ("/api/public/uma/media/…") — prefix with the API origin to display */
+  heroImage: string | null;
+  issueNumber: number | null;
+  publishedAt: string | null; // ISO datetime
+  hearts: number;
+  claps: number;
+  readingMinutes: number;
+  /** Primary language, for <html lang> and JSON-LD */
+  lang: 'bn' | 'en';
+}
+
+export interface UmaArticleView extends UmaArticleCard {
+  authorBio: string | null;
+  authorBioBn: string | null;
+  bodyMd: string;
+  /** The piece in the OTHER language; when set, the page shows বাংলা/English pills */
+  bodyMdAlt: string | null;
+  issueTitle: string | null;
+}
+
+export interface UmaIssueCard {
+  id: string; // 'sankhya-1'
+  number: number;
+  /** Optional theme name — "শারদীয়া সংখ্যা"; display falls back to "সংখ্যা <n>" */
+  title: string | null;
+  coverImage: string | null;
+  /** Markdown — the chief editor's desk (সম্পাদকীয়) */
+  editorialNote: string | null;
+  status: 'draft' | 'published';
+  publishedOn: string | null; // ISO date
+  articleCount: number;
+}
+
+export interface UmaIssueView extends UmaIssueCard {
+  articles: UmaArticleCard[];
+}
+
+export interface UmaHomeView {
+  latest: UmaIssueView | null;
+  /** Published issues, newest first (latest included) */
+  issues: UmaIssueCard[];
+  masthead: { chief: string | null; editors: string[] };
+}
+
+/** Anonymous public reaction, sent as deltas the server clamps. */
+export interface UmaReactInput {
+  slug: string;
+  /** -1 (un-heart), 0 or 1 */
+  hearts: number;
+  /** 0..UMA_MAX_CLAPS additional claps */
+  claps: number;
+}
+
+// — editorial desk —
+
+export interface UmaDeskArticle extends UmaArticleView {
+  id: string;
+  status: UmaArticleStatus;
+  issueId: string | null;
+  sortOrder: number;
+  authorPersonId: string | null;
+  submittedVia: 'whatsapp' | 'email' | null;
+  submittedOn: string | null; // ISO date
+  /** Internal — hold/reject reason, copy-edit notes; never shown publicly */
+  editorNote: string | null;
+  updatedAt: string;
+}
+
+export interface UmaDeskView {
+  articles: UmaDeskArticle[];
+  issues: UmaIssueCard[]; // drafts included, newest first
+  masthead: { chief: { id: string; name: string } | null; editors: { id: string; name: string }[] };
+}
+
+export interface UmaArticleInput {
+  /** Derived from the title when omitted; REQUIRED when the title has no ASCII letters */
+  slug?: string;
+  section: UmaSectionId;
+  title: string;
+  titleBn: string | null;
+  authorName: string;
+  authorNameBn: string | null;
+  authorBio: string | null;
+  authorBioBn: string | null;
+  authorPersonId: string | null;
+  isGuest: boolean;
+  excerpt: string | null;
+  heroImage: string | null;
+  bodyMd: string;
+  /** Optional translation into the other language */
+  bodyMdAlt: string | null;
+  lang: 'bn' | 'en';
+  submittedVia: 'whatsapp' | 'email' | null;
+  submittedOn: string | null;
+}
+
+export interface UmaStatusInput {
+  status: UmaArticleStatus;
+  /** Required when accepting: the (unpublished) Sankhya to slot into */
+  issueId?: string | null;
+  editorNote?: string | null;
+}
+
+export interface UmaIssueInput {
+  number: number;
+  title: string | null;
+  coverImage: string | null;
+  editorialNote: string | null;
 }
 
 export interface BudgetLineInput {

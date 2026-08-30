@@ -7,8 +7,8 @@ import { adminRoutes } from './routes/admin'
 import { memberRoutes } from './routes/members'
 import { oauthRoutes } from './routes/oauth'
 import { onboardingRoutes } from './routes/onboarding'
-import { postRoutes } from './routes/posts'
 import { publicRoutes } from './routes/public'
+import { umaPublicRoutes } from './routes/uma'
 
 const app = new Hono<{ Bindings: Env }>()
 
@@ -27,7 +27,7 @@ app.on(['GET', 'POST'], '/api/auth/*', (c) => createAuth(c.env).handler(c.req.ra
 
 app.route('/api/oauth', oauthRoutes)
 app.route('/api/public', publicRoutes)
-app.route('/api/public', postRoutes)
+app.route('/api/public/uma', umaPublicRoutes)
 app.route('/api/members', memberRoutes)
 app.route('/api/onboarding', onboardingRoutes)
 app.route('/api/admin', adminRoutes)

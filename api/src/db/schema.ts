@@ -175,6 +175,12 @@ export const person = sqliteTable('person', {
   isFinAdmin: integer('is_fin_admin', { mode: 'boolean' }).notNull().default(false),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
+  /**
+   * Seat on the Uma magazine masthead: one 'chief_editor' + up to two
+   * 'editor's, core members only, assigned by an admin. Gates the editorial
+   * desk; the chief editor additionally publishes Sankhyas.
+   */
+  umaRole: text('uma_role', { enum: ['chief_editor', 'editor'] }),
   notes: text('notes'),
   /**
    * How this record came to exist: 'roster' = entered from the samiti's own
@@ -538,4 +544,67 @@ export const bhogRsvp = sqliteTable('bhog_rsvp', {
   /** The sheet's remark column: "already paid for 10 Ashtami guests". */
   notes: text('notes'),
   updatedAt: text('updated_at').notNull(), // ISO date-time of the last change
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 11 · Uma (উমা) — the samiti's magazine
+// A Sankhya (uma_issue) is one edition — no fixed cadence, the chief editor
+// opens one when enough accepted material exists. Articles arrive out of band
+// (WhatsApp/email → a dev converts to markdown) and move draft → in_review →
+// accepted/held/rejected; publishing a Sankhya flips its accepted articles to
+// published. The magazine is fully PUBLIC; hearts/claps are anonymous
+// aggregate counters bumped by a clamped public endpoint.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const umaIssue = sqliteTable('uma_issue', {
+  id: text('id').primaryKey(), // 'sankhya-1'
+  number: integer('number').notNull().unique(),
+  title: text('title'), // optional theme name — "শারদীয়া সংখ্যা"
+  coverImage: text('cover_image'), // API media path
+  editorialNote: text('editorial_note'), // markdown — সম্পাদকীয়
+  status: text('status', { enum: ['draft', 'published'] })
+    .notNull()
+    .default('draft'),
+  publishedOn: text('published_on'), // ISO date
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+})
+
+export const umaArticle = sqliteTable('uma_article', {
+  id: text('id').primaryKey(),
+  slug: text('slug').notNull().unique(), // public URL identity; immutable once published
+  section: text('section').notNull(), // UMA_SECTIONS in shared
+  title: text('title').notNull(),
+  titleBn: text('title_bn'),
+  /** Byline as printed — guests are not users, so this is free text. */
+  authorName: text('author_name').notNull(),
+  /** The byline in Bengali script, shown when the reader is on the বাংলা pill. */
+  authorNameBn: text('author_name_bn'),
+  authorBio: text('author_bio'), // one-liner under the byline
+  authorBioBn: text('author_bio_bn'), // the same line in Bengali
+  authorPersonId: text('author_person_id').references(() => person.id), // when the writer is on the rolls
+  isGuest: integer('is_guest', { mode: 'boolean' }).notNull().default(false),
+  excerpt: text('excerpt'), // card teaser + SEO/OG description
+  heroImage: text('hero_image'), // API media path; also the share image
+  bodyMd: text('body_md').notNull(),
+  /** The same piece in the other language — the article page offers বাংলা/English pills when set. */
+  bodyMdAlt: text('body_md_alt'),
+  lang: text('lang', { enum: ['bn', 'en'] })
+    .notNull()
+    .default('bn'), // primary language, for <html lang> and JSON-LD
+  status: text('status', {
+    enum: ['draft', 'in_review', 'accepted', 'held', 'rejected', 'published'],
+  })
+    .notNull()
+    .default('draft'),
+  issueId: text('issue_id').references(() => umaIssue.id, { onDelete: 'set null' }),
+  sortOrder: integer('sort_order').notNull().default(1000), // order within the Sankhya
+  submittedVia: text('submitted_via', { enum: ['whatsapp', 'email'] }),
+  submittedOn: text('submitted_on'), // ISO date the entry reached the editors
+  editorNote: text('editor_note'), // internal: hold/reject reason, copy-edit notes
+  hearts: integer('hearts').notNull().default(0),
+  claps: integer('claps').notNull().default(0),
+  publishedAt: text('published_at'), // ISO datetime
+  createdBy: text('created_by').references(() => person.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })

@@ -48,6 +48,10 @@
   --durba: #3a7d44; /* sacred grass — success: paid, settled, money in */
   --durba-foreground: #ffffff;
   --palash-foreground: #ffffff;
+  --jarul: #7d5bbe; /* pride of India blossom — lavender/purple accents */
+  --jarul-foreground: #ffffff;
+  --padma: #d34f8d; /* pink lotus — pink accents */
+  --padma-foreground: #ffffff;
 }
 
 .dark {
@@ -85,6 +89,10 @@
   --durba: #7fc08a;
   --durba-foreground: #12240e;
   --palash-foreground: #33100c;
+  --jarul: #b39ce8;
+  --jarul-foreground: #241543;
+  --padma: #f08cb8;
+  --padma-foreground: #40102a;
 }
 
 @theme inline {
@@ -125,6 +133,10 @@
   --color-durba: var(--durba);
   --color-durba-foreground: var(--durba-foreground);
   --color-palash-foreground: var(--palash-foreground);
+  --color-jarul: var(--jarul);
+  --color-jarul-foreground: var(--jarul-foreground);
+  --color-padma: var(--padma);
+  --color-padma-foreground: var(--padma-foreground);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
