@@ -281,6 +281,13 @@ umaPublicRoutes.get('/prerender', async (c) => {
         'Uma (উমা) — the Magarpatta pujo samiti magazine: stories, poetry, commentary, mythology, recipes, travel and art from the samiti families of Pune.',
     },
   ]
+  if (issues.length)
+    routes.push({
+      path: '/uma/sankhya',
+      title: 'সব সংখ্যা · All issues · Uma magazine',
+      description:
+        'Every issue of Uma (উমা), the Magarpatta pujo samiti magazine — stories, poetry, recipes, travel, mythology and commentary, in Bengali and English.',
+    })
   for (const i of issues)
     routes.push({
       path: `/uma/sankhya/${i.number}`,

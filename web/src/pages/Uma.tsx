@@ -50,6 +50,9 @@ const fmtDate = (iso: string | null) =>
 
 const issueName = (i: { number: number; title: string | null }) => i.title ?? `সংখ্যা ${i.number}`
 
+/** How many editions the front page shows before sending you to the archive. */
+const ARCHIVE_PREVIEW = 6
+
 /** Bengali pieces lead with their Bengali title; the other becomes the subtitle. */
 const headlineOf = (a: { title: string; titleBn: string | null; lang: 'bn' | 'en' }) => ({
   main: a.lang === 'bn' ? (a.titleBn ?? a.title) : a.title,
@@ -126,6 +129,35 @@ function ArticleCard({ a }: { a: UmaArticleCard }) {
                 {a.claps > 0 && <span>👏 {a.claps}</span>}
               </>
             )}
+          </p>
+        </CardHeader>
+      </Card>
+    </Link>
+  )
+}
+
+/** One edition, for the archive and the strip under the current issue. */
+function IssueCard({ issue, current = false }: { issue: UmaIssueCard; current?: boolean }) {
+  const cover = mediaUrl(issue.coverImage)
+  return (
+    <Link to={`/uma/sankhya/${issue.number}`}>
+      <Card className="h-full overflow-hidden pt-0 transition-shadow hover:shadow-md">
+        {cover ? (
+          <img src={cover} alt="" loading="lazy" className="aspect-[3/2] w-full object-cover" />
+        ) : (
+          // No cover yet — the masthead itself stands in, so the card is never bald
+          <div className="flex aspect-[3/2] w-full flex-col items-center justify-center gap-1 [background:color-mix(in_srgb,var(--jaba)_7%,var(--card))]">
+            <img src={seal} alt="" aria-hidden="true" width={56} height={56} className="size-14 opacity-70" />
+            <span className="font-serif text-2xl font-bold text-primary">উমা</span>
+          </div>
+        )}
+        <CardHeader>
+          <div className="flex flex-wrap items-center gap-2">
+            <CardTitle className="font-serif text-lg">{issueName(issue)}</CardTitle>
+            {current && <Badge variant="genda">এই সংখ্যা</Badge>}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            {[fmtDate(issue.publishedOn), `${issue.articleCount} pieces`].filter(Boolean).join(' · ')}
           </p>
         </CardHeader>
       </Card>
@@ -247,21 +279,53 @@ export function UmaHome() {
       ) : (
         <>
           <IssueBlock issue={data.latest} articles={data.latest.articles} />
-          {data.issues.length > 1 && (
-            <section className="flex flex-col gap-2 border-t pt-4">
-              <h3 className="text-sm font-semibold text-muted-foreground">আগের সংখ্যা · Past issues</h3>
-              <div className="flex flex-wrap gap-2">
-                {data.issues.slice(1).map((i) => (
-                  <Button key={i.id} variant="outline" size="sm" asChild>
-                    <Link to={`/uma/sankhya/${i.number}`}>
-                      {issueName(i)} · {i.articleCount} pieces
-                    </Link>
-                  </Button>
-                ))}
-              </div>
-            </section>
-          )}
+          <section className="flex flex-col gap-3 border-t pt-5">
+            <div className="flex items-baseline justify-between gap-2">
+              <h3 className="font-serif text-xl font-bold">সব সংখ্যা · All issues</h3>
+              {data.issues.length > ARCHIVE_PREVIEW && (
+                <Link to="/uma/sankhya" className="text-sm font-medium text-primary">
+                  সব দেখুন →
+                </Link>
+              )}
+            </div>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {data.issues.slice(0, ARCHIVE_PREVIEW).map((i) => (
+                <IssueCard key={i.id} issue={i} current={i.number === data.latest!.number} />
+              ))}
+            </div>
+          </section>
         </>
+      )}
+    </div>
+  )
+}
+
+/** /uma/sankhya — every edition, newest first. */
+export function UmaArchive() {
+  const { data, isPending } = useUmaHome()
+  const issues = data?.issues ?? []
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col gap-5">
+      <Seo
+        title="সব সংখ্যা · All issues · Uma magazine"
+        description="Every issue of Uma (উমা), the Magarpatta pujo samiti magazine — stories, poetry, recipes, travel, mythology and commentary, in Bengali and English."
+        path="/uma/sankhya"
+      />
+      <MagazineMast />
+      <SectionChips />
+      <h2 className="font-serif text-2xl font-bold">সব সংখ্যা · All issues</h2>
+      {isPending ? (
+        <LogoSpinner />
+      ) : issues.length === 0 ? (
+        <p className="text-center text-sm text-muted-foreground">
+          কোনও সংখ্যা এখনও প্রকাশিত হয়নি — প্রথমটি আসছে।
+        </p>
+      ) : (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {issues.map((i, idx) => (
+            <IssueCard key={i.id} issue={i} current={idx === 0} />
+          ))}
+        </div>
       )}
     </div>
   )

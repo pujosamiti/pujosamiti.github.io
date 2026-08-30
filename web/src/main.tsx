@@ -21,7 +21,7 @@ import { ProcurementMaster } from '@/pages/ProcurementMaster'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
-import { UmaArticle, UmaHome, UmaIssue, UmaSectionPage } from '@/pages/Uma'
+import { UmaArchive, UmaArticle, UmaHome, UmaIssue, UmaSectionPage } from '@/pages/Uma'
 import { UmaDesk } from '@/pages/UmaDesk'
 
 import { captureTokenFromUrl } from '@/lib/auth'
@@ -79,6 +79,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
               {/* Uma — the magazine is fully public (SEO + WhatsApp sharing) */}
               <Route path="uma" element={<UmaHome />} />
+              <Route path="uma/sankhya" element={<UmaArchive />} />
               <Route path="uma/sankhya/:number" element={<UmaIssue />} />
               <Route path="uma/bibhag/:section" element={<UmaSectionPage />} />
               <Route path="uma/:slug" element={<UmaArticle />} />
