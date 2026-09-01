@@ -15,7 +15,7 @@ import type {
   UmaStatusInput,
 } from '@pujosamiti/shared'
 import { canEditUmaSection, isUmaEditor, UMA_MAX_CLAPS, UMA_SECTIONS, umaSection } from '@pujosamiti/shared'
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -146,16 +146,22 @@ umaPublicRoutes.get('/home', async (c) => {
     .where(eq(schema.umaArticle.status, 'published'))
     .groupBy(schema.umaArticle.issueId)
   const countOf = new Map(counts.map((r) => [r.issueId, r.n]))
-  const masthead = await db
-    .select({ name: schema.person.displayName, umaRole: schema.person.umaRole })
+  const [chiefRow] = await db
+    .select({ name: schema.person.displayName })
     .from(schema.person)
-    .where(and(isNotNull(schema.person.umaRole), eq(schema.person.isActive, true)))
+    .where(and(eq(schema.person.umaRole, 'chief_editor'), eq(schema.person.isActive, true)))
+    .limit(1)
+  const seated = await db
+    .selectDistinct({ name: schema.person.displayName })
+    .from(schema.umaSectionEditor)
+    .innerJoin(schema.person, eq(schema.person.id, schema.umaSectionEditor.personId))
+    .where(eq(schema.person.isActive, true))
   const out: UmaHomeView = {
     latest: issues[0] ? await loadIssueView(db, issues[0]) : null,
     issues: issues.map((i) => toIssueCard(i, countOf.get(i.id) ?? 0)),
     masthead: {
-      chief: masthead.find((m) => m.umaRole === 'chief_editor')?.name ?? null,
-      editors: masthead.filter((m) => m.umaRole === 'editor').map((m) => m.name),
+      chief: chiefRow?.name ?? null,
+      editors: seated.map((r) => r.name).sort((a, b) => a.localeCompare(b)),
     },
   }
   return c.json(ok(out))
