@@ -1,10 +1,13 @@
 -- Sponsorship board for Durga Pujo 2026.
 --
 -- The master catalog is perpetual; what changes each year is the OFFERING
--- (sponsorship_item_year). This file does both in one idempotent pass:
---   1. upsert every item the 2026 board needs (new slots + retitled old ones),
---   2. write the 2026 offering — the listed items at their listed price,
---      every other catalog item explicitly NOT offered.
+-- (sponsorship_item_year). This file does both, and running it twice is a
+-- no-op:
+--   1. the catalog is FILE-OWNED — slots, titles, categories and order are
+--      upserted from here every run,
+--   2. the 2026 offering is APP-OWNED once it exists — section 2 fills gaps
+--      only, so a price set by finance or a slot skipped by the webmaster
+--      survives a re-run.
 --
 -- Old slots are reused wherever the 2026 name is the same real-world thing
 -- (Murti N → Durga Puja Pratima N, Padma Phul → Sandhi Puja Lotus Flowers…)
@@ -87,16 +90,23 @@ ON CONFLICT(id) DO UPDATE SET
   is_active      = excluded.is_active;
 
 -- ── 2. The 2026 offering ────────────────────────────────────────────────────
--- Rewritten wholesale each run. Safe: it touches no pledge, and the id scheme
--- ('siy-<item>-<year>') is the one the admin UI upserts into afterwards.
-
-DELETE FROM sponsorship_item_year WHERE year = 2026;
+-- GAP-FILLING, NOT AUTHORITATIVE. This writes a year row only where none
+-- exists. Once a slot has one, the app owns it: the webmaster decides whether
+-- it is offered and finance sets its amount, both through the same
+-- 'siy-<item>-<year>' row this file creates. A re-run must never undo that
+-- work, so there is no DELETE here — running this file twice is a no-op.
+--
+-- Which means the file no longer enforces the list below. To take a slot off
+-- the 2026 board now, use "Skip this year" in the app; to change a price, set
+-- it there. Editing this file only affects a database that has never been
+-- seeded for 2026.
 
 -- Everything on the 2026 list, at its 2026 price.
 INSERT INTO sponsorship_item_year (id, item_id, year, amount, is_active, notes)
 SELECT 'siy-' || id || '-2026', id, 2026, default_amount, 1, NULL
 FROM sponsorship_item
-WHERE id IN (
+WHERE id NOT IN (SELECT item_id FROM sponsorship_item_year WHERE year = 2026)
+AND id IN (
   'murti-slot-1','murti-slot-2','murti-slot-3','murti-slot-4','murti-slot-5','lakshmi-idol',
   'murti-moncha','mancha-lighting',
   'pratima-homecoming','pratima-farewell',
@@ -117,6 +127,7 @@ WHERE id IN (
 
 -- Every other catalog slot: on the books, off the 2026 board. Stated rather
 -- than left to the master flag, so an old item can never leak onto the board.
+-- Same rule — only where the year has no row yet.
 INSERT INTO sponsorship_item_year (id, item_id, year, amount, is_active, notes)
 SELECT 'siy-' || id || '-2026', id, 2026, NULL, 0, 'not offered in 2026'
 FROM sponsorship_item
@@ -124,10 +135,10 @@ WHERE id NOT IN (SELECT item_id FROM sponsorship_item_year WHERE year = 2026);
 
 -- ── 3. Standing pledges ─────────────────────────────────────────────────────
 -- The external artist fee is Tapash Basu's, at an amount he has not disclosed.
--- amount = 0 is the only way to say "claimed, price unknown" in a NOT NULL
--- column; it keeps the slot off the board for anyone else and adds nothing to
--- the pledged total. The real figure has to replace it (cancel → re-pledge)
--- BEFORE a payment is recorded, or the ledger takes a ₹0 contribution.
+-- amount = 0 is how the app records "pledged the cost, figure unknown": the
+-- slot is off the board for anyone else, the board reads "the cost" rather
+-- than ₹0, and it adds nothing to the pledged total. Recording payment asks
+-- for the amount received and writes it to both the ledger entry and this row.
 -- DO NOTHING, not REPLACE: a re-run must never resurrect a pledge that was
 -- since paid or cancelled in the app.
 INSERT INTO sponsorship_pledge (id, item_id, year, person_id, amount, status, ledger_entry_id, pledged_on, notes) VALUES
