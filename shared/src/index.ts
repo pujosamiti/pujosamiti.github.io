@@ -977,12 +977,21 @@ export interface BudgetLineInput {
   notes?: string | null;
 }
 
+/** Where a carried-forward balance came from — Poila Baishakh money is not
+ *  pujo money, even when the same person is holding both. */
+export interface BookShare {
+  bookId: BookId;
+  amount: number;
+}
+
 export interface WalletBalance {
   personId: string;
   personName: string;
   balance: number;
   /** balance before 1 July of the snapshot year */
   carriedForward: number;
+  /** that same figure, split by the book it was earned in (non-zero shares only) */
+  carriedForwardByBook: BookShare[];
   collectedSince: number;
   spentSince: number;
   transfersInSince: number;
@@ -1001,6 +1010,8 @@ export interface LedgerSummary {
   seasons: number[];
   totalBalance: number;
   carriedForward: number;
+  /** the same figure, split by book — Poila Baishakh's surplus is its own */
+  carriedForwardByBook: BookShare[];
   collectedSince: number;
   /** portion of collectedSince that is sponsorship money */
   collectedSponsorship: number;

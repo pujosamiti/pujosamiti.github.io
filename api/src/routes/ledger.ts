@@ -1,6 +1,7 @@
 import type {
   ApiResult,
   BookId,
+  BookShare,
   BudgetLine,
   BudgetLineInput,
   LedgerEntry,
@@ -267,6 +268,7 @@ ledgerRoutes.get('/summary', async (c) => {
         personName: names.get(pid) ?? '?',
         balance: 0,
         carriedForward: 0,
+        carriedForwardByBook: [],
         collectedSince: 0,
         spentSince: 0,
         transfersInSince: 0,
@@ -281,6 +283,23 @@ ledgerRoutes.get('/summary', async (c) => {
   let collectedSponsorship = 0
   let spentSince = 0
   let carriedForward = 0
+  /**
+   * Carried-forward money keeps the book it was earned in. Poila Baishakh runs
+   * in April, which the 1-July season boundary puts in the PREVIOUS season — so
+   * its surplus arrives in the pujo season's opening balance and, unlabelled,
+   * reads as pujo money. It is held in the same wallet (one person, one pocket)
+   * but it is not the pujo's to spend.
+   */
+  const byBook = new Map<string, Map<BookId, number>>()
+  const share = (key: string, book: BookId, amount: number) => {
+    const m = byBook.get(key) ?? new Map<BookId, number>()
+    m.set(book, (m.get(book) ?? 0) + amount)
+    byBook.set(key, m)
+  }
+  const shares = (key: string): BookShare[] =>
+    [...(byBook.get(key)?.entries() ?? [])]
+      .filter(([, amount]) => amount !== 0)
+      .map(([bookId, amount]) => ({ bookId, amount }))
   for (const e of entries) {
     const since = e.entryDate >= seasonStart
     if (e.kind === 'contribution') {
@@ -292,6 +311,8 @@ ledgerRoutes.get('/summary', async (c) => {
       } else {
         carriedForward += e.amount
         w(e.walletPersonId).carriedForward += e.amount
+        share('*', e.bookId as BookId, e.amount)
+        share(e.walletPersonId, e.bookId as BookId, e.amount)
       }
     } else if (e.kind === 'expense') {
       w(e.walletPersonId).balance -= e.amount
@@ -301,6 +322,8 @@ ledgerRoutes.get('/summary', async (c) => {
       } else {
         carriedForward -= e.amount
         w(e.walletPersonId).carriedForward -= e.amount
+        share('*', e.bookId as BookId, -e.amount)
+        share(e.walletPersonId, e.bookId as BookId, -e.amount)
       }
     } else {
       w(e.walletPersonId).balance -= e.amount
@@ -329,11 +352,13 @@ ledgerRoutes.get('/summary', async (c) => {
     seasons,
     totalBalance: carriedForward + collectedSince - spentSince,
     carriedForward,
+    carriedForwardByBook: shares('*'),
     collectedSince,
     collectedSponsorship,
     spentSince,
     outstandingClaims,
     wallets: [...wallets.values()]
+      .map((x) => ({ ...x, carriedForwardByBook: shares(x.personId) }))
       .filter((x) => x.balance !== 0 || x.collectedSince || x.spentSince || x.transfersInSince || x.transfersOutSince)
       .sort((a, b) => b.balance - a.balance),
   }

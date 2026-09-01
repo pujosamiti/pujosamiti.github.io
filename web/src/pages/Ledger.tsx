@@ -9,6 +9,7 @@ import type {
   LedgerSummary,
   Me,
   ReimbursementClaim,
+  BookShare,
   ReimbursementClaimInput,
   SponsorshipItemView,
   SpendRow,
@@ -23,6 +24,7 @@ import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { PersonPicker } from '@/components/PersonPicker'
+import { cn } from '@/lib/utils'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
@@ -530,9 +532,21 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
   if (isPending || !s) return <LogoSpinner small />
   const isCurrent = s.seasonYear === s.currentSeasonYear
   const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)}`
-  const stats: [string, string, string, string?][] = [
+  /** "Poila Baishakh carry forward ₹11,780" — the share of an opening balance
+      that belongs to another book, held in the same wallet but not the pujo's. */
+  const otherBooks = (shares: BookShare[]) =>
+    shares
+      .filter((b) => b.bookId !== 'pujo-ledger' && b.amount !== 0)
+      .map((b) => `${BOOKS.find((x) => x.id === b.bookId)?.name ?? b.bookId} carry forward ${rupees(b.amount)}`)
+  const stats: [string, string, string, string?, 'warn'?][] = [
     [isCurrent ? 'Total in hand' : `Closing balance (30 Jun ${s.seasonYear + 1})`, rupees(s.totalBalance), 'genda'],
-    [`Carried forward (before 1 Jul ${s.seasonYear})`, rupees(s.carriedForward), 'sharat'],
+    [
+      `Carried forward (before 1 Jul ${s.seasonYear})`,
+      rupees(s.carriedForward),
+      'sharat',
+      otherBooks(s.carriedForwardByBook).map((t) => `incl. ${t}`).join(' · ') || undefined,
+      'warn',
+    ],
     ['Collected this season', rupees(s.collectedSince), 'durba', `incl. ${rupees(s.collectedSponsorship)} sponsorship`],
     ['Spent this season', rupees(s.spentSince), 'destructive'],
     ...(isCurrent
@@ -559,12 +573,16 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
         />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {stats.map(([label, value, tone, sub]) => (
+        {stats.map(([label, value, tone, sub, subTone]) => (
           <Card key={label} style={{ background: `color-mix(in srgb, var(--${tone}) 9%, var(--card))` }}>
             <CardContent className="p-4">
               <p className="text-xs text-muted-foreground">{label}</p>
               <p className="text-lg font-bold">{value}</p>
-              {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+              {sub && (
+                <p className={cn('text-xs', subTone === 'warn' ? 'font-medium text-palash' : 'text-muted-foreground')}>
+                  {sub}
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -596,7 +614,14 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
               <tbody>
                 {s.wallets.map((w) => (
                   <tr key={w.personId} className="border-b last:border-0">
-                    <td className="py-1.5 pr-2">{w.personName}</td>
+                    <td className="py-1.5 pr-2">
+                      {w.personName}
+                      {otherBooks(w.carriedForwardByBook).map((t) => (
+                        <span key={t} className="block text-xs font-medium text-palash">
+                          incl. {t}
+                        </span>
+                      ))}
+                    </td>
                     <td className="py-1.5 pr-2 text-right">{rupees(w.carriedForward)}</td>
                     <td className="py-1.5 pr-2 text-right">{rupees(w.collectedSince)}</td>
                     <td className="py-1.5 pr-2 text-right">{rupees(w.spentSince)}</td>
