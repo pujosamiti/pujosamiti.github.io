@@ -76,7 +76,7 @@ export function Bhog() {
     )
   }
 
-  const canEdit = isCoreRole(me.role) && !archival
+  const canEdit = me.role === 'admin' && !archival
   // The season's occasions in calendar order; members see only those with
   // something published, editors see every occasion as a workspace.
   const seasonEvents = (events ?? [])
@@ -139,7 +139,6 @@ export function Bhog() {
             me={me}
             canEdit={canEdit}
             canRsvp={!archival}
-            isAdmin={me.role === 'admin'}
             isCore={isCoreRole(me.role)}
             showMoney={isProxyRole(me.role)}
             initialCountFor={
@@ -160,7 +159,6 @@ function EventSection({
   me,
   canEdit,
   canRsvp,
-  isAdmin,
   isCore,
   showMoney,
   initialCountFor = null,
@@ -169,9 +167,9 @@ function EventSection({
   season: number
   days: BhogMenuView[]
   me: Me
+  /** admin, current season: the only writer of days, menus and prices. */
   canEdit: boolean
   canRsvp: boolean
-  isAdmin: boolean
   isCore: boolean
   /** admin/fin_admin only: per-plate cost and the totals derived from it. */
   showMoney: boolean
@@ -214,7 +212,7 @@ function EventSection({
           )}
           {canEdit && (days.length > 0 || isDurga) && (
             <>
-              {isAdmin && isDurga && days.length === 0 && (pujaDays?.days.length ?? 0) > 0 && (
+              {isDurga && days.length === 0 && (pujaDays?.days.length ?? 0) > 0 && (
                 <Button size="sm" onClick={() => seed.mutate()} disabled={seed.isPending}>
                   {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
                 </Button>
