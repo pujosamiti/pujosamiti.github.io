@@ -26,6 +26,8 @@ export function SearchSelect({
   onCreate,
   createLabel = (query) => `New: “${query}”`,
   fullWidth = false,
+  placeholder = 'Select…',
+  invalid = false,
 }: {
   options: SearchSelectOption[]
   value: string | null
@@ -41,6 +43,10 @@ export function SearchSelect({
   createLabel?: (query: string) => string
   /** Span the parent like a normal form input (form fields, not toolbars). */
   fullWidth?: boolean
+  /** What the trigger reads before anything is picked. */
+  placeholder?: string
+  /** Required and still empty: the control says so instead of only the disabled Save. */
+  invalid?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const [q, setQ] = useState('')
@@ -107,14 +113,25 @@ export function SearchSelect({
     <div ref={rootRef} className={cn('relative', className)}>
       <button
         type="button"
-        className={cn(inputCls, 'flex items-center justify-between gap-2 text-left', fullWidth ? 'w-full' : 'w-auto')}
+        className={cn(
+          inputCls,
+          'flex items-center justify-between gap-2 text-left',
+          fullWidth ? 'w-full' : 'w-auto',
+          invalid && !selected && 'border-destructive focus:ring-destructive/50',
+        )}
         onClick={() => (open ? setOpen(false) : openPanel())}
         aria-label={ariaLabel}
         aria-expanded={open}
         aria-haspopup="listbox"
+        aria-invalid={invalid && !selected}
       >
-        <span>{selected?.label ?? 'Select…'}</span>
-        <ChevronsUpDown className="size-4 shrink-0 text-shiuli" aria-hidden="true" />
+        <span className={cn(!selected && invalid && 'text-destructive')}>
+          {selected?.label ?? placeholder}
+        </span>
+        <ChevronsUpDown
+          className={cn('size-4 shrink-0', invalid && !selected ? 'text-destructive' : 'text-shiuli')}
+          aria-hidden="true"
+        />
       </button>
       {open && (
         <div

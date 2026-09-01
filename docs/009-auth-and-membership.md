@@ -58,8 +58,9 @@ Hiding routes in the React bundle protects nothing — enforcement lives here.
 an `is_active` person whose tier is still `non_member` passes the gate with
 the computed role **`newsignin`**: two pages (Bhog & Food Menu and
 Sponsorship) and exactly TWO writes — their household's food count and their
-own sponsorship pledge (create/cancel; enforced centrally in the members
-middleware: any other non-GET → 403, and non-core pledges are self-only). Onboarding skips "awaiting
+own sponsorship pledge (create only — a pledge is released by an admin, never
+by the pledger; enforced centrally in the members middleware: any other
+non-GET → 403, and a non-proxy pledge is self-only). Onboarding skips "awaiting
 activation" — completing the profile is enough. Stored tiers are untouched:
 new sign-ins register `origin='self'` / `tier='non_member'`, appear under
 **Pending activation** on /membership, and an admin setting their tier

@@ -141,7 +141,6 @@ export const SponsorshipPage = () => (
         isWebmaster={isWebmaster(me.personId)}
         pledgeForOthers={isProxyRole(me.role)}
         myPersonId={me.personId!}
-        myName={me.name}
       />
     )}
   </CorePage>
@@ -831,6 +830,9 @@ function PersonSelect({
   exclude = [],
   everyone = false,
   allowCreate = false,
+  placeholder,
+  invalid = false,
+  pinnedId,
 }: {
   value: string | null
   onChange: (v: string) => void
@@ -841,9 +843,25 @@ function PersonSelect({
   everyone?: boolean
   /** Offer walk-up creation (contributions only). */
   allowCreate?: boolean
+  placeholder?: string
+  /** Required and still empty. */
+  invalid?: boolean
+  /** Pin one person to the top of the roll (the sponsorship form pins the viewer). */
+  pinnedId?: string
 }) {
   const { data: people } = useMembersLite()
-  if (everyone) return <PersonPicker value={value} onChange={onChange} ariaLabel={ariaLabel} allowCreate={allowCreate} />
+  if (everyone)
+    return (
+      <PersonPicker
+        value={value}
+        onChange={onChange}
+        ariaLabel={ariaLabel}
+        allowCreate={allowCreate}
+        placeholder={placeholder}
+        invalid={invalid}
+        pinnedId={pinnedId}
+      />
+    )
   const options = (people ?? [])
     .filter((p) => (!coreOnly || p.tier === 'core') && !exclude.includes(p.id))
     .map((p) => ({ value: p.id, label: p.name }))
@@ -1116,7 +1134,6 @@ function SponsorshipTab({
   isWebmaster,
   pledgeForOthers,
   myPersonId,
-  myName,
 }: {
   isFinAdmin: boolean
   /** Core and above: may record a payment against a pledge, or cancel anyone's. */
@@ -1126,7 +1143,6 @@ function SponsorshipTab({
   /** Admin/fin_admin only: may record a pledge for another household. */
   pledgeForOthers: boolean
   myPersonId: string
-  myName: string
 }) {
   const { data: events } = useEvents()
   const dp = (events ?? []).filter((e) => e.kind === 'durga-pujo')
@@ -1144,6 +1160,8 @@ function SponsorshipTab({
   const [priceDraft, setPriceDraft] = useState('')
   /** Pledged but never paid: the slot an admin is about to put back on the board. */
   const [releasing, setReleasing] = useState<SponsorshipItemView | null>(null)
+  /** The slot this member is about to take, at its listed price. */
+  const [confirming, setConfirming] = useState<{ item: SponsorshipItemView; amount: number } | null>(null)
 
   const setYearAmount = useMutation({
     mutationFn: (i: SponsorshipItemView) =>
@@ -1168,6 +1186,15 @@ function SponsorshipTab({
         notes: i.yearNotes,
       }),
     onSuccess: invalidate,
+  })
+  const pledgeMine = useMutation({
+    mutationFn: ({ itemId, amount }: { itemId: string; amount: number }) =>
+      post('/api/members/ledger/sponsorship/pledges', { itemId, year: y, personId: myPersonId, amount }),
+    onSuccess: () => {
+      invalidate()
+      setConfirming(null)
+      setPledgingId(null)
+    },
   })
   const cancelPledge = useMutation({
     mutationFn: (pledgeId: string) => post(`/api/members/ledger/sponsorship/pledges/${pledgeId}/cancel`),
@@ -1234,7 +1261,8 @@ function SponsorshipTab({
                         )}
                         {pl && (
                           <span className="block text-xs text-muted-foreground">
-                            {pl.status === 'paid' ? 'Sponsored by' : 'Pledged by'} {pl.personName} · {rupees(pl.amount)}
+                            {pl.status === 'paid' ? 'Sponsored by' : 'Pledged by'} {pl.personName} ·{' '}
+                            {pl.amount > 0 ? rupees(pl.amount) : 'the cost'}
                           </span>
                         )}
                       </span>
@@ -1277,17 +1305,15 @@ function SponsorshipTab({
                         ) : readOnly ? (
                           <Badge variant="outline">pledged</Badge>
                         ) : !canSettle ? (
-                          // A member sees the pledge, and may take back their own.
-                          <>
-                            <Badge variant="outline">pledged</Badge>
-                            {pl.personId === myPersonId && (
-                              <Button size="icon" variant="ghost" aria-label="Cancel my pledge" onClick={() => cancelPledge.mutate(pl.id)}>
-                                <Undo2 className="size-4" />
-                              </Button>
-                            )}
-                          </>
+                          // A pledge stands until an admin releases it — the
+                          // pledger sees it, and cannot take it back.
+                          <Badge variant="outline">pledged</Badge>
                         ) : payingId === i.id ? (
-                          <PayPledgeInline pledgeId={pl.id} onDone={() => setPayingId(null)} />
+                          <PayPledgeInline
+                            pledgeId={pl.id}
+                            needsAmount={pl.amount <= 0}
+                            onDone={() => setPayingId(null)}
+                          />
                         ) : (
                           <>
                             <Button size="sm" variant="outline" onClick={() => setPayingId(i.id)}>
@@ -1304,13 +1330,18 @@ function SponsorshipTab({
                             itemId={i.id}
                             year={y}
                             defaultAmount={amount}
-                            pledgeForOthers={pledgeForOthers}
                             myPersonId={myPersonId}
-                            myName={myName}
                             onDone={() => setPledgingId(null)}
                           />
                         ) : (
-                          <Button size="sm" onClick={() => setPledgingId(i.id)}>
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              pledgeForOthers
+                                ? setPledgingId(i.id)
+                                : setConfirming({ item: i, amount: amount ?? 0 })
+                            }
+                          >
                             Pledge
                           </Button>
                         )
@@ -1331,6 +1362,44 @@ function SponsorshipTab({
           )
         })
       )}
+      <Dialog
+        open={!!confirming}
+        onClose={() => {
+          setConfirming(null)
+          pledgeMine.reset()
+        }}
+      >
+        <DialogTitle>Confirm your pledge</DialogTitle>
+        <DialogDescription>
+          You are about to pledge{' '}
+          {confirming && (confirming.item.yearAmount ?? confirming.item.defaultAmount) != null
+            ? `${confirming.amount.toLocaleString('en-IN')} INR`
+            : 'the cost'}{' '}
+          for “{confirming?.item.title}”. Please confirm.
+        </DialogDescription>
+        {pledgeMine.isError && (
+          <p className="text-sm text-destructive">{(pledgeMine.error as Error).message}</p>
+        )}
+        <DialogActions>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={() => {
+              setConfirming(null)
+              pledgeMine.reset()
+            }}
+          >
+            Cancel
+          </Button>
+          <Button
+            className="flex-1"
+            disabled={pledgeMine.isPending}
+            onClick={() => confirming && pledgeMine.mutate({ itemId: confirming.item.id, amount: confirming.amount })}
+          >
+            {pledgeMine.isPending ? <Loader2 className="animate-spin" /> : null} OK
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Dialog open={!!releasing} onClose={() => setReleasing(null)}>
         <DialogTitle>Release this slot?</DialogTitle>
         <DialogDescription>
@@ -1365,21 +1434,18 @@ function PledgeInline({
   itemId,
   year,
   defaultAmount,
-  pledgeForOthers,
   myPersonId,
-  myName,
   onDone,
 }: {
   itemId: string
   year: number
   defaultAmount: number | null
-  pledgeForOthers: boolean
+  /** Pinned to the top of the roll — an admin most often pledges as themselves. */
   myPersonId: string
-  myName: string
   onDone: () => void
 }) {
   const invalidate = useLedgerInvalidate()
-  const [personId, setPersonId] = useState<string | null>(pledgeForOthers ? null : myPersonId)
+  const [personId, setPersonId] = useState<string | null>(null)
   const [amount, setAmount] = useState(defaultAmount ? String(defaultAmount) : '')
   const save = useMutation({
     mutationFn: () => post('/api/members/ledger/sponsorship/pledges', { itemId, year, personId, amount: Number(amount) }),
@@ -1390,13 +1456,22 @@ function PledgeInline({
   })
   return (
     <span className="flex flex-wrap items-center gap-2">
-      {pledgeForOthers ? (
-        <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Pledger" everyone />
-      ) : (
-        <span className="text-sm font-medium">{myName}</span>
-      )}
+      <PersonSelect
+        value={personId}
+        onChange={setPersonId}
+        ariaLabel="Pledger"
+        everyone
+        allowCreate
+        placeholder="Select Sponsor"
+        invalid={!personId}
+        pinnedId={myPersonId}
+      />
       <input type="number" min="1" className={`${inputCls} w-24`} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="₹" />
-      <Button size="sm" disabled={!personId || !amount || save.isPending} onClick={() => save.mutate()}>
+      <Button
+        size="sm"
+        disabled={!personId || !amount || save.isPending}
+        onClick={() => save.mutate()}
+      >
         Save
       </Button>
       <Button size="sm" variant="ghost" onClick={onDone}>
@@ -1407,11 +1482,25 @@ function PledgeInline({
   )
 }
 
-function PayPledgeInline({ pledgeId, onDone }: { pledgeId: string; onDone: () => void }) {
+function PayPledgeInline({
+  pledgeId,
+  needsAmount,
+  onDone,
+}: {
+  pledgeId: string
+  /** Pledged at "whatever it costs": the figure is named here, on payment. */
+  needsAmount: boolean
+  onDone: () => void
+}) {
   const invalidate = useLedgerInvalidate()
   const [walletId, setWalletId] = useState<string | null>(null)
+  const [amount, setAmount] = useState('')
   const save = useMutation({
-    mutationFn: () => post(`/api/members/ledger/sponsorship/pledges/${pledgeId}/pay`, { walletPersonId: walletId }),
+    mutationFn: () =>
+      post(`/api/members/ledger/sponsorship/pledges/${pledgeId}/pay`, {
+        walletPersonId: walletId,
+        ...(needsAmount ? { amount: Number(amount) } : {}),
+      }),
     onSuccess: () => {
       invalidate()
       onDone()
@@ -1420,7 +1509,22 @@ function PayPledgeInline({ pledgeId, onDone }: { pledgeId: string; onDone: () =>
   return (
     <span className="flex flex-wrap items-center gap-2">
       <PersonSelect value={walletId} onChange={setWalletId} ariaLabel="Received by (wallet)" coreOnly />
-      <Button size="sm" disabled={!walletId || save.isPending} onClick={() => save.mutate()}>
+      {needsAmount && (
+        <input
+          type="number"
+          min="1"
+          className={`${inputCls} h-9 w-28`}
+          value={amount}
+          onChange={(e) => setAmount(e.target.value)}
+          placeholder="Amount received"
+          aria-label="Amount received"
+        />
+      )}
+      <Button
+        size="sm"
+        disabled={!walletId || (needsAmount && !amount) || save.isPending}
+        onClick={() => save.mutate()}
+      >
         Received
       </Button>
       <Button size="sm" variant="ghost" onClick={onDone}>

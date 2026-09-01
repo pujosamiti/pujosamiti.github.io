@@ -35,7 +35,9 @@ type Vars = { me: Me }
  *
  * Every member reads: the season summary, the budget, spend by category and
  * the sponsorship board — the samiti's accounts are its own business — and may
- * pledge for an item or take back a pledge of their own (MEMBER_OPEN below).
+ * pledge for an item (MEMBER_OPEN below). Taking a pledge back is not theirs:
+ * a slot someone has claimed is released by an admin, who knows whether the
+ * money is still coming.
  *
  * Core members read the ledger itself and run the day-to-day: raising a
  * reimbursement claim, taking one on to pay.
@@ -55,8 +57,7 @@ const MEMBER_OPEN: [string, RegExp][] = [
   ['GET', /\/ledger\/spend$/],
   ['GET', /\/ledger\/sponsorship$/],
   ['POST', /\/ledger\/sponsorship\/pledges$/],
-  // Un-pledging is theirs to undo — the handler checks it is their own.
-  ['POST', /\/ledger\/sponsorship\/pledges\/[^/]+\/cancel$/],
+  // Cancelling is NOT here: a pledge, once made, is released by an admin only.
 ]
 
 ledgerRoutes.use('*', async (c, next) => {
@@ -474,7 +475,7 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
   // adding to the ledger, so it belongs to whoever actually holds the money.
   if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const pledgeId = c.req.param('id')
-  const body = await c.req.json<{ walletPersonId: string; entryDate?: string }>()
+  const body = await c.req.json<{ walletPersonId: string; entryDate?: string; amount?: number }>()
   if (!body.walletPersonId) return c.json({ ok: false, error: 'wallet person required' }, 400)
   const entryDate = body.entryDate ?? todayIST()
   if (!DATE_RE.test(entryDate)) return c.json({ ok: false, error: 'entry_date must be YYYY-MM-DD' }, 400)
@@ -482,6 +483,11 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
   const [pl] = await db.select().from(schema.sponsorshipPledge).where(eq(schema.sponsorshipPledge.id, pledgeId)).limit(1)
   if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
   if (pl.status !== 'pledged') return c.json({ ok: false, error: `pledge is ${pl.status}` }, 409)
+  // A slot pledged at "whatever it costs" stores 0 — the amount received is
+  // named here, and never guessed.
+  const amount = pl.amount > 0 ? pl.amount : Number(body.amount)
+  if (!Number.isInteger(amount) || amount <= 0)
+    return c.json({ ok: false, error: 'this pledge has no amount yet — enter what was received' }, 400)
   if (pl.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — payments only for the active pujo year' }, 400)
   const [item] = await db.select().from(schema.sponsorshipItem).where(eq(schema.sponsorshipItem.id, pl.itemId)).limit(1)
@@ -493,7 +499,7 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
     kind: 'contribution',
     category: 'sponsorship',
     subCategory: item?.category ?? null,
-    amount: pl.amount,
+    amount,
     personId: pl.personId,
     walletPersonId: body.walletPersonId,
     notes: item ? `Sponsorship: ${item.title} ${pl.year}` : null,
@@ -502,7 +508,7 @@ ledgerRoutes.post('/sponsorship/pledges/:id/pay', async (c) => {
   })
   const res = await db
     .update(schema.sponsorshipPledge)
-    .set({ status: 'paid', ledgerEntryId: entryId })
+    .set({ status: 'paid', ledgerEntryId: entryId, amount })
     .where(and(eq(schema.sponsorshipPledge.id, pledgeId), eq(schema.sponsorshipPledge.status, 'pledged')))
   if (((res as unknown as { meta?: { changes?: number } }).meta?.changes ?? 1) === 0) {
     // lost the race — remove the just-created entry
@@ -520,10 +526,10 @@ ledgerRoutes.post('/sponsorship/pledges/:id/cancel', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const [pl] = await db.select().from(schema.sponsorshipPledge).where(eq(schema.sponsorshipPledge.id, c.req.param('id'))).limit(1)
   if (!pl) return c.json({ ok: false, error: 'unknown pledge' }, 404)
-  // Members may pledge, so they may take it back — but only their own.
-  const me = c.get('me')
-  if (!isCoreRole(me.role) && pl.personId !== me.personId)
-    return c.json({ ok: false, error: 'you can only cancel your own pledge' }, 403)
+  // A pledge is a commitment to the samiti, not a basket item: only an admin
+  // releases one, and only after deciding the money is not coming.
+  if (!isProxyRole(c.get('me').role))
+    return c.json({ ok: false, error: 'only an admin can release a pledge' }, 403)
   if (pl.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — cancellations only for the active pujo year' }, 400)
   const res = await db

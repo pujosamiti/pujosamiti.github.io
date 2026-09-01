@@ -73,7 +73,7 @@ local `http://localhost:8787`.
 | `POST /entries` · `POST /entries/:id/update` · `POST /entries/:id/void` | Write/correct/void (48 h hardening window — [004](004-database.md) §2) |
 | `GET /sponsorship?year=` | Items + year state + pledges |
 | `POST /sponsorship/items` · `POST /sponsorship/items/:id/year` | Catalog & yearly pricing |
-| `POST /sponsorship/pledges` · `…/:id/pay` · `…/:id/cancel` | Pledge lifecycle (pay writes the ledger entry) |
+| `POST /sponsorship/pledges` · `…/:id/pay` · `…/:id/cancel` | Pledge lifecycle. Anyone pledges (self only unless admin/fin_admin); pay and cancel are admin/fin_admin — pay writes the ledger entry |
 | `GET /budget?year=` · `POST /budget` · `POST /budget/bulk` · `POST /budget/:id/delete` | Season budget lines |
 | `GET /claims` · `POST /claims` · `…/:id/assign` · `…/:id/settle` · `…/:id/reject` · `…/:id/cancel` | Reimbursements (settle writes the vendor expense + link) |
 

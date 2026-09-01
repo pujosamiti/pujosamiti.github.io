@@ -62,7 +62,7 @@ memberRoutes.use('*', async (c, next) => {
   // own sponsorship pledge — enforced centrally so no individual write route
   // needs to remember it.
   const newSignInWriteOk =
-    c.req.path.endsWith('/bhog/rsvp') || /\/ledger\/sponsorship\/pledges(\/[^/]+\/cancel)?$/.test(c.req.path)
+    c.req.path.endsWith('/bhog/rsvp') || /\/ledger\/sponsorship\/pledges$/.test(c.req.path)
   if (role === 'newsignin' && c.req.method !== 'GET' && !newSignInWriteOk)
     return c.json(
       {

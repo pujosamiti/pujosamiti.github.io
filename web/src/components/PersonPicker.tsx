@@ -25,11 +25,18 @@ export function PersonPicker({
   onChange,
   ariaLabel,
   allowCreate = false,
+  placeholder,
+  invalid = false,
+  pinnedId,
 }: {
   value: string | null
   onChange: (id: string) => void
   ariaLabel: string
   allowCreate?: boolean
+  placeholder?: string
+  invalid?: boolean
+  /** Sits first in the list, marked "You" — the person most often picked. */
+  pinnedId?: string
 }) {
   const queryClient = useQueryClient()
   const { data: people } = usePickerPeople()
@@ -53,10 +60,17 @@ export function PersonPicker({
     },
   })
 
-  const options = (people ?? []).map((p) => ({
+  // sort is stable, so pinning the viewer to the top leaves everyone else in
+  // the roster's own order.
+  const roll = pinnedId
+    ? [...(people ?? [])].sort((a, b) => (a.id === pinnedId ? -1 : b.id === pinnedId ? 1 : 0))
+    : (people ?? [])
+  const options = roll.map((p) => ({
     value: p.id,
     label: p.name,
-    hint: [p.isActive ? TIER_HINT[p.tier] : 'Inactive', p.society].filter(Boolean).join(' · '),
+    hint: [p.id === pinnedId ? 'You' : null, p.isActive ? TIER_HINT[p.tier] : 'Inactive', p.society]
+      .filter(Boolean)
+      .join(' · '),
   }))
 
   return (
@@ -68,6 +82,8 @@ export function PersonPicker({
         value={value}
         onChange={onChange}
         ariaLabel={ariaLabel}
+        placeholder={placeholder}
+        invalid={invalid}
         onCreate={
           allowCreate
             ? (typed) => {
