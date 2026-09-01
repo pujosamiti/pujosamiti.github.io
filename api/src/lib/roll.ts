@@ -10,7 +10,7 @@ type DB = ReturnType<typeof drizzle<typeof schema>>
  * The automatic membership rule for counter entries: recording participation
  * for someone updates the roll to match reality. A recorded subscription or
  * sponsorship of ≥ ₹CORE_CONTRIBUTION_THRESHOLD makes them CORE; any other
- * recorded participation (smaller payment, food count) makes a non-member a
+ * recorded participation (smaller payment, headcount) makes a non-member a
  * MEMBER; someone who had left is reactivated. Upgrades only — never
  * demotes, never touches admin/fin flags.
  */

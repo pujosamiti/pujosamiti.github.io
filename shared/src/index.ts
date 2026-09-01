@@ -118,7 +118,7 @@ export interface PujaDaysView {
 /**
  * newsignin: signed in and profile completed, but not yet activated by an
  * admin (person: origin='self', tier='non_member', active). View-only access
- * to bhog and sponsorship plus TWO writes — their household's food count and
+ * to bhog and sponsorship plus TWO writes — their household's headcount and
  * their own pledge. Computed per-request, so an admin activation upgrades
  * them instantly.
  */
@@ -133,7 +133,7 @@ export const maskEmail = (e: string | null): string | null =>
   e ? `xxxxxx@${e.split('@')[1] ?? ''}` : null;
 export const isMaskedEmail = (e: string | null | undefined): boolean => !!e && e.startsWith('xxxxxx@');
 
-/** Roles that may record on someone's behalf: counter entries, proxy food counts. */
+/** Roles that may record on someone's behalf: counter entries, proxy headcounts. */
 export const isProxyRole = (r: MemberRole): boolean => r === 'admin' || r === 'fin_admin';
 
 /**
@@ -411,7 +411,7 @@ export interface PickerPerson {
 /**
  * The automatic tier rule for recorded payments: a subscription or
  * sponsorship of ≥ this amount makes the payer CORE; any smaller recorded
- * participation (payment or food count) makes a non-member a MEMBER.
+ * participation (payment or headcount) makes a non-member a MEMBER.
  * Upgrades only — nothing ever demotes automatically.
  */
 export const CORE_CONTRIBUTION_THRESHOLD = 10000;
@@ -463,7 +463,7 @@ export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
 /**
  * OPEN MEMBERSHIP window for the 2026 season: everyone who signs in and
  * completes their profile gets in immediately as a NEWSIGNIN (view-only +
- * food count) through this IST date, without waiting for admin activation.
+ * headcount) through this IST date, without waiting for admin activation.
  * Stored tiers are untouched — new sign-ins register as origin='self' /
  * tier='non_member', so the admin's "Pending activation" list keeps
  * recording who hasn't been approved; activating someone there grants their

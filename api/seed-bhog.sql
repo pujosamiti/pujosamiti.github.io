@@ -1,5 +1,5 @@
 -- Historical bhog: menus (the 2025 WhatsApp menu repeated back),
--- per-plate costs and household food counts imported from the
+-- per-plate costs and household headcounts imported from the
 -- food-coupon-details sheets (2023/2024) and 2025-Durga-Puja-Bhog.xlsx.
 -- Idempotent: clears and re-inserts the three historical events.
 DELETE FROM bhog_rsvp WHERE menu_id IN (SELECT id FROM bhog_menu WHERE event_id IN ('durga-pujo-2023','durga-pujo-2024','durga-pujo-2025','saraswati-pujo-2026'));

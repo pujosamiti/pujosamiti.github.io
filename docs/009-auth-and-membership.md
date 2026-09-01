@@ -57,7 +57,7 @@ Hiding routes in the React bundle protects nothing — enforcement lives here.
 `OPEN_MEMBERSHIP_UNTIL` / `openMembershipActive()` in shared. While active,
 an `is_active` person whose tier is still `non_member` passes the gate with
 the computed role **`newsignin`**: two pages (Bhog & Food Menu and
-Sponsorship) and exactly TWO writes — their household's food count and their
+Sponsorship) and exactly TWO writes — their household's headcount and their
 own sponsorship pledge (create only — a pledge is released by an admin, never
 by the pledger; enforced centrally in the members middleware: any other
 non-GET → 403, and a non-proxy pledge is self-only). Onboarding skips "awaiting
@@ -79,7 +79,7 @@ admin       is_admin = true            — everything
 fin_admin   is_fin_admin = true        — everything money, without the membership roll
 coremember  tier = 'core'              — committee: task planning, admin READS
 member      tier = 'member'            — member content
-newsignin   tier = 'non_member', open  — bhog + sponsorship views; food count + own pledge (window, §3)
+newsignin   tier = 'non_member', open  — bhog + sponsorship views; headcount + own pledge (window, §3)
 (non_member / inactive / no row        — public content only)
 ```
 
@@ -117,18 +117,18 @@ Gates in practice:
 - **Activation is manual**: an admin promotes tier (admin UI → `/api/admin/
   people/:id/tier`, or SQL). Only then does member content open.
 - **The participation rule** (`api/src/lib/roll.ts`, counter entries): when an
-  admin/fin_admin records a food count or a contribution for someone, the
+  admin/fin_admin records a headcount or a contribution for someone, the
   roll updates itself — subscription/sponsorship ≥ ₹10,000
   (`CORE_CONTRIBUTION_THRESHOLD`) → **core**, any other recorded
   participation → non-member becomes **member**, inactive people reactivate.
   Upgrades only; nothing auto-demotes. Fires on ledger contribution entries,
-  pledge payments and proxied food counts — not on self-service actions.
+  pledge payments and proxied headcounts — not on self-service actions.
 - **Counter entries**: admins/fin_admins carry a full-roster person picker
-  (ex/non-members and inactive included, `/people-full`) on the food-count
+  (ex/non-members and inactive included, `/people-full`) on the headcount
   form and the ledger contributor/pledger fields, plus walk-up creation
   (`/counter-person`, `origin='counter'`, no email). A fresh contribution
   offers a one-tap jump to `/bhog?count=<personId>` to take the household's
-  food count immediately.
+  headcount immediately.
 - **Tier meaning**: `core` ≈ committee (typically follows the Durga Pujo
   subscription ≥ the threshold constant); `member` = regular; promotion is
   always an explicit admin act — sponsorships never affect tier.

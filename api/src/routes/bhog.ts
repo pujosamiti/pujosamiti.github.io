@@ -93,7 +93,7 @@ bhogRoutes.get('/', async (c) => {
 })
 
 /**
- * Food count: any active member submits their household's headcount for an
+ * Headcount: any active member submits their household's headcount for an
  * event's PUBLISHED days — Durga Puja in one go, single-meal events as one
  * row. 0 is a valid answer; resubmitting updates.
  */
@@ -261,7 +261,7 @@ bhogRoutes.post('/days', async (c) => {
     label: body.label.trim(),
     labelBn: body.labelBn?.trim() || null,
     date: body.date.trim(),
-    perPlateCost: Number.isInteger(body.perPlateCost) ? body.perPlateCost : null,
+    perPlateCost: isProxyRole(c.get('me').role) && Number.isInteger(body.perPlateCost) ? body.perPlateCost : null,
     notes: body.notes?.trim() || null,
     sortOrder: body.sortOrder ?? 1000,
   })
@@ -289,7 +289,10 @@ bhogRoutes.post('/days/:id', async (c) => {
       label: body.label.trim(),
       labelBn: body.labelBn?.trim() || null,
       date: body.date.trim(),
-      perPlateCost: Number.isInteger(body.perPlateCost) ? body.perPlateCost : null,
+      // Only admin/fin_admin price a plate; a core member's edit keeps what is there.
+      perPlateCost: isProxyRole(c.get('me').role)
+        ? (Number.isInteger(body.perPlateCost) ? body.perPlateCost : null)
+        : d.perPlateCost,
       notes: body.notes?.trim() || null,
       sortOrder: body.sortOrder ?? d.sortOrder,
     })

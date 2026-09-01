@@ -948,7 +948,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
     onSuccess: (r) => {
       invalidate()
       // Counter flow: a fresh contribution keeps the panel open with the
-      // roll-update message and a one-tap jump to their food count.
+      // roll-update message and a one-tap jump to their headcount.
       if (!editing && kind === 'contribution' && personId) {
         void queryClient.invalidateQueries({ queryKey: ['people-full'] })
         void queryClient.invalidateQueries({ queryKey: ['admin-people'] })
@@ -1085,7 +1085,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
               {savedFor.rollUpdated === 'reactivated' && ' They are back on the active roll.'}
             </span>
             <Button size="sm" variant="outline" asChild>
-              <Link to={`/bhog?count=${savedFor.personId}`}>Take their food count →</Link>
+              <Link to={`/bhog?count=${savedFor.personId}`}>Take their headcount →</Link>
             </Button>
           </div>
         )}

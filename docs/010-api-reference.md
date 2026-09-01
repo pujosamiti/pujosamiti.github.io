@@ -116,7 +116,7 @@ One menu per calendar date per event — five occasions a season
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (event/label/date/per-plate ₹/notes) — single-meal events add their one menu here |
 | `POST /days/:id/publish` | Publish/unpublish a day to the members |
 | `POST /days/:id/items` | Replace a day's dishes wholesale |
-| `POST /rsvp` | **Any member**: their household's food count, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`) — the participation rule then updates the roll |
+| `POST /rsvp` | **Any member**: their household's headcount, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`) — the participation rule then updates the roll |
 | `GET /counts?eventId=` | **Core**: the household-by-household count sheet for one event |
 
 ## Admin (`/api/admin` — core/admin read, admin write)

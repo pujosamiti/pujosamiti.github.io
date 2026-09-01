@@ -41,7 +41,7 @@ export function Bhog() {
   const { data: events } = useEvents()
   const [season, setSeason] = useState<number | null>(null)
   // Counter linkage: /bhog?count=<personId> (from a fresh ledger entry) opens
-  // the food-count form with that person pre-picked.
+  // the headcount form with that person pre-picked.
   const [searchParams] = useSearchParams()
   const countFor = searchParams.get('count')
 
@@ -141,6 +141,7 @@ export function Bhog() {
             canRsvp={!archival}
             isAdmin={me.role === 'admin'}
             isCore={isCoreRole(me.role)}
+            showMoney={isProxyRole(me.role)}
             initialCountFor={
               countFor && !archival && i === sections.findIndex((x) => (byEvent.get(x.id) ?? []).some((d) => d.isPublished))
                 ? countFor
@@ -161,6 +162,7 @@ function EventSection({
   canRsvp,
   isAdmin,
   isCore,
+  showMoney,
   initialCountFor = null,
 }: {
   event: PujoEvent
@@ -171,6 +173,8 @@ function EventSection({
   canRsvp: boolean
   isAdmin: boolean
   isCore: boolean
+  /** admin/fin_admin only: per-plate cost and the totals derived from it. */
+  showMoney: boolean
   initialCountFor?: string | null
 }) {
   const queryClient = useQueryClient()
@@ -195,7 +199,7 @@ function EventSection({
         <span className="ml-auto flex flex-wrap gap-2">
           {canRsvp && publishedDays.length > 0 && (
             <Button size="sm" onClick={() => setCounting(!counting)}>
-              <Users /> {publishedDays.some((d) => d.myCount != null) ? 'Update food count' : 'Give food count'}
+              <Users /> {publishedDays.some((d) => d.myCount != null) ? 'Update headcount' : 'Give headcount'}
             </Button>
           )}
           {isCore && days.some((d) => d.responses > 0) && (
@@ -232,7 +236,7 @@ function EventSection({
           onClose={() => setCounting(false)}
         />
       )}
-      {showResponses && isCore && <ResponsesTable event={event} days={days} />}
+      {showResponses && isCore && <ResponsesTable event={event} days={days} showMoney={showMoney} />}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
         <p className="text-sm text-muted-foreground">
           No Puja Days for {event.year} yet — finalise the nirghanto and seed them first (Nirghanto page).
@@ -244,19 +248,30 @@ function EventSection({
           season={season}
           eventId={event.id}
           defaults={{ label: kindLabel, date: event.startsOn }}
+          showMoney={showMoney}
           onClose={() => setAdding(false)}
         />
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         {days.map((d) => (
-          <DayCard key={d.id} season={season} day={d} canEdit={canEdit} />
+          <DayCard key={d.id} season={season} day={d} canEdit={canEdit} showMoney={showMoney} />
         ))}
       </div>
     </section>
   )
 }
 
-function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; canEdit: boolean }) {
+function DayCard({
+  season,
+  day,
+  canEdit,
+  showMoney,
+}: {
+  season: number
+  day: BhogMenuView
+  canEdit: boolean
+  showMoney: boolean
+}) {
   const queryClient = useQueryClient()
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['bhog', season] })
   const [editing, setEditing] = useState(false)
@@ -266,7 +281,16 @@ function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; 
   })
   const remove = useMutation({ mutationFn: () => deleteBhogDay(day.id), onSettled: invalidate })
 
-  if (editing) return <DayForm season={season} eventId={day.eventId} initial={day} onClose={() => setEditing(false)} />
+  if (editing)
+    return (
+      <DayForm
+        season={season}
+        eventId={day.eventId}
+        initial={day}
+        showMoney={showMoney}
+        onClose={() => setEditing(false)}
+      />
+    )
 
   return (
     <Card>
@@ -282,13 +306,15 @@ function DayCard({ season, day, canEdit }: { season: number; day: BhogMenuView; 
         <CardDescription>{fmtDate(day.date)}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <p className="text-lg font-semibold">
-          {day.perPlateCost != null ? (
-            <>₹{day.perPlateCost} <span className="text-sm font-normal text-muted-foreground">per plate</span></>
-          ) : (
-            <span className="text-sm font-normal text-muted-foreground">Per-plate cost to be announced</span>
-          )}
-        </p>
+        {showMoney && (
+          <p className="text-lg font-semibold">
+            {day.perPlateCost != null ? (
+              <>₹{day.perPlateCost} <span className="text-sm font-normal text-muted-foreground">per plate</span></>
+            ) : (
+              <span className="text-sm font-normal text-muted-foreground">Per-plate cost to be announced</span>
+            )}
+          </p>
+        )}
         {day.items.length > 0 ? (
           <ul className="flex flex-col gap-1 text-sm">
             {day.items.map((i) => (
@@ -416,7 +442,7 @@ function HeadcountForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Food count — {event.nameEn}</CardTitle>
+        <CardTitle>Headcount — {event.nameEn}</CardTitle>
         <CardDescription>
           {proxy
             ? 'Recording on behalf of a household? Pick the person — their existing counts load for editing. 0 means not coming; blank leaves a day unanswered.'
@@ -470,7 +496,16 @@ const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
  * The household-by-household count sheet (core) — rows people, columns days,
  * with the sheet's money math (plates × per-plate ₹) and print/CSV export.
  */
-function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[] }) {
+function ResponsesTable({
+  event,
+  days,
+  showMoney,
+}: {
+  event: PujoEvent
+  days: BhogMenuView[]
+  /** Plate counts are everyone's business on this table; the ₹ rows are not. */
+  showMoney: boolean
+}) {
   const { data: rows, isPending } = useBhogCounts(event.id)
   if (isPending)
     return (
@@ -494,7 +529,7 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
   const dayLabel = new Map(days.map((d) => [d.id, d.label]))
   const noted = (rows ?? []).filter((r) => r.notes)
 
-  const title = `Food count — ${event.nameEn} ${event.year}`
+  const title = `Headcount — ${event.nameEn} ${event.year}`
   const toCsv = () => {
     const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
     const lines = [
@@ -503,13 +538,13 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
         [p.name, p.tier === 'core' ? 'Core' : 'Member', ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(','),
       ),
       ['Total plates', '', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
-      ['Total INR', '', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(','),
+      ...(showMoney ? [['Total INR', '', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(',')] : []),
       ...(noted.length ? ['', ...noted.map((r) => [`${r.name} — ${dayLabel.get(r.menuId) ?? ''}`, r.notes!].map(esc).join(','))] : []),
     ]
     const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
     const a = document.createElement('a')
     a.href = URL.createObjectURL(blob)
-    a.download = `food-count-${event.id}.csv`
+    a.download = `headcount-${event.id}.csv`
     a.click()
     URL.revokeObjectURL(a.href)
   }
@@ -530,7 +565,7 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
         .map((p) => `<tr>${cell(`${p.name}${p.tier === 'core' ? ' <small>(Core)</small>' : ''}`, false)}${days.map((d) => cell(p.counts[d.id] ?? '—')).join('')}${cell(p.total)}</tr>`)
         .join('')}
       <tr class="total">${cell('Total plates', false)}${days.map((d) => cell(d.totalCount)).join('')}${cell(grandPlates)}</tr>
-      <tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>
+      ${showMoney ? `<tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>` : ''}
     </table>${
       noted.length
         ? `<ul style="font-size:12px;margin-top:12px">${noted
@@ -595,13 +630,15 @@ function ResponsesTable({ event, days }: { event: PujoEvent; days: BhogMenuView[
               ))}
               <td className="px-3 py-1.5 text-right">{grandPlates}</td>
             </tr>
-            <tr className="bg-accent/40 font-medium">
-              <td className="px-3 py-1.5">Total ₹</td>
-              {money.map((m, i) => (
-                <td key={days[i].id} className="px-3 py-1.5 text-right">{m != null ? inr(m) : '—'}</td>
-              ))}
-              <td className="px-3 py-1.5 text-right">{grandMoney != null ? inr(grandMoney) : '—'}</td>
-            </tr>
+            {showMoney && (
+              <tr className="bg-accent/40 font-medium">
+                <td className="px-3 py-1.5">Total ₹</td>
+                {money.map((m, i) => (
+                  <td key={days[i].id} className="px-3 py-1.5 text-right">{m != null ? inr(m) : '—'}</td>
+                ))}
+                <td className="px-3 py-1.5 text-right">{grandMoney != null ? inr(grandMoney) : '—'}</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -624,12 +661,16 @@ function DayForm({
   eventId,
   initial,
   defaults,
+  showMoney,
   onClose,
 }: {
   season: number
   eventId: BhogMenuView['eventId']
   initial?: BhogMenuView
   defaults?: { label: string; date: string }
+  /** admin/fin_admin only: the per-plate field. The server keeps the stored
+      value on everyone else's edits, so hiding it never wipes a price. */
+  showMoney: boolean
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
@@ -686,9 +727,11 @@ function DayForm({
           <Field label="Date">
             <input className={inputCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </Field>
-          <Field label="Per plate ₹">
-            <input className={inputCls} type="number" min="0" inputMode="numeric" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="180" />
-          </Field>
+          {showMoney && (
+            <Field label="Per plate ₹">
+              <input className={inputCls} type="number" min="0" inputMode="numeric" value={cost} onChange={(e) => setCost(e.target.value)} placeholder="180" />
+            </Field>
+          )}
         </div>
         <Field label="Menu (one dish per line)">
           <textarea

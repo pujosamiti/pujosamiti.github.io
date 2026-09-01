@@ -114,7 +114,7 @@ a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and an
 `is_published` flag: drafts are core-editor-only, published days are visible
 to every member. Only the current season is writable.
 
-`bhog_rsvp` is the **food count** — the digital food-coupon-details sheet:
+`bhog_rsvp` is the **headcount** — the digital food-coupon-details sheet:
 one row per (menu day × person), the signed-in member answering for their
 household ("Bhog Count, 5+ yrs"), unique-indexed, 0 a valid answer. Any
 active member submits — Durga Puja's days in one go — and resubmitting
@@ -202,7 +202,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0005 | `0005_timetable-alert-note.sql` | `timetable_entry.alert_note` (red note) |
 | 0006 | `0006_puja-days-procurement.sql` | Puja Days (`puja_day`, `event.nirghanto_finalized_on`) + the full procurement suite (catalog with vendor names & master-list suggestions, item-years with due date/time, puja-day-linked delivery columns, quantity cells) |
 | 0007 | `0007_bhog-menu.sql` | Bhog & food menus (`bhog_menu` per event per calendar date + `bhog_menu_item` dishes) |
-| 0008 | `0008_bhog-rsvp.sql` | Food count (`bhog_rsvp`, unique per menu day × person) |
+| 0008 | `0008_bhog-rsvp.sql` | Headcount (`bhog_rsvp`, unique per menu day × person) |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

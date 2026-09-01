@@ -160,7 +160,7 @@ export function MembersOnly() {
       {me?.role === 'newsignin' && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
           You're in with limited access while an admin activates your membership — you can already
-          give your household's food count on the{' '}
+          give your household's headcount on the{' '}
           <Link to="/bhog" className="underline">
             Bhog &amp; Food Menu
           </Link>{' '}

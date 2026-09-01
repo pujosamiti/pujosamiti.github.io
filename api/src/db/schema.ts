@@ -530,7 +530,7 @@ export const bhogMenuItem = sqliteTable('bhog_menu_item', {
 })
 
 /**
- * Food count: one household's headcount for one menu day, keyed by the
+ * Headcount: one household's headcount for one menu day, keyed by the
  * signed-in member's person row (the digital food-coupon-details sheet —
  * one row per family per day, "Bhog Count (5+ yrs)"). Any active member
  * responds for their household; 0 is a valid answer ("not coming").
