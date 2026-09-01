@@ -8,8 +8,8 @@ import { cn } from '@/lib/utils'
 const desktopNav = [
   { to: '/', label: 'Home', end: true },
   { to: '/schedule', label: 'Schedule', end: false },
-  { to: '/durga-puja', label: 'Durga Puja', end: false },
   { to: '/uma', label: 'উমা', end: false },
+  { to: '/durga-puja', label: 'Durga Puja', end: false },
   { to: '/membersonly', label: 'Members Only', end: false },
 ]
 
