@@ -474,6 +474,17 @@ export const OPEN_MEMBERSHIP_UNTIL = '2026-10-30'; // inclusive
 export const openMembershipActive = (): boolean =>
   new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10) <= OPEN_MEMBERSHIP_UNTIL;
 
+/**
+ * The sponsorship board opens to the samiti on this IST date. Before it, the
+ * page belongs to admins alone: the catalog is still being priced and the
+ * slots settled, and a half-built board invites pledges nobody can honour.
+ * From the 25th it is what it has always been — every member, and new
+ * sign-ins during the open-membership window.
+ */
+export const SPONSORSHIP_OPENS_ON = '2026-09-25';
+export const sponsorshipOpen = (): boolean =>
+  new Date(Date.now() + 5.5 * 3600_000).toISOString().slice(0, 10) >= SPONSORSHIP_OPENS_ON;
+
 /** Where a signed-in user stands: member, registered-but-waiting, or new. */
 export type OnboardingState =
   | { state: 'member' }

@@ -13,7 +13,7 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole, isProxyRole, isWebmaster } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -42,6 +42,14 @@ const canFinance = (me: Me) => me.role === 'admin' || me.role === 'fin_admin'
 /** Entries harden 48 h after creation — edit/void disappear, admin included. */
 const entryLocked = (e: LedgerEntry) => Date.now() - e.createdAt > 48 * 60 * 60 * 1000
 const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
+/** "25 September 2026" — the day the sponsorship board opens to the samiti. */
+const fmtOpensOn = () =>
+  new Date(`${SPONSORSHIP_OPENS_ON}T00:00:00Z`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'UTC',
+  })
 /**
  * The samiti's books run 1 July → 30 June, so the ledger is filtered by season
  * rather than calendar year — a March expense belongs to the pujo that began
@@ -134,7 +142,18 @@ export const WalletsPage = () => (
 )
 export const SponsorshipPage = () => (
   <CorePage title="Sponsorship" members newSignIn>
-    {(me) => (
+    {(me) =>
+      !sponsorshipOpen() && me.role !== 'admin' ? (
+        <Card className="mx-auto max-w-md">
+          <CardHeader>
+            <CardTitle>The board opens on {fmtOpensOn()}</CardTitle>
+            <CardDescription>
+              The slots for this year are still being settled and priced. From that morning every
+              member can see what is on offer and take one on.
+            </CardDescription>
+          </CardHeader>
+        </Card>
+      ) : (
       <SponsorshipTab
         isFinAdmin={canFinance(me)}
         canSettle={canFinance(me)}
@@ -142,7 +161,8 @@ export const SponsorshipPage = () => (
         pledgeForOthers={isProxyRole(me.role)}
         myPersonId={me.personId!}
       />
-    )}
+      )
+    }
   </CorePage>
 )
 export const ReimbursementsPage = () => (

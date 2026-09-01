@@ -1,4 +1,4 @@
-import { isCoreRole } from '@pujosamiti/shared'
+import { isCoreRole, sponsorshipOpen } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, Clock, Feather, Gift, LogIn, LogOut, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
@@ -17,7 +17,7 @@ import { Seo } from '@/components/Seo'
 const memberSections = [
   { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: 'durba' },
   { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets', tone: 'genda' },
-  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, tone: 'palash' },
+  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, adminUntilOpen: true, tone: 'palash' },
   { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
   { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: 'durba' },
@@ -48,6 +48,8 @@ export function MembersOnly() {
     // The editorial desk shows only to its masthead (and admins) once signed in;
     // signed-out visitors still see it listed with its gate label.
     if (s.editorsOnly && me && !(me.role === 'admin' || me.umaRole)) return false
+    // The sponsorship board is the admin's alone until it opens (see shared).
+    if (s.adminUntilOpen && me && !sponsorshipOpen() && me.role !== 'admin') return false
     return me?.role === 'newsignin' ? s.newSignInOk : !(s.coreOnly && me && !isCoreRole(me.role))
   })
 
@@ -164,10 +166,16 @@ export function MembersOnly() {
           <Link to="/bhog" className="underline">
             Bhog &amp; Food Menu
           </Link>{' '}
-          page and pledge a{' '}
-          <Link to="/sponsorship" className="underline">
-            sponsorship
-          </Link>
+          page
+          {sponsorshipOpen() ? (
+            <>
+              {' '}
+              and pledge a{' '}
+              <Link to="/sponsorship" className="underline">
+                sponsorship
+              </Link>
+            </>
+          ) : null}
           .
         </p>
       )}
