@@ -572,6 +572,22 @@ export const umaIssue = sqliteTable('uma_issue', {
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
 })
 
+/**
+ * One editor per Uma section — the masthead's working half. A person may hold
+ * several rows; a section with no row is unassigned. The chair lives on
+ * person.uma_role, which is the only place 'chief_editor' is recorded.
+ */
+export const umaSectionEditor = sqliteTable('uma_section_editor', {
+  section: text('section').primaryKey(), // UmaSectionId
+  personId: text('person_id')
+    .notNull()
+    .references(() => person.id),
+  assignedBy: text('assigned_by')
+    .notNull()
+    .references(() => person.id),
+  assignedAt: integer('assigned_at', { mode: 'timestamp' }).notNull(),
+})
+
 export const umaArticle = sqliteTable('uma_article', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(), // public URL identity; immutable once published

@@ -7,7 +7,6 @@ import type {
   UmaIssueInput,
   UmaIssueView,
   UmaReactInput,
-  UmaRole,
   UmaStatusInput,
 } from '@pujosamiti/shared'
 import { useQuery } from '@tanstack/react-query'
@@ -126,9 +125,10 @@ export const orderUmaIssue = (id: string, articleIds: string[]) =>
   put(`/api/members/uma/issues/${id}/order`, { articleIds })
 export const publishUmaIssue = (id: string) =>
   post(`/api/members/uma/issues/${id}/publish`, {}) as Promise<{ published: number; rebuildTriggered: boolean }>
-export const unpublishUmaIssue = (id: string) => post(`/api/members/uma/issues/${id}/unpublish`, {})
 export const deleteUmaIssue = (id: string) => api(`/api/members/uma/issues/${id}`, { method: 'DELETE' })
-export const setUmaRole = (personId: string, role: UmaRole | null) => put('/api/members/uma/roles', { personId, role })
+export const setUmaChief = (personId: string | null) => put('/api/members/uma/roles', { personId })
+export const setUmaSectionEditor = (section: string, personId: string | null) =>
+  put('/api/members/uma/sections', { section, personId })
 
 export const uploadUmaMedia = (file: File) =>
   api<{ url: string }>(`/api/members/uma/media?name=${encodeURIComponent(file.name)}`, {

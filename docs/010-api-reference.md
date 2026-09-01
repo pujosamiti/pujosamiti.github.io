@@ -152,3 +152,25 @@ Adding a route: define it in the right `routes/*.ts` file (respecting the
 mount's gate), add/extend the contract type in `shared/src/index.ts`, and
 call it through `web/src/lib/api.ts` — the shared types make a mismatch a
 compile error on both sides, which the CI typecheck gate then catches.
+
+## উমা — the magazine
+
+Public (`/api/public/uma/*`, unauthenticated): `GET home` · `GET issues/:number` ·
+`GET articles` · `GET articles/:slug` · `POST react` (hearts / claps) ·
+`GET media/:key` · `GET prerender` (read by the web build).
+
+The desk (`/api/members/uma/*`, behind the editor gate — chief editor, any
+section editor, or an admin):
+
+| Route | Who |
+| --- | --- |
+| `GET /desk` | any editor |
+| `POST /articles` · `PUT /articles/:id` · `POST /articles/:id/status` | the **section's** editor, chief, admin |
+| `DELETE /articles/:id` | admin — refuses a published article |
+| `POST /issues` · `PUT /issues/:id` · `PUT /issues/:id/order` · `DELETE /issues/:id` | chief, admin — ordering works on published issues too |
+| `POST /issues/:id/publish` | chief, admin — one-way; there is no unpublish |
+| `POST /media` | any editor |
+| `PUT /roles` (the chair) · `PUT /sections` (one section's seat) | admin; active core members only |
+
+Full model in [015](015-uma-magazine.md); the access rules across every
+surface are in [014](014-roles-and-access.md).

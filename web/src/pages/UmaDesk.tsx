@@ -1,5 +1,5 @@
 import type { UmaArticleInput, UmaDeskArticle, UmaDeskView, UmaIssueCard, UmaSectionId } from '@pujosamiti/shared'
-import { UMA_MAX_EDITORS, UMA_SECTIONS, umaSection } from '@pujosamiti/shared'
+import { canEditUmaSection, UMA_SECTIONS, umaSection } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { ArrowDown, ArrowUp, Eye, EyeOff, ImagePlus, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -25,9 +25,9 @@ import {
   mediaUrl,
   orderUmaIssue,
   publishUmaIssue,
-  setUmaRole,
+  setUmaChief,
+  setUmaSectionEditor,
   setUmaStatus,
-  unpublishUmaIssue,
   updateUmaArticle,
   updateUmaIssue,
   uploadUmaMedia,
@@ -381,6 +381,7 @@ function DeskArticleCard({
   a,
   issues,
   isAdmin,
+  mine,
   onEdit,
   onChanged,
   onError,
@@ -388,6 +389,8 @@ function DeskArticleCard({
   a: UmaDeskArticle
   issues: UmaIssueCard[]
   isAdmin: boolean
+  /** false when this article's section belongs to another editor */
+  mine: boolean
   onEdit: () => void
   onChanged: () => void
   onError: (m: string) => void
@@ -419,10 +422,15 @@ function DeskArticleCard({
           <Button size="sm" variant="outline" onClick={() => setShowBody((v) => !v)}>
             {showBody ? <EyeOff /> : <Eye />} {showBody ? 'Close preview' : 'Preview'}
           </Button>
-          {a.status !== 'published' && (
+          {mine && a.status !== 'published' && (
             <Button size="sm" variant="outline" onClick={onEdit}>
               <Pencil /> Edit
             </Button>
+          )}
+          {!mine && (
+            <span className="self-center text-xs text-muted-foreground">
+              {umaSection(a.section)?.en}'s editor handles this one
+            </span>
           )}
           {isAdmin && a.status !== 'published' && (
             <Button
@@ -447,7 +455,7 @@ function DeskArticleCard({
             <MarkdownArticle markdown={a.bodyMd} resolveImage={(src) => mediaUrl(src) ?? null} />
           </div>
         )}
-        {a.status !== 'published' && <VerdictRow article={a} issues={issues} onDone={onChanged} onError={onError} />}
+        {mine && a.status !== 'published' && <VerdictRow article={a} issues={issues} onDone={onChanged} onError={onError} />}
       </CardContent>
     </Card>
   )
@@ -552,7 +560,7 @@ function IssuePanel({
                 {a.titleBn ?? a.title} <span className="text-muted-foreground">— {a.authorName}</span>
               </span>
               <Badge variant={STATUS_BADGE[a.status].variant}>{STATUS_BADGE[a.status].label}</Badge>
-              {isChief && issue.status === 'draft' && (
+              {isChief && (
                 <>
                   <Button size="icon" variant="ghost" className="size-8" onClick={() => move(i, -1)} disabled={busy || i === 0}>
                     <ArrowUp />
@@ -586,9 +594,10 @@ function IssuePanel({
                 </Button>
               </>
             ) : (
-              <Button size="sm" variant="outline" onClick={() => run(() => unpublishUmaIssue(issue.id))} disabled={busy}>
-                Unpublish
-              </Button>
+              <p className="text-xs text-muted-foreground">
+                Published on {issue.publishedOn} — a sankhya, once out, stays out. Order it as you
+                like; corrections are made by editing the pieces themselves.
+              </p>
             )}
           </div>
         )}
@@ -597,68 +606,83 @@ function IssuePanel({
   )
 }
 
-/** Admin-only: seat the masthead — one chief editor, up to two editors, core members. */
+/** Admin-only: seat the masthead — one chief editor, one editor per section. */
 function MastheadPanel({ desk, onChanged, onError }: { desk: UmaDeskView; onChanged: () => void; onError: (m: string) => void }) {
   const { data: people } = usePickerPeople()
   const core = (people ?? []).filter((p) => p.tier === 'core' && p.isActive)
   const options = core.map((p) => ({ value: p.id, label: p.name }))
-  const assign = async (personId: string, role: 'chief_editor' | 'editor' | null) => {
+  const run = async (fn: () => Promise<unknown>) => {
     try {
-      await setUmaRole(personId, role)
+      await fn()
       onChanged()
     } catch (e) {
       onError((e as Error).message)
     }
   }
+  const held = desk.masthead.seats.filter((s) => s.personId).length
   return (
     <Card>
       <CardHeader>
         <CardTitle>The masthead</CardTitle>
         <p className="text-sm text-muted-foreground">
-          One chief editor and up to {UMA_MAX_EDITORS} editors — active core members. The chief editor composes and
-          publishes sankhyas; editors run the queue.
+          One chief editor, and one editor per section — active core members only. A section's editor
+          runs that section's queue and nothing outside it; one person may hold several. The chief
+          editor composes and publishes sankhyas.
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <Field label="Chief editor · সম্পাদক">
-          <div className="flex items-center gap-2">
-            <SearchSelect
-              fullWidth
-              align="left"
-              ariaLabel="chief editor"
-              options={options}
-              value={desk.masthead.chief?.id ?? null}
-              onChange={(v) => void assign(v, 'chief_editor')}
-            />
-            {desk.masthead.chief && (
-              <Button size="sm" variant="ghost" onClick={() => void assign(desk.masthead.chief!.id, null)}>
-                clear
-              </Button>
-            )}
-          </div>
-        </Field>
-        <Field label={`Editors · সহ-সম্পাদক (${desk.masthead.editors.length}/${UMA_MAX_EDITORS})`}>
-          <div className="flex flex-col gap-2">
-            {desk.masthead.editors.map((e) => (
-              <div key={e.id} className="flex items-center gap-2">
-                <span className="flex-1 rounded-md border px-3 py-2 text-sm">{e.name}</span>
-                <Button size="sm" variant="ghost" onClick={() => void assign(e.id, null)}>
-                  clear
-                </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="min-w-40 text-sm font-medium">
+            Chief editor <span className="font-normal text-muted-foreground">সম্পাদক</span>
+          </span>
+          <SearchSelect
+            className="min-w-56 flex-1"
+            fullWidth
+            align="left"
+            ariaLabel="chief editor"
+            placeholder="unassigned"
+            options={options}
+            value={desk.masthead.chief?.id ?? null}
+            onChange={(v) => void run(() => setUmaChief(v))}
+          />
+          {desk.masthead.chief && (
+            <Button size="sm" variant="ghost" onClick={() => void run(() => setUmaChief(null))}>
+              clear
+            </Button>
+          )}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Section editors — {held} of {desk.masthead.seats.length} seated
+        </p>
+        <div className="flex flex-col gap-2">
+          {desk.masthead.seats.map((seat) => {
+            const sec = umaSection(seat.section)
+            return (
+              <div key={seat.section} className="flex flex-wrap items-center gap-2">
+                <span className="min-w-40 text-sm">
+                  {sec?.en ?? seat.section}{' '}
+                  <span className="text-muted-foreground">{sec?.bn}</span>
+                </span>
+                <SearchSelect
+                  className="min-w-56 flex-1"
+                  fullWidth
+                  align="left"
+                  ariaLabel={`${sec?.en ?? seat.section} editor`}
+                  placeholder="unassigned"
+                  options={options}
+                  value={seat.personId}
+                  onChange={(v) => void run(() => setUmaSectionEditor(seat.section, v))}
+                />
+                {seat.personId && (
+                  <Button size="sm" variant="ghost" onClick={() => void run(() => setUmaSectionEditor(seat.section, null))}>
+                    clear
+                  </Button>
+                )}
               </div>
-            ))}
-            {desk.masthead.editors.length < UMA_MAX_EDITORS && (
-              <SearchSelect
-                fullWidth
-                align="left"
-                ariaLabel="add editor"
-                options={options.filter((o) => !desk.masthead.editors.some((e) => e.id === o.value))}
-                value={null}
-                onChange={(v) => void assign(v, 'editor')}
-              />
-            )}
-          </div>
-        </Field>
+            )
+          })}
+        </div>
       </CardContent>
     </Card>
   )
@@ -670,7 +694,9 @@ export function UmaDesk() {
   const queryClient = useQueryClient()
   const { memberState } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
-  const canSee = !!me && (me.role === 'admin' || !!me.umaRole)
+  const canSee = !!me && (me.role === 'admin' || !!me.umaRole || me.umaSections.length > 0)
+  /** Articles in the sections this person holds — the chief and admins hold all. */
+  const mineFor = (section: string) => !!me && canEditUmaSection(me, section)
   const isChief = !!me && (me.role === 'admin' || me.umaRole === 'chief_editor')
   const isAdmin = me?.role === 'admin'
   const { data: desk, isPending } = useUmaDesk(canSee)
@@ -761,6 +787,7 @@ export function UmaDesk() {
               a={a}
               issues={desk.issues}
               isAdmin={isAdmin}
+              mine={mineFor(a.section)}
               onEdit={() => (setEditing(a), setCreating(false))}
               onChanged={refresh}
               onError={setError}
@@ -790,6 +817,7 @@ export function UmaDesk() {
               a={a}
               issues={desk.issues}
               isAdmin={isAdmin}
+              mine={mineFor(a.section)}
               onEdit={() => (setEditing(a), setCreating(false))}
               onChanged={refresh}
               onError={setError}

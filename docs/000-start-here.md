@@ -35,10 +35,12 @@ trust for everything.
 | 011 | [Content & SEO](011-content-and-seo.md) | Publishing book chapters/articles, frontmatter, share previews |
 | 012 | [Design system](012-design-system.md) | The লাল-পাড় সাদা palette, typography, mobile-first rules |
 | 013 | [Known gaps & roadmap](013-known-gaps.md) | Everything currently broken, dormant, or deliberately deferred |
+| 014 | [Roles & access](014-roles-and-access.md) | Who sees and changes what, surface by surface — and where each rule is actually enforced |
+| 015 | [উমা — the magazine](015-uma-magazine.md) | Sections, sankhyas, the editorial lifecycle, the masthead, prerendering |
 
 New engineer fast path: **001 → 002 → 003** gets you running locally.
 Read 004 and 009 before touching any feature code; 006–008 before touching
-anything production.
+anything production; 014 before changing who can do anything.
 
 ## Quick reference card
 

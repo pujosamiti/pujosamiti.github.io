@@ -41,7 +41,8 @@ export function SearchSelect({
    */
   onCreate?: (query: string) => void
   createLabel?: (query: string) => string
-  /** Span the parent like a normal form input (form fields, not toolbars). */
+  /** Span the parent like a normal form input (form fields, not toolbars).
+   *  Applies to the control itself, so it works inside a flex row too. */
   fullWidth?: boolean
   /** What the trigger reads before anything is picked. */
   placeholder?: string
@@ -110,7 +111,7 @@ export function SearchSelect({
   const highlighted = Math.min(hi, Math.max(0, rows - 1))
 
   return (
-    <div ref={rootRef} className={cn('relative', className)}>
+    <div ref={rootRef} className={cn('relative', fullWidth && 'w-full', className)}>
       <button
         type="button"
         className={cn(

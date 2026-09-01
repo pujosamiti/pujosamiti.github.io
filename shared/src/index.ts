@@ -157,6 +157,8 @@ export interface Me {
   email: string;
   image: string | null;
   role: MemberRole;
+  /** Uma sections this person edits — empty for everyone but section editors */
+  umaSections: UmaSectionId[];
   /** Portfolio, if held by a core member — e.g. "Treasurer", "Cultural Secretary" */
   portfolio: string | null;
   /** Seat on the Uma masthead, when held — gates the editorial desk */
@@ -827,13 +829,35 @@ export type UmaSectionId = (typeof UMA_SECTIONS)[number]['id'];
 export const umaSection = (id: string) => UMA_SECTIONS.find((s) => s.id === id);
 
 /**
- * The masthead: exactly one chief editor and up to two editors, all core
- * members, assigned by an admin. Editors run the queue (accept/hold/reject
- * and copy-edit); the chief editor additionally composes and publishes
- * Sankhyas. Admins hold both implicitly (they are the devs doing intake).
+ * Who may work the desk at all: the chief editor, anyone holding a section,
+ * and admins (who are the devs doing intake).
+ */
+export const isUmaEditor = (me: { role: MemberRole; umaRole: UmaRole | null; umaSections: UmaSectionId[] }): boolean =>
+  me.role === 'admin' || me.umaRole === 'chief_editor' || me.umaSections.length > 0;
+
+/** Who may work THIS article: its own section's editor, the chief, an admin. */
+export const canEditUmaSection = (
+  me: { role: MemberRole; umaRole: UmaRole | null; umaSections: UmaSectionId[] },
+  section: string,
+): boolean =>
+  me.role === 'admin' || me.umaRole === 'chief_editor' || me.umaSections.includes(section as UmaSectionId);
+
+/**
+ * The masthead: one chief editor, and one editor per SECTION. A section's
+ * editor runs that section's queue — accept, hold, reject, copy-edit — and
+ * nothing outside it. One person may hold several sections; a section that
+ * has no editor yet simply sits unassigned. Seats are for active CORE members
+ * and are assigned by an admin. The chief composes and publishes Sankhyas.
+ * Admins hold everything implicitly (they are the devs doing intake).
  */
 export type UmaRole = 'chief_editor' | 'editor';
-export const UMA_MAX_EDITORS = 2;
+
+/** One section's seat on the masthead. */
+export interface UmaSeat {
+  section: UmaSectionId;
+  personId: string | null;
+  personName: string | null;
+}
 
 /**
  * draft      — dev still converting; not yet in the editors' queue
@@ -900,7 +924,7 @@ export interface UmaHomeView {
   latest: UmaIssueView | null;
   /** Published issues, newest first (latest included) */
   issues: UmaIssueCard[];
-  masthead: { chief: string | null; editors: string[] };
+  masthead: { chief: string | null; editors: string[] }; // public: names only
 }
 
 /** Anonymous public reaction, sent as deltas the server clamps. */
@@ -930,7 +954,7 @@ export interface UmaDeskArticle extends UmaArticleView {
 export interface UmaDeskView {
   articles: UmaDeskArticle[];
   issues: UmaIssueCard[]; // drafts included, newest first
-  masthead: { chief: { id: string; name: string } | null; editors: { id: string; name: string }[] };
+  masthead: { chief: { id: string; name: string } | null; seats: UmaSeat[] };
 }
 
 export interface UmaArticleInput {

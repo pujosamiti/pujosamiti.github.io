@@ -71,6 +71,10 @@ never `role !== 'member'`, which `newsignin` would slip past.
 
 ## 4. Roles
 
+> Who may do what on each page — the full matrix, and where each rule is
+> enforced — is [014 · Roles & access](014-roles-and-access.md). This section
+> is about how a person *becomes* a role.
+
 Computed per-request from the person row, in priority order
 (`members.ts`):
 

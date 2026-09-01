@@ -11,10 +11,10 @@ import type {
   UmaIssueInput,
   UmaIssueView,
   UmaReactInput,
-  UmaRole,
+  UmaSeat,
   UmaStatusInput,
 } from '@pujosamiti/shared'
-import { UMA_MAX_CLAPS, UMA_MAX_EDITORS, UMA_SECTIONS } from '@pujosamiti/shared'
+import { canEditUmaSection, isUmaEditor, UMA_MAX_CLAPS, UMA_SECTIONS, umaSection } from '@pujosamiti/shared'
 import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -337,8 +337,12 @@ umaPublicRoutes.get('/prerender', async (c) => {
 
 type Vars = { me: Me }
 
-const isEditor = (me: Me) => me.role === 'admin' || !!me.umaRole
+const isEditor = (me: Me) => isUmaEditor(me)
 const isChief = (me: Me) => me.role === 'admin' || me.umaRole === 'chief_editor'
+/** The section's own editor, the chief, or an admin — nobody else. */
+const canSection = (me: Me, section: string) => canEditUmaSection(me, section)
+const notYours = (section: string) =>
+  err(`${umaSection(section)?.en ?? section} belongs to another section editor`)
 
 export const umaDeskRoutes = new Hono<{ Bindings: Env; Variables: Vars }>()
 
@@ -355,11 +359,17 @@ umaDeskRoutes.get('/desk', async (c) => {
   const titleOf = new Map(issues.map((i) => [i.id, i.title ?? `সংখ্যা ${i.number}`]))
   const countOf = new Map<string, number>()
   for (const a of articles) if (a.issueId) countOf.set(a.issueId, (countOf.get(a.issueId) ?? 0) + 1)
-  const seats = await db
-    .select({ id: schema.person.id, name: schema.person.displayName, umaRole: schema.person.umaRole })
+  const [chief] = await db
+    .select({ id: schema.person.id, name: schema.person.displayName })
     .from(schema.person)
-    .where(and(isNotNull(schema.person.umaRole), eq(schema.person.isActive, true)))
-  const chief = seats.find((s) => s.umaRole === 'chief_editor')
+    .where(and(eq(schema.person.umaRole, 'chief_editor'), eq(schema.person.isActive, true)))
+    .limit(1)
+  // Every section is listed, held or not — an empty seat is information.
+  const held = await db
+    .select({ section: schema.umaSectionEditor.section, personId: schema.umaSectionEditor.personId, name: schema.person.displayName })
+    .from(schema.umaSectionEditor)
+    .innerJoin(schema.person, eq(schema.person.id, schema.umaSectionEditor.personId))
+  const byId = new Map(held.map((h) => [h.section, h]))
   const out: UmaDeskView = {
     articles: articles.map(
       (a): UmaDeskArticle => ({
@@ -382,7 +392,10 @@ umaDeskRoutes.get('/desk', async (c) => {
     issues: issues.map((i) => toIssueCard(i, countOf.get(i.id) ?? 0)),
     masthead: {
       chief: chief ? { id: chief.id, name: chief.name } : null,
-      editors: seats.filter((s) => s.umaRole === 'editor').map((s) => ({ id: s.id, name: s.name })),
+      seats: UMA_SECTIONS.map((sec): UmaSeat => {
+        const h = byId.get(sec.id)
+        return { section: sec.id, personId: h?.personId ?? null, personName: h?.name ?? null }
+      }),
     },
   }
   return c.json(ok(out))
@@ -402,6 +415,7 @@ umaDeskRoutes.post('/articles', async (c) => {
   const body = (await c.req.json()) as UmaArticleInput
   const bad = validateArticle(body)
   if (bad) return c.json(err(bad), 400)
+  if (!canSection(me, body.section)) return c.json(notYours(body.section), 403)
   const slug = (body.slug?.trim() ? slugify(body.slug) : slugify(body.title)) || null
   if (!slug) return c.json(err('a URL slug is required (the title has no ASCII letters to derive one from)'), 400)
   const db = drizzle(c.env.DB, { schema })
@@ -437,12 +451,16 @@ umaDeskRoutes.post('/articles', async (c) => {
 })
 
 umaDeskRoutes.put('/articles/:id', async (c) => {
+  const me = c.get('me')
   const body = (await c.req.json()) as UmaArticleInput
   const bad = validateArticle(body)
   if (bad) return c.json(err(bad), 400)
   const db = drizzle(c.env.DB, { schema })
   const [a] = await db.select().from(schema.umaArticle).where(eq(schema.umaArticle.id, c.req.param('id'))).limit(1)
   if (!a) return c.json(err('no such article'), 404)
+  // Both ends: the section it is in, and the section it is moving to.
+  if (!canSection(me, a.section) || !canSection(me, body.section))
+    return c.json(notYours(canSection(me, a.section) ? body.section : a.section), 403)
   // The slug is the article's public identity — a published URL never changes.
   let slug = a.slug
   if (a.status !== 'published' && body.slug?.trim()) {
@@ -485,11 +503,13 @@ umaDeskRoutes.put('/articles/:id', async (c) => {
  * the reason. Publishing never happens here — only via the Sankhya.
  */
 umaDeskRoutes.post('/articles/:id/status', async (c) => {
+  const me = c.get('me')
   const body = (await c.req.json()) as UmaStatusInput
   const db = drizzle(c.env.DB, { schema })
   const [a] = await db.select().from(schema.umaArticle).where(eq(schema.umaArticle.id, c.req.param('id'))).limit(1)
   if (!a) return c.json(err('no such article'), 404)
-  if (a.status === 'published') return c.json(err('published articles change only by unpublishing their sankhya'), 400)
+  if (!canSection(me, a.section)) return c.json(notYours(a.section), 403)
+  if (a.status === 'published') return c.json(err('a published article stays published — a sankhya is never withdrawn'), 400)
   if (body.status === 'published') return c.json(err('publish the sankhya, not the article'), 400)
   if (!['draft', 'in_review', 'accepted', 'held', 'rejected'].includes(body.status))
     return c.json(err('unknown status'), 400)
@@ -518,7 +538,7 @@ umaDeskRoutes.delete('/articles/:id', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const [a] = await db.select().from(schema.umaArticle).where(eq(schema.umaArticle.id, c.req.param('id'))).limit(1)
   if (!a) return c.json(err('no such article'), 404)
-  if (a.status === 'published') return c.json(err('unpublish its sankhya first'), 400)
+  if (a.status === 'published') return c.json(err('a published article cannot be deleted — a sankhya, once out, stays out'), 400)
   await db.delete(schema.umaArticle).where(eq(schema.umaArticle.id, a.id))
   return c.json(ok({ id: a.id }))
 })
@@ -601,28 +621,19 @@ umaDeskRoutes.post('/issues/:id/publish', async (c) => {
   return c.json(ok({ id: issue.id, published: accepted.length, rebuildTriggered }))
 })
 
-umaDeskRoutes.post('/issues/:id/unpublish', async (c) => {
-  if (!isChief(c.get('me'))) return c.json(err('the chief editor publishes'), 403)
-  const db = drizzle(c.env.DB, { schema })
-  const [issue] = await db.select().from(schema.umaIssue).where(eq(schema.umaIssue.id, c.req.param('id'))).limit(1)
-  if (!issue) return c.json(err('no such sankhya'), 404)
-  if (issue.status !== 'published') return c.json(err('not published'), 400)
-  const now = new Date()
-  await db
-    .update(schema.umaArticle)
-    .set({ status: 'accepted', publishedAt: null, updatedAt: now })
-    .where(and(eq(schema.umaArticle.issueId, issue.id), eq(schema.umaArticle.status, 'published')))
-  await db.update(schema.umaIssue).set({ status: 'draft', publishedOn: null }).where(eq(schema.umaIssue.id, issue.id))
-  const rebuildTriggered = await triggerRebuild(c.env)
-  return c.json(ok({ id: issue.id, rebuildTriggered }))
-})
+/*
+ * There is no unpublish. A sankhya that has gone out has been read, linked and
+ * shared; withdrawing it would break those links and rewrite what the samiti
+ * has already said. Corrections are made by editing the pieces in place —
+ * which is why ordering stays open on a published issue.
+ */
 
 umaDeskRoutes.delete('/issues/:id', async (c) => {
   if (!isChief(c.get('me'))) return c.json(err('the chief editor composes sankhyas'), 403)
   const db = drizzle(c.env.DB, { schema })
   const [issue] = await db.select().from(schema.umaIssue).where(eq(schema.umaIssue.id, c.req.param('id'))).limit(1)
   if (!issue) return c.json(err('no such sankhya'), 404)
-  if (issue.status === 'published') return c.json(err('unpublish first'), 400)
+  if (issue.status === 'published') return c.json(err('a published sankhya cannot be deleted'), 400)
   // Its accepted pieces go back to the parking lot, not into limbo.
   await db
     .update(schema.umaArticle)
@@ -659,30 +670,37 @@ umaDeskRoutes.post('/media', async (c) => {
 umaDeskRoutes.put('/roles', async (c) => {
   const me = c.get('me')
   if (me.role !== 'admin') return c.json(err('admins assign the masthead'), 403)
-  const body = (await c.req.json()) as { personId: string; role: UmaRole | null }
-  if (!body.personId) return c.json(err('personId required'), 400)
-  if (body.role != null && body.role !== 'chief_editor' && body.role !== 'editor')
-    return c.json(err('role must be chief_editor, editor or null'), 400)
+  const body = (await c.req.json()) as { personId: string | null }
   const db = drizzle(c.env.DB, { schema })
-  const [p] = await db.select().from(schema.person).where(eq(schema.person.id, body.personId)).limit(1)
-  if (!p) return c.json(err('no such person'), 404)
-  if (body.role != null) {
-    if (!p.isActive || p.tier !== 'core') return c.json(err('masthead seats are for active core members'), 400)
-    if (body.role === 'chief_editor') {
-      // one chair: the outgoing chief steps down automatically
-      await db
-        .update(schema.person)
-        .set({ umaRole: null })
-        .where(eq(schema.person.umaRole, 'chief_editor'))
-    } else {
-      const editors = await db
-        .select({ id: schema.person.id })
-        .from(schema.person)
-        .where(eq(schema.person.umaRole, 'editor'))
-      if (editors.filter((e) => e.id !== p.id).length >= UMA_MAX_EDITORS)
-        return c.json(err(`the masthead seats ${UMA_MAX_EDITORS} editors — clear one first`), 400)
-    }
+  // One chair: whoever sat there steps down first.
+  await db.update(schema.person).set({ umaRole: null }).where(eq(schema.person.umaRole, 'chief_editor'))
+  if (body.personId) {
+    const [p] = await db.select().from(schema.person).where(eq(schema.person.id, body.personId)).limit(1)
+    if (!p) return c.json(err('no such person'), 404)
+    if (!p.isActive || p.tier !== 'core') return c.json(err('the masthead is for active core members'), 400)
+    await db.update(schema.person).set({ umaRole: 'chief_editor' }).where(eq(schema.person.id, p.id))
   }
-  await db.update(schema.person).set({ umaRole: body.role }).where(eq(schema.person.id, p.id))
-  return c.json(ok({ personId: p.id, role: body.role }))
+  return c.json(ok({ chief: body.personId ?? null }))
+})
+
+/** One section, one editor. Passing personId: null clears the seat. */
+umaDeskRoutes.put('/sections', async (c) => {
+  const me = c.get('me')
+  if (me.role !== 'admin') return c.json(err('admins assign the masthead'), 403)
+  const body = (await c.req.json()) as { section: string; personId: string | null }
+  if (!umaSection(body.section)) return c.json(err('unknown section'), 400)
+  const db = drizzle(c.env.DB, { schema })
+  await db.delete(schema.umaSectionEditor).where(eq(schema.umaSectionEditor.section, body.section))
+  if (body.personId) {
+    const [p] = await db.select().from(schema.person).where(eq(schema.person.id, body.personId)).limit(1)
+    if (!p) return c.json(err('no such person'), 404)
+    if (!p.isActive || p.tier !== 'core') return c.json(err('the masthead is for active core members'), 400)
+    await db.insert(schema.umaSectionEditor).values({
+      section: body.section,
+      personId: p.id,
+      assignedBy: me.personId,
+      assignedAt: new Date(),
+    })
+  }
+  return c.json(ok({ section: body.section, personId: body.personId ?? null }))
 })

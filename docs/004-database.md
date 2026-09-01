@@ -20,7 +20,10 @@ command takes `--local` or `--remote` — getting this flag wrong is the #1
 footgun. Nothing syncs automatically; mirror deliberately via
 [005-backup-and-restore.md](005-backup-and-restore.md).
 
-## 2. Schema tour — the 18 tables by domain
+## 2. Schema tour — the tables by domain
+
+> Written when there were 18. Uma added three more (below) and the
+> sponsorship board grew a `tagline`; row counts here are from 28 Aug 2026.
 
 ### Auth (better-auth managed): `user`, `session`, `account`, `verification`
 
@@ -162,6 +165,20 @@ claimant is a pass-through) and links it. Status:
 sub_category); NULL sub_category = whole-category "General" line. Budgets
 exist from season 2026 onward — no historical budgets.
 
+### উমা, the magazine: `uma_issue`, `uma_article`, `uma_section_editor`
+
+Added after this doc's audit — see **[015](015-uma-magazine.md)** for the
+model in full. In short: a `uma_issue` is one numbered সংখ্যা; `uma_article`
+carries the whole editorial lifecycle (`draft → in_review → accepted/held/
+rejected → published`) plus both language versions and the public reaction
+counters; `uma_section_editor` seats **one editor per section** (section is the
+primary key, so a person may hold several rows). The chief editor's chair lives
+on `person.uma_role`. Hero art is not in the database — it ships in
+`web/public/uma-media/` and the columns hold `/uma-media/<name>.webp` paths.
+
+Also since the audit: `sponsorship_item.tagline` / `tagline_bn` (migration
+0010) hold each slot's bilingual one-line appeal.
+
 ## 3. Seeds
 
 | File (in `api/`) | Contains |
@@ -203,6 +220,9 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0006 | `0006_puja-days-procurement.sql` | Puja Days (`puja_day`, `event.nirghanto_finalized_on`) + the full procurement suite (catalog with vendor names & master-list suggestions, item-years with due date/time, puja-day-linked delivery columns, quantity cells) |
 | 0007 | `0007_bhog-menu.sql` | Bhog & food menus (`bhog_menu` per event per calendar date + `bhog_menu_item` dishes) |
 | 0008 | `0008_bhog-rsvp.sql` | Headcount (`bhog_rsvp`, unique per menu day × person) |
+| 0009 | `0009_uma.sql` | উমা — `uma_issue`, `uma_article`, `person.uma_role` ([015](015-uma-magazine.md)) |
+| 0010 | `0010_sponsorship-tagline.sql` | `sponsorship_item.tagline` / `tagline_bn` — each slot's bilingual appeal |
+| 0011 | `0011_uma-section-editors.sql` | `uma_section_editor` — one editor per Uma section; retires `uma_role = 'editor'` |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 
