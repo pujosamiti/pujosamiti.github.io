@@ -136,6 +136,15 @@ export const isMaskedEmail = (e: string | null | undefined): boolean => !!e && e
 /** Roles that may record on someone's behalf: counter entries, proxy food counts. */
 export const isProxyRole = (r: MemberRole): boolean => r === 'admin' || r === 'fin_admin';
 
+/**
+ * The samiti's own account — the webmaster. It curates the catalog behind the
+ * boards: which slots exist at all, and which of them a given year offers.
+ * Everyone else, admins and finance included, sees only what is on offer.
+ */
+export const WEBMASTER_PERSON_ID = 'p-samiti';
+export const isWebmaster = (personId: string | null | undefined): boolean =>
+  personId === WEBMASTER_PERSON_ID;
+
 /** Roles that curate content; member and newsignin are consumers. */
 export const isCoreRole = (r: MemberRole): boolean =>
   r === 'coremember' || r === 'fin_admin' || r === 'admin';
@@ -692,6 +701,9 @@ export interface SponsorshipItemView {
   id: string;
   category: string;
   title: string;
+  /** One-line appeal under the title, both languages; either may be missing. */
+  tagline: string | null;
+  taglineBn: string | null;
   defaultAmount: number | null;
   sortOrder: number;
   /** master is_active */

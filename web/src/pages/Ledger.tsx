@@ -13,7 +13,7 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole, isProxyRole, isWebmaster } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
@@ -138,7 +138,10 @@ export const SponsorshipPage = () => (
       <SponsorshipTab
         isFinAdmin={canFinance(me)}
         canSettle={canFinance(me)}
+        isWebmaster={isWebmaster(me.personId)}
+        pledgeForOthers={isProxyRole(me.role)}
         myPersonId={me.personId!}
+        myName={me.name}
       />
     )}
   </CorePage>
@@ -1110,12 +1113,20 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 function SponsorshipTab({
   isFinAdmin,
   canSettle,
+  isWebmaster,
+  pledgeForOthers,
   myPersonId,
+  myName,
 }: {
   isFinAdmin: boolean
   /** Core and above: may record a payment against a pledge, or cancel anyone's. */
   canSettle: boolean
+  /** The samiti's own account: the only view that includes slots not on offer. */
+  isWebmaster: boolean
+  /** Admin/fin_admin only: may record a pledge for another household. */
+  pledgeForOthers: boolean
   myPersonId: string
+  myName: string
 }) {
   const { data: events } = useEvents()
   const dp = (events ?? []).filter((e) => e.kind === 'durga-pujo')
@@ -1131,6 +1142,8 @@ function SponsorshipTab({
   const [payingId, setPayingId] = useState<string | null>(null)
   const [pricingId, setPricingId] = useState<string | null>(null)
   const [priceDraft, setPriceDraft] = useState('')
+  /** Pledged but never paid: the slot an admin is about to put back on the board. */
+  const [releasing, setReleasing] = useState<SponsorshipItemView | null>(null)
 
   const setYearAmount = useMutation({
     mutationFn: (i: SponsorshipItemView) =>
@@ -1162,13 +1175,18 @@ function SponsorshipTab({
   })
 
   // Retired catalog items were genuine sponsorships in their era: everyone sees
-  // them for years where they were offered or pledged; admins see them always
-  // (so a legacy slot can be re-offered in a future year).
-  const shown = (items ?? []).filter((i) => !i.retired || i.offered || i.pledge || isFinAdmin)
+  // them for years where they were offered or pledged; the webmaster sees them
+  // always (so a legacy slot can be re-offered in a future year).
+  const shown = (items ?? []).filter((i) => !i.retired || i.offered || i.pledge || isWebmaster)
   const categories = [...new Set(shown.map((i) => i.category))]
   const offered = shown.filter((i) => i.offered)
+  /** On an archival board only a paid pledge counts — nothing else was ever money. */
+  const livePledge = (i: SponsorshipItemView) =>
+    i.pledge && (!readOnly || i.pledge.status === 'paid') ? i.pledge : null
   const pledgedTotal = offered.reduce((s, i) => s + (i.pledge && i.pledge.status !== 'cancelled' ? i.pledge.amount : 0), 0)
-  const paidTotal = offered.reduce((s, i) => s + (i.pledge?.status === 'paid' ? i.pledge.amount : 0), 0)
+  // Totalled from the same list the rows are drawn from, so the figure can
+  // never disagree with what is on screen.
+  const paidTotal = shown.reduce((s, i) => s + (i.pledge?.status === 'paid' ? i.pledge.amount : 0), 0)
 
   return (
     <div className="flex flex-col gap-3">
@@ -1181,14 +1199,16 @@ function SponsorshipTab({
           ariaLabel="Sponsorship year"
         />
         <span className="ml-auto text-sm text-muted-foreground">
-          Pledged {rupees(pledgedTotal)} · Received {rupees(paidTotal)}
+          {readOnly ? `Received ${rupees(paidTotal)}` : `Pledged ${rupees(pledgedTotal)} · Received ${rupees(paidTotal)}`}
         </span>
       </div>
       {isPending ? (
         <LogoSpinner small />
       ) : (
         categories.map((cat) => {
-          const rows = shown.filter((i) => i.category === cat && (isFinAdmin || i.offered))
+          const rows = shown.filter((i) =>
+            i.category === cat && (readOnly ? i.pledge?.status === 'paid' : isWebmaster || i.offered),
+          )
           if (!rows.length) return null
           return (
             <Card key={cat}>
@@ -1198,13 +1218,20 @@ function SponsorshipTab({
               <CardContent className="flex flex-col gap-2">
                 {rows.map((i) => {
                   const amount = i.yearAmount ?? i.defaultAmount
-                  const pl = i.pledge
+                  const pl = livePledge(i)
                   return (
                     <div key={i.id} className={`flex flex-wrap items-center gap-2 border-b pb-2 text-sm last:border-0 last:pb-0 ${i.offered ? '' : 'opacity-50'}`}>
                       <span className="min-w-0 flex-1">
                         {i.title}
                         {!i.offered && <Badge variant="outline">not offered</Badge>}
                         {i.retired && <Badge variant="outline">legacy</Badge>}
+                        {(i.tagline || i.taglineBn) && (
+                          <span className="block text-xs text-muted-foreground">
+                            {i.tagline}
+                            {i.tagline && i.taglineBn && ' · '}
+                            {i.taglineBn}
+                          </span>
+                        )}
                         {pl && (
                           <span className="block text-xs text-muted-foreground">
                             {pl.status === 'paid' ? 'Sponsored by' : 'Pledged by'} {pl.personName} · {rupees(pl.amount)}
@@ -1266,21 +1293,32 @@ function SponsorshipTab({
                             <Button size="sm" variant="outline" onClick={() => setPayingId(i.id)}>
                               <HandCoins /> Record payment
                             </Button>
-                            <Button size="icon" variant="ghost" aria-label="Cancel pledge" onClick={() => cancelPledge.mutate(pl.id)}>
-                              <Undo2 className="size-4" />
+                            <Button size="sm" variant="ghost" onClick={() => setReleasing(i)}>
+                              <Undo2 /> Release
                             </Button>
                           </>
                         )
                       ) : i.offered && !readOnly ? (
                         pledgingId === i.id ? (
-                          <PledgeInline itemId={i.id} year={y} defaultAmount={amount} onDone={() => setPledgingId(null)} />
+                          <PledgeInline
+                            itemId={i.id}
+                            year={y}
+                            defaultAmount={amount}
+                            pledgeForOthers={pledgeForOthers}
+                            myPersonId={myPersonId}
+                            myName={myName}
+                            onDone={() => setPledgingId(null)}
+                          />
                         ) : (
                           <Button size="sm" onClick={() => setPledgingId(i.id)}>
                             Pledge
                           </Button>
                         )
                       ) : null}
-                      {isFinAdmin && !readOnly && (
+                      {/* A pledged slot can't be withdrawn from the year — the pledge would
+                          be stranded on an item nobody can see. Take the pledge back first.
+                          'Offer' stays available, so a stray pledge on an unoffered item is fixable. */}
+                      {isWebmaster && !readOnly && !(i.offered && pl) && (
                         <Button size="sm" variant="ghost" onClick={() => toggleOffered.mutate(i)}>
                           {i.offered ? 'Skip this year' : 'Offer'}
                         </Button>
@@ -1293,14 +1331,55 @@ function SponsorshipTab({
           )
         })
       )}
+      <Dialog open={!!releasing} onClose={() => setReleasing(null)}>
+        <DialogTitle>Release this slot?</DialogTitle>
+        <DialogDescription>
+          {releasing?.title} — pledged by {releasing?.pledge?.personName} for{' '}
+          {releasing?.pledge ? rupees(releasing.pledge.amount) : ''}. The pledge is recorded as
+          cancelled and the slot goes back on the board for anyone to take. Nothing is deleted, and
+          no money is involved — a pledge that was already paid cannot be released this way.
+        </DialogDescription>
+        <DialogActions>
+          <Button variant="outline" size="sm" onClick={() => setReleasing(null)}>
+            Keep the pledge
+          </Button>
+          <Button
+            variant="destructive"
+            size="sm"
+            disabled={cancelPledge.isPending}
+            onClick={() => {
+              if (releasing?.pledge) cancelPledge.mutate(releasing.pledge.id)
+              setReleasing(null)
+            }}
+          >
+            <Undo2 /> Release slot
+          </Button>
+        </DialogActions>
+      </Dialog>
       {isFinAdmin && !readOnly && <NewItemForm />}
     </div>
   )
 }
 
-function PledgeInline({ itemId, year, defaultAmount, onDone }: { itemId: string; year: number; defaultAmount: number | null; onDone: () => void }) {
+function PledgeInline({
+  itemId,
+  year,
+  defaultAmount,
+  pledgeForOthers,
+  myPersonId,
+  myName,
+  onDone,
+}: {
+  itemId: string
+  year: number
+  defaultAmount: number | null
+  pledgeForOthers: boolean
+  myPersonId: string
+  myName: string
+  onDone: () => void
+}) {
   const invalidate = useLedgerInvalidate()
-  const [personId, setPersonId] = useState<string | null>(null)
+  const [personId, setPersonId] = useState<string | null>(pledgeForOthers ? null : myPersonId)
   const [amount, setAmount] = useState(defaultAmount ? String(defaultAmount) : '')
   const save = useMutation({
     mutationFn: () => post('/api/members/ledger/sponsorship/pledges', { itemId, year, personId, amount: Number(amount) }),
@@ -1311,7 +1390,11 @@ function PledgeInline({ itemId, year, defaultAmount, onDone }: { itemId: string;
   })
   return (
     <span className="flex flex-wrap items-center gap-2">
-      <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Pledger" everyone />
+      {pledgeForOthers ? (
+        <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Pledger" everyone />
+      ) : (
+        <span className="text-sm font-medium">{myName}</span>
+      )}
       <input type="number" min="1" className={`${inputCls} w-24`} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="₹" />
       <Button size="sm" disabled={!personId || !amount || save.isPending} onClick={() => save.mutate()}>
         Save

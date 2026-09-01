@@ -71,6 +71,13 @@
       "when": 1786339949862,
       "tag": "0009_uma",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1786339949863,
+      "tag": "0010_sponsorship-tagline",
+      "breakpoints": true
     }
   ]
 }

@@ -293,6 +293,9 @@ export const sponsorshipItem = sqliteTable('sponsorship_item', {
   id: text('id').primaryKey(), // unique slug: 'sandhi-puja-3', 'durga-idol'
   category: text('category').notNull(), // Murti, Stage, Bhog, Puja, Dhak, Dakshina, Samagri…
   title: text('title').notNull(),
+  /** One-line appeal shown under the title on the board — "Sponsor the smile on Ma's face." */
+  tagline: text('tagline'),
+  taglineBn: text('tagline_bn'), // "মায়ের মুখের হাসিটুকু হোক আপনার দান।"
   defaultAmount: integer('default_amount'), // NULL = priced fresh each year
   sortOrder: integer('sort_order').notNull().default(1000),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true),

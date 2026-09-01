@@ -14,7 +14,7 @@ import type {
   SpendRow,
   WalletBalance,
 } from '@pujosamiti/shared'
-import { isCoreRole, CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
+import { isCoreRole, isProxyRole, isWebmaster, CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
 import { applyParticipationRule } from '../lib/roll'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
@@ -362,6 +362,8 @@ ledgerRoutes.get('/sponsorship', async (c) => {
         id: i.id,
         category: i.category,
         title: i.title,
+        tagline: i.tagline,
+        taglineBn: i.taglineBn,
         defaultAmount: i.defaultAmount,
         sortOrder: i.sortOrder,
         retired: !i.isActive,
@@ -409,7 +411,10 @@ ledgerRoutes.post('/sponsorship/items', async (c) => {
 
 /** Upsert this year's offering for an item (admin): amount / offered / notes. */
 ledgerRoutes.post('/sponsorship/items/:id/year', async (c) => {
-  if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
+  // Finance sets this year's amount; the webmaster decides whether the slot is
+  // offered at all. Both write the same row.
+  if (!canFinance(c) && !isWebmaster(c.get('me').personId))
+    return c.json({ ok: false, error: 'finance admins or the webmaster only' }, 403)
   const itemId = c.req.param('id')
   const body = await c.req.json<{ year: number; amount: number | null; offered: boolean; notes: string | null }>()
   if (!body.year) return c.json({ ok: false, error: 'year required' }, 400)
@@ -434,9 +439,10 @@ ledgerRoutes.post('/sponsorship/pledges', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   if (body.year !== (await activePujoYear(db)))
     return c.json({ ok: false, error: 'past boards are archival — pledges only for the active pujo year' }, 400)
-  // Members and new sign-ins pledge for their own household only
+  // Everyone pledges for their own household. Only admin/fin_admin may record
+  // one on someone else's behalf — the person who took the money at the counter.
   const pledger = c.get('me')
-  if (!isCoreRole(pledger.role) && body.personId !== pledger.personId)
+  if (!isProxyRole(pledger.role) && body.personId !== pledger.personId)
     return c.json({ ok: false, error: 'you can only pledge for yourself' }, 403)
   const live = (
     await db
