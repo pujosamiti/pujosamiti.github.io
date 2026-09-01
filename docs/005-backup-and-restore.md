@@ -59,14 +59,35 @@ superset merge from the ETL era — its `00-REPORT.md` explains itself),
 Always skipped: `_cf_KV`, `sqlite_sequence` (engine internals) and `session`,
 `verification` (live tokens, ephemeral — users just sign in again).
 
-**Taking a new one**: a small script runs
-`wrangler d1 execute pujosamiti --remote --json --command 'SELECT * FROM <t>'`
-per table and writes the files above into a fresh `backup-<date>` folder.
-(The 28 Aug 2026 snapshot was generated exactly this way: 2,210 rows across
-16 tables.)
+### The two scripts (committed, `scripts/` — code only, never data)
 
-**Restoring one**: run `00-schema.sql` on an empty DB, then each table file,
-loading `person` and `family` before the tables that reference them.
+```bash
+python3 scripts/backup-prod.py                  # → docs/tmp/backup-<today>
+python3 scripts/backup-prod.py 01-sep-2026      # → docs/tmp/backup-01-sep-2026
+python3 scripts/restore-local.py backup-01-sep-2026
+python3 scripts/restore-local.py backup-01-sep-2026 --fresh   # wipe + reload schema
+```
+
+`backup-prod.py` is a FULL backup: every table (parents before children, the
+order derived from the schema's own `REFERENCES`), plus `media/uma-media/` —
+the Uma article art the rows point at — and a `MANIFEST.txt` that checks every
+referenced image is present. R2 is not enabled on this project (the binding in
+`api/wrangler.jsonc` is commented out), so there are no bucket objects: Uma art
+is served from `web/public/uma-media` in the repo.
+
+`restore-local.py` only ever writes to `--local`; it cannot touch prod by
+accident. It clears every table first, children before parents, `session` and
+`verification` included — those point at `user`, which cannot be emptied while
+they exist, and a token is worthless once the rows beneath it are replaced. So
+**sign in again on localhost afterwards**. Running it twice is harmless.
+
+**By hand instead**: run `00-schema.sql` on an empty DB, then each table file
+in `MANIFEST.txt` order — `person` and `family` before the tables that
+reference them.
+
+Snapshot sizes: 28 Aug 2026 was 2,210 rows across 16 tables; **1 Sep 2026 is
+5,179 rows across 27 tables plus 18 media files (3.6 MB)**, the growth being
+procurement, the sponsorship board and Uma.
 
 ## 4. Disaster recovery (prod)
 
