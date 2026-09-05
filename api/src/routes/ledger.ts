@@ -15,7 +15,7 @@ import type {
   SpendRow,
   WalletBalance,
 } from '@pujosamiti/shared'
-import { isCoreRole, isProxyRole, isWebmaster, CONTRIBUTION_CATEGORIES } from '@pujosamiti/shared'
+import { isCoreRole, isProxyRole, isWebmaster, CONTRIBUTION_CATEGORIES, SUBSCRIPTION_SUBCATS } from '@pujosamiti/shared'
 import { applyParticipationRule } from '../lib/roll'
 import { and, eq } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
@@ -98,6 +98,16 @@ ledgerRoutes.get('/entries', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const rows = await db.select().from(schema.ledgerEntry)
   const names = await peopleMap(db)
+  // Contributor → family name, for the season reports that list households.
+  const families = new Map(
+    (await db.select({ id: schema.family.id, name: schema.family.name }).from(schema.family)).map((f) => [f.id, f.name]),
+  )
+  const familyOf = new Map(
+    (await db.select({ id: schema.person.id, familyId: schema.person.familyId }).from(schema.person)).map((p) => [
+      p.id,
+      p.familyId ? (families.get(p.familyId) ?? null) : null,
+    ]),
+  )
   const out: LedgerEntry[] = rows
     .sort((a, b) => (a.entryDate < b.entryDate ? 1 : a.entryDate > b.entryDate ? -1 : 0))
     .map((e) => ({
@@ -111,6 +121,7 @@ ledgerRoutes.get('/entries', async (c) => {
       amount: e.amount,
       personId: e.personId,
       personName: e.personId ? (names.get(e.personId) ?? null) : null,
+      familyName: e.personId ? (familyOf.get(e.personId) ?? null) : null,
       counterparty: e.counterparty,
       walletPersonId: e.walletPersonId,
       walletName: names.get(e.walletPersonId) ?? '?',
@@ -137,6 +148,8 @@ function validateEntry(body: LedgerEntryInput): string | null {
     if (!CONTRIBUTION_CATEGORIES.includes(body.category as never)) return 'invalid contribution category'
     if ((body.category === 'subscription' || body.category === 'sponsorship') && !body.personId)
       return `${body.category} requires a person`
+    if (body.category === 'subscription' && !SUBSCRIPTION_SUBCATS.includes(body.subCategory?.trim() as never))
+      return 'subscription sub-category must be core or non-core'
     if (!body.personId && !body.counterparty?.trim()) return 'person or counterparty required'
   } else if (body.kind === 'expense') {
     if (!body.category?.trim()) return 'expense category required'

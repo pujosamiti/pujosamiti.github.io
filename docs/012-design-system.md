@@ -57,6 +57,21 @@ Usage notes:
 - Both themes are complete; components must work in each (the site follows
   the visitor's scheme).
 
+## PDF reports
+
+Downloadable reports (the ledger's season lists) are built in the browser
+with jsPDF + autotable (`web/src/lib/ledger-pdf.ts`), loaded on first use.
+The page furniture is fixed so every report reads as ours:
+
+- A thin **jaba band** (`#D70000`, 12 mm) across the top of every page, the
+  small logo at the left, the report title in white beside it and the book ·
+  season as a lighter subline. Nothing else is red.
+- A4 portrait, Helvetica, ink-coloured text; the table header in `kali`, the
+  total row bold. Amounts are right-aligned and written `Rs 10,000` — the
+  built-in PDF fonts have no `₹` glyph, and embedding a font for one symbol
+  is not worth the weight.
+- Footer: "Generated <date> · Page n of N", small and grey.
+
 ## Component idiom
 
 shadcn-style components (copied in, not a dependency) under

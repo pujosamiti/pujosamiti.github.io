@@ -628,9 +628,24 @@ export const CONTRIBUTION_CATEGORIES: ContributionCategory[] = [
   'misc_income',
 ];
 
+/**
+ * A subscription is either the core membership fee or a smaller non-core
+ * one. Unlike the other sub-categories these are not suggestions: the entry
+ * form is a fixed dropdown and the API rejects anything else.
+ */
+export const SUBSCRIPTION_SUBCATS = ['core', 'non-core'] as const;
+export type SubscriptionSubCategory = (typeof SUBSCRIPTION_SUBCATS)[number];
+
+/**
+ * Season PDF reports (core / non-core subscriptions, sponsorships) exist from
+ * this season on. Earlier seasons were tagged by hand before the sub-category
+ * rule existed, so a report over them would mislabel members.
+ */
+export const LEDGER_PDF_FROM_SEASON = 2026;
+
 /** sub_category suggestions per contribution category */
 export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
-  subscription: ['core', 'non-core'],
+  subscription: [...SUBSCRIPTION_SUBCATS],
   sponsorship: [], // auto-filled from the pledged item's catalog category
   donation: ['small box', 'large box', 'others'],
   misc_income: ['Anandamela', 'Cultural Participation Contri', 'Food Coupons', 'Guest Bhog', 'Refund'],
@@ -683,6 +698,8 @@ export interface LedgerEntry {
   amount: number; // whole rupees, > 0
   personId: string | null;
   personName: string | null;
+  /** The contributor's family, when they are linked to one — what the season PDFs print. */
+  familyName: string | null;
   counterparty: string | null;
   walletPersonId: string;
   walletName: string;

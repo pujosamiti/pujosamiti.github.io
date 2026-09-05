@@ -14,9 +14,10 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ban, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
+import { Ban, FileDown, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
+import type { LedgerReportId } from '@/lib/ledger-pdf'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -713,6 +714,9 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
           <option value="expense">Expenses</option>
           <option value="transfer">Transfers</option>
         </select>
+        {book !== 'all' && typeof season === 'number' && season >= LEDGER_PDF_FROM_SEASON && (
+          <PdfDownload bookId={book as BookId} season={season} entries={entries ?? []} />
+        )}
         <span className="ml-auto text-sm text-muted-foreground">Net: {rupees(total)}</span>
       </div>
 
@@ -771,6 +775,56 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
  * Two-step confirmation for the admin-only book rewrites (edit and void):
  * a plain confirm first, then a type-the-phrase gate.
  */
+/**
+ * One book, one season, three reports — core subscriptions, non-core
+ * subscriptions, sponsorships — as a PDF with the jaba band on top. The
+ * builder and jsPDF load on first use so the ledger page stays light.
+ */
+function PdfDownload({ bookId, season, entries }: { bookId: BookId; season: number; entries: LedgerEntry[] }) {
+  const [busy, setBusy] = useState<LedgerReportId | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const download = async (report: LedgerReportId) => {
+    setBusy(report)
+    setError(null)
+    try {
+      const { downloadLedgerPdf } = await import('@/lib/ledger-pdf')
+      await downloadLedgerPdf({
+        report,
+        bookId,
+        season,
+        entries: entries.filter((e) => e.bookId === bookId && seasonOf(e.entryDate) === season),
+      })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'could not build the PDF')
+    } finally {
+      setBusy(null)
+    }
+  }
+  const pills: { id: LedgerReportId; label: string }[] = [
+    { id: 'core', label: 'Core' },
+    { id: 'non-core', label: 'Non Core' },
+    { id: 'sponsorship', label: 'Sponsorship' },
+  ]
+  return (
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      {pills.map((pill) => (
+        <button
+          key={pill.id}
+          type="button"
+          disabled={busy !== null}
+          onClick={() => void download(pill.id)}
+          className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-sindoor disabled:opacity-60"
+          aria-label={`Download ${pill.label} PDF`}
+        >
+          {busy === pill.id ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
+          {pill.label}
+        </button>
+      ))}
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </span>
+  )
+}
+
 function ConfirmTwice({
   open,
   title,
@@ -955,15 +1009,38 @@ function CategoryFields({
         )}
       </Field>
       <Field label="Sub-category">
-        <input className={inputCls} list="sub-cats" value={subCategory} onChange={(e) => setSubCategory(e.target.value)} />
-        <datalist id="sub-cats">
-          {subs.map((x) => (
-            <option key={x} value={x} />
-          ))}
-        </datalist>
+        {kind === 'contribution' && category === 'subscription' ? (
+          // Fixed choice: the API rejects any other value for a subscription.
+          <select className={inputCls} value={subCategory} onChange={(e) => setSubCategory(e.target.value)}>
+            {SUBSCRIPTION_SUBCATS.map((x) => (
+              <option key={x} value={x}>
+                {x}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <>
+            <input className={inputCls} list="sub-cats" value={subCategory} onChange={(e) => setSubCategory(e.target.value)} />
+            <datalist id="sub-cats">
+              {subs.map((x) => (
+                <option key={x} value={x} />
+              ))}
+            </datalist>
+          </>
+        )}
       </Field>
     </>
   )
+}
+
+/**
+ * A subscription's sub-category is always one of the fixed two. Older rows
+ * were typed by hand ("Core", "Core Membership Subscription"), so an edit
+ * form folds them onto the dropdown rather than showing a blank select.
+ */
+function subscriptionSub(value: string | null | undefined): string {
+  const v = (value ?? '').trim().toLowerCase()
+  return SUBSCRIPTION_SUBCATS.find((s) => v === s || v.startsWith(s)) ?? SUBSCRIPTION_SUBCATS[0]
 }
 
 function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () => void }) {
@@ -972,8 +1049,21 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   const [kind, setKind] = useState<LedgerKind>(initial?.kind ?? 'contribution')
   const [bookId, setBookId] = useState<BookId>((initial?.bookId as BookId) ?? 'pujo-ledger')
   const [entryDate, setEntryDate] = useState(initial?.entryDate ?? todayIST())
-  const [category, setCategory] = useState(initial?.category ?? 'subscription')
-  const [subCategory, setSubCategory] = useState(initial?.subCategory ?? '')
+  const [category, setCategoryRaw] = useState(initial?.category ?? 'subscription')
+  const [subCategory, setSubCategory] = useState(
+    (initial?.category ?? 'subscription') === 'subscription' && (initial?.kind ?? 'contribution') === 'contribution'
+      ? subscriptionSub(initial?.subCategory)
+      : (initial?.subCategory ?? ''),
+  )
+  // Entering "subscription" snaps the sub-category onto the dropdown; leaving
+  // it clears the core/non-core value so it cannot leak onto a donation.
+  const setCategory = (next: string) => {
+    if (next === category) return
+    setCategoryRaw(next)
+    if (kind !== 'contribution') return
+    if (next === 'subscription') setSubCategory(subscriptionSub(subCategory))
+    else if (category === 'subscription') setSubCategory('')
+  }
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
   const [personId, setPersonId] = useState<string | null>(initial?.personId ?? null)
   const [counterparty, setCounterparty] = useState(initial?.counterparty ?? '')
@@ -1019,8 +1109,8 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 
   const switchKind = (k: LedgerKind) => {
     setKind(k)
-    setCategory(k === 'contribution' ? 'subscription' : k === 'expense' ? Object.keys(EXPENSE_TAXONOMY)[0] : '')
-    setSubCategory('')
+    setCategoryRaw(k === 'contribution' ? 'subscription' : k === 'expense' ? Object.keys(EXPENSE_TAXONOMY)[0] : '')
+    setSubCategory(k === 'contribution' ? SUBSCRIPTION_SUBCATS[0] : '')
     // Nothing carries over between kinds — a stale contributor must not
     // become an accidental "reimbursed to" on an expense.
     setPersonId(null)

@@ -136,6 +136,16 @@ bookkeeping conventions):
 - Entry `kind`: `contribution` | `expense` | `transfer`. Categories:
   contributions use `subscription`/`sponsorship`/`donation`/`misc_income`;
   expenses use the expense taxonomy; transfers carry none.
+- `sub_category` is free text with per-category suggestions, except for a
+  subscription, where it must be `core` or `non-core` (a shared constant): the
+  form is a fixed dropdown and the API rejects anything else.
+- The entries tab downloads a season's core subscriptions, non-core
+  subscriptions or sponsorships as a PDF, one book at a time, listing each
+  contribution under the contributor's **family** (their own name when they
+  are not linked to one; `LedgerEntry.familyName`), from the 2026
+  season on (`LEDGER_PDF_FROM_SEASON`); earlier seasons were tagged by hand
+  and would mislabel members. Built in the browser — [012](012-design-system.md)
+  §PDF reports.
 - **No bank account exists.** All cash sits with wallet-holders. Wallets are
   *emergent*: anyone named as `wallet_person_id` holds samiti money; balances
   are always derived (credits − debits ± transfers), never stored.
