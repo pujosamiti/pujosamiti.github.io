@@ -47,7 +47,16 @@ const MARGIN = 12
 
 const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)} season`
 const rs = (n: number) => `Rs ${n.toLocaleString('en-IN')}`
-const longDate = (d: Date) => d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+/** "5 Sept 2026, 2:35 pm IST" — the samiti's clock, whatever the device is set to. */
+const stampIST = (d: Date) =>
+  d.toLocaleString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+    timeZone: 'Asia/Kolkata',
+  }) + ' IST'
 
 export interface LedgerPdfInput {
   report: LedgerReportId
@@ -76,6 +85,7 @@ export function renderLedgerPdf({ report, bookId, season, entries, logo }: Ledge
   const pageW = doc.internal.pageSize.getWidth()
   const pageH = doc.internal.pageSize.getHeight()
   const totalPagesToken = '{total_pages}'
+  const generated = `Generated ${stampIST(new Date())}`
 
   const drawBand = () => {
     doc.setFillColor(...JABA)
@@ -86,10 +96,10 @@ export function renderLedgerPdf({ report, bookId, season, entries, logo }: Ledge
     doc.text(spec.title, MARGIN + 11, 6.2)
     doc.setFont('helvetica', 'normal').setFontSize(7.5)
     doc.text(`${bookName} · ${seasonLabel(season)}`, MARGIN + 11, 9.8)
+    doc.text(generated, pageW - MARGIN, 7.5, { align: 'right' })
   }
   const drawFooter = (page: number) => {
     doc.setTextColor(...GREY).setFont('helvetica', 'normal').setFontSize(7.5)
-    doc.text(`Generated ${longDate(new Date())}`, MARGIN, pageH - 7)
     doc.text(`Page ${page} of ${totalPagesToken}`, pageW - MARGIN, pageH - 7, { align: 'right' })
   }
 
