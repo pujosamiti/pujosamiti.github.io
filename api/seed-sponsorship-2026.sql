@@ -35,7 +35,7 @@ INSERT INTO sponsorship_item (id, category, title, default_amount, sort_order, i
   -- Bhog: one slot per day in 2026, not the old split halves.
   ('saptami-bhog-1',            'Bhog',               'Saptami Bhog',                                              20000, 300, 1, unixepoch()),
   ('ashtami-bhog-1',            'Bhog',               'Ashtami Bhog',                                              30000, 310, 1, unixepoch()),
-  ('sandhi-luchi-bhog',        'Bhog',               'Sandhi Puja Luchi Bhog',                                    20000, 315, 1, unixepoch()),
+  ('sandhi-luchi-bhog',        'Bhog',               'Sandhi Puja Maha Bhog',                                     20000, 315, 1, unixepoch()),
   ('nabami-bhog-1',             'Bhog',               'Nabami Bhog',                                               20000, 320, 1, unixepoch()),
   -- Phul o mala
   ('thakurer-mala',             'Flowers & Garlands', 'Goddess Mother''s Garland',                                  5000, 350, 1, unixepoch()),
