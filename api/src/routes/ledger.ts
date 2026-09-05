@@ -108,8 +108,10 @@ ledgerRoutes.get('/entries', async (c) => {
       p.familyId ? (families.get(p.familyId) ?? null) : null,
     ]),
   )
+  // Newest first on the page: by payment date, then by when the record was
+  // made, so a counter day reads bottom-up in the order people paid.
   const out: LedgerEntry[] = rows
-    .sort((a, b) => (a.entryDate < b.entryDate ? 1 : a.entryDate > b.entryDate ? -1 : 0))
+    .sort((a, b) => b.entryDate.localeCompare(a.entryDate) || b.createdAt.getTime() - a.createdAt.getTime())
     .map((e) => ({
       id: e.id,
       bookId: e.bookId as BookId,

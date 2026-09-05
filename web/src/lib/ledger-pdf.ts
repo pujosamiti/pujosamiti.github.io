@@ -74,11 +74,9 @@ export function renderLedgerPdf({ report, bookId, season, entries, logo }: Ledge
   const bookName = BOOKS.find((b) => b.id === bookId)?.name ?? bookId
   const rows = entries
     .filter((e) => e.isActive && e.kind === 'contribution' && spec.matches(e))
-    .sort(
-      (a, b) =>
-        a.entryDate.localeCompare(b.entryDate) ||
-        (a.familyName ?? a.personName ?? '').localeCompare(b.familyName ?? b.personName ?? ''),
-    )
+    // Payment order: by date, then by when the record was made — on a
+    // counter day that is the order people actually paid in.
+    .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.createdAt - b.createdAt)
   const total = rows.reduce((s, e) => s + e.amount, 0)
 
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })

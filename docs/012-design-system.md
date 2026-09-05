@@ -68,7 +68,9 @@ The page furniture is fixed so every report reads as ours:
   season as a lighter subline; "Generated <date, time> IST" sits at the
   band's right edge. Nothing else is red.
 - A4 portrait, Helvetica, ink-coloured text; the table header in `kali`, the
-  total row bold. Amounts are right-aligned and written `Rs 10,000` — the
+  total row bold. Rows run in payment order — date, then the time the record
+  was made (the ledger stores no payment time of its own); only the date is
+  printed. Amounts are right-aligned and written `Rs 10,000` — the
   built-in PDF fonts have no `₹` glyph, and embedding a font for one symbol
   is not worth the weight.
 - Footer: "Page n of N", small and grey, bottom right.
