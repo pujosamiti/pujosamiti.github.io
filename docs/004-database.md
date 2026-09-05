@@ -146,6 +146,11 @@ bookkeeping conventions):
   season on (`LEDGER_PDF_FROM_SEASON`); earlier seasons were tagged by hand
   and would mislabel members. Built in the browser — [012](012-design-system.md)
   §PDF reports.
+- The sponsorship page downloads a year's board as a PDF: every slot as drawn
+  on screen with its appeal in both languages, the listed price, who pledged
+  (the person's own name, not the household) and the date the payment came in
+  (`pledge.paidOn` = the linked ledger entry's date; blank until paid). Any
+  year.
 - **No bank account exists.** All cash sits with wallet-holders. Wallets are
   *emergent*: anyone named as `wallet_person_id` holds samiti money; balances
   are always derived (credits − debits ± transfers), never stored.

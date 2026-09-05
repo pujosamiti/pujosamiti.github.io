@@ -17,7 +17,7 @@ import type {
 } from '@pujosamiti/shared'
 import { isCoreRole, isProxyRole, isWebmaster, CONTRIBUTION_CATEGORIES, SUBSCRIPTION_SUBCATS } from '@pujosamiti/shared'
 import { applyParticipationRule } from '../lib/roll'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
@@ -394,6 +394,18 @@ ledgerRoutes.get('/sponsorship', async (c) => {
   const pledgeBy = new Map(
     pledges.filter((p) => p.status !== 'cancelled').map((p) => [p.itemId, p]),
   )
+  // A paid pledge's date is its ledger entry's date — the day the money came in.
+  const entryIds = pledges.flatMap((p) => (p.status === 'paid' && p.ledgerEntryId ? [p.ledgerEntryId] : []))
+  const paidOn = new Map(
+    entryIds.length
+      ? (
+          await db
+            .select({ id: schema.ledgerEntry.id, entryDate: schema.ledgerEntry.entryDate })
+            .from(schema.ledgerEntry)
+            .where(inArray(schema.ledgerEntry.id, entryIds))
+        ).map((e) => [e.id, e.entryDate])
+      : [],
+  )
   const out: SponsorshipItemView[] = items
     .sort((a, b) => a.sortOrder - b.sortOrder)
     .map((i) => {
@@ -419,6 +431,7 @@ ledgerRoutes.get('/sponsorship', async (c) => {
               amount: pl.amount,
               status: pl.status,
               pledgedOn: pl.pledgedOn,
+              paidOn: (pl.status === 'paid' && pl.ledgerEntryId && paidOn.get(pl.ledgerEntryId)) || null,
             }
           : null,
       }

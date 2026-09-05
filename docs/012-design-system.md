@@ -59,8 +59,14 @@ Usage notes:
 
 ## PDF reports
 
-Downloadable reports (the ledger's season lists) are built in the browser
-with jsPDF + autotable (`web/src/lib/ledger-pdf.ts`), loaded on first use.
+Downloadable reports (the ledger's season lists, the sponsorship board) are
+built in the browser with jsPDF + autotable (`web/src/lib/reports-pdf.ts`),
+loaded on first use. Ledger lists are portrait; the sponsorship board is
+landscape, each item carrying its English and Bengali one-liners in small
+grey type under the title. **Bengali is drawn by the browser**: the PDF's
+built-in fonts have no Bengali and jsPDF cannot shape the script even with a
+font embedded, so each বাংলা line is rendered to a canvas in Hind Siliguri
+and placed in the cell as a picture.
 The page furniture is fixed so every report reads as ours:
 
 - A thin **jaba band** (`#D70000`, 12 mm) across the top of every page, the

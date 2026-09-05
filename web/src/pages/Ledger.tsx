@@ -17,7 +17,7 @@ import type {
 import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, FileDown, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
-import type { LedgerReportId } from '@/lib/ledger-pdf'
+import type { LedgerReportId } from '@/lib/reports-pdf'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -787,7 +787,7 @@ function PdfDownload({ bookId, season, entries }: { bookId: BookId; season: numb
     setBusy(report)
     setError(null)
     try {
-      const { downloadLedgerPdf } = await import('@/lib/ledger-pdf')
+      const { downloadLedgerPdf } = await import('@/lib/reports-pdf')
       await downloadLedgerPdf({
         report,
         bookId,
@@ -808,18 +808,48 @@ function PdfDownload({ bookId, season, entries }: { bookId: BookId; season: numb
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
       {pills.map((pill) => (
-        <button
-          key={pill.id}
-          type="button"
-          disabled={busy !== null}
-          onClick={() => void download(pill.id)}
-          className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-sindoor disabled:opacity-60"
-          aria-label={`Download ${pill.label} PDF`}
-        >
-          {busy === pill.id ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
-          {pill.label}
-        </button>
+        <PdfPill key={pill.id} label={pill.label} busy={busy === pill.id} disabled={busy !== null} onClick={() => void download(pill.id)} />
       ))}
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </span>
+  )
+}
+
+/** A red pill with the download mark: one tap, one PDF. */
+function PdfPill({ label, busy, disabled, onClick }: { label: string; busy: boolean; disabled: boolean; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-sindoor disabled:opacity-60"
+      aria-label={`Download ${label} PDF`}
+    >
+      {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
+      {label}
+    </button>
+  )
+}
+
+/** The sponsorship board of one year as a PDF — the rows exactly as drawn on screen. */
+function SponsorshipPdf({ year, items }: { year: number; items: SponsorshipItemView[] }) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const download = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      const { downloadSponsorshipPdf } = await import('@/lib/reports-pdf')
+      await downloadSponsorshipPdf({ year, items })
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'could not build the PDF')
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      <PdfPill label="Sponsorship" busy={busy} disabled={busy} onClick={() => void download()} />
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   )
@@ -1349,6 +1379,10 @@ function SponsorshipTab({
   // Totalled from the same list the rows are drawn from, so the figure can
   // never disagree with what is on screen.
   const paidTotal = shown.reduce((s, i) => s + (i.pledge?.status === 'paid' ? i.pledge.amount : 0), 0)
+  /** A slot is on the board this year: offered (webmaster sees the rest too); archival years keep only what was paid. */
+  const onBoard = (i: SponsorshipItemView) => (readOnly ? i.pledge?.status === 'paid' : isWebmaster || i.offered)
+  // The PDF lists the same rows in the same order as the cards below.
+  const boardRows = categories.flatMap((cat) => shown.filter((i) => i.category === cat && onBoard(i)))
 
   return (
     <div className="flex flex-col gap-3">
@@ -1360,6 +1394,7 @@ function SponsorshipTab({
           onChange={(v) => setYear(Number(v))}
           ariaLabel="Sponsorship year"
         />
+        {!isPending && boardRows.length > 0 && <SponsorshipPdf year={y} items={boardRows} />}
         <span className="ml-auto text-sm text-muted-foreground">
           {readOnly ? `Received ${rupees(paidTotal)}` : `Pledged ${rupees(pledgedTotal)} · Received ${rupees(paidTotal)}`}
         </span>
@@ -1368,9 +1403,7 @@ function SponsorshipTab({
         <LogoSpinner small />
       ) : (
         categories.map((cat) => {
-          const rows = shown.filter((i) =>
-            i.category === cat && (readOnly ? i.pledge?.status === 'paid' : isWebmaster || i.offered),
-          )
+          const rows = shown.filter((i) => i.category === cat && onBoard(i))
           if (!rows.length) return null
           return (
             <Card key={cat}>

@@ -749,6 +749,8 @@ export interface SponsorshipItemView {
     amount: number;
     status: PledgeStatus;
     pledgedOn: string;
+    /** The ledger entry's date once the money is in; null until then. */
+    paidOn: string | null;
   } | null;
 }
 
