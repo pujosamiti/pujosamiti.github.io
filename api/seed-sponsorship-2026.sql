@@ -19,7 +19,12 @@
 -- ── 1. The catalog ──────────────────────────────────────────────────────────
 
 INSERT INTO sponsorship_item (id, category, title, default_amount, sort_order, is_active, created_at) VALUES
-  -- Pratima: the five Durga slots are the old 'Murti 1-5' shares, un-retired.
+  -- Pratima 2026: ONE slot for all the idols — the five Durga shares and the
+  -- Kojagari Lakshmi pratima were clubbed on 19 Sep 2026. Priced per year
+  -- (default NULL); the 2026 figure is set in section 2.
+  ('durga-lakshmi-pratima',     'Murti',              'Durga and Kojagari Lakshmi Puja Pratima',                    NULL,  99, 1, unixepoch()),
+  -- The six slots it replaced stay in the catalog — they carry the 2022–2025
+  -- pledges (old 'Murti 1-5' shares, un-retired) — but are off the 2026 board.
   ('murti-slot-1',              'Murti',              'Durga Puja Pratima 1',                                       5000, 100, 1, unixepoch()),
   ('murti-slot-2',              'Murti',              'Durga Puja Pratima 2',                                       5000, 101, 1, unixepoch()),
   ('murti-slot-3',              'Murti',              'Durga Puja Pratima 3',                                       5000, 102, 1, unixepoch()),
@@ -33,17 +38,21 @@ INSERT INTO sponsorship_item (id, category, title, default_amount, sort_order, i
   ('pratima-homecoming',        'Transport',          'Goddess Mother''s Homecoming (Transportation)',              5000, 250, 1, unixepoch()),
   ('pratima-farewell',          'Transport',          'Goddess Mother''s Farewell (Boat and Majhi Fare)',           5000, 255, 1, unixepoch()),
   -- Bhog: one slot per day in 2026, not the old split halves.
-  ('saptami-bhog-1',            'Bhog',               'Saptami Bhog',                                              20000, 300, 1, unixepoch()),
+  ('saptami-bhog-1',            'Bhog',               'Saptami Bhog 1',                                            20000, 300, 1, unixepoch()),
+  ('saptami-bhog-2',            'Bhog',               'Saptami Bhog 2',                                            20000, 305, 1, unixepoch()),
   ('ashtami-bhog-1',            'Bhog',               'Ashtami Bhog',                                              30000, 310, 1, unixepoch()),
-  ('sandhi-luchi-bhog',        'Bhog',               'Sandhi Puja Maha Bhog',                                     20000, 315, 1, unixepoch()),
+  ('sandhi-luchi-bhog',        'Bhog',               'Sandhi Puja Maha Bhog',                                     30000, 315, 1, unixepoch()),
   ('nabami-bhog-1',             'Bhog',               'Nabami Bhog',                                               20000, 320, 1, unixepoch()),
   -- Phul o mala
   ('thakurer-mala',             'Flowers & Garlands', 'Goddess Mother''s Garland',                                  5000, 350, 1, unixepoch()),
   ('all-garlands',              'Flowers & Garlands', 'All Garlands for all Idols',                                 5000, 355, 1, unixepoch()),
+  ('pujor-phul',                'Flowers & Garlands', 'Goddess Mother''s Puja Flowers for All Days',               5000, 357, 1, unixepoch()),
   ('sandhi-puja-flowers',       'Flowers & Garlands', 'Sandhi Puja Flowers, 108 Bel Pata Mala and all Garlands',    5000, 360, 1, unixepoch()),
   ('padma-phul',                'Flowers & Garlands', 'Sandhi Puja Lotus Flowers',                                  5000, 365, 1, unixepoch()),
   -- Puja, day by day
   ('kala-bou-saree',            'Puja',               'Kala Bou Saree / Nabapatrika',                               5000, 400, 1, unixepoch()),
+  ('shashthi-puja-1',           'Puja',               'Shashthi Puja 1',                                            5000, 401, 1, unixepoch()),
+  ('shashthi-puja-2',           'Puja',               'Shashthi Puja 2',                                            5000, 402, 1, unixepoch()),
   ('saptami-puja-1',            'Puja',               'Saptami Puja 1',                                             5000, 403, 1, unixepoch()),
   ('saptami-puja-2',            'Puja',               'Saptami Puja 2',                                             5000, 406, 1, unixepoch()),
   ('saptami-puja-3',            'Puja',               'Saptami Puja 3',                                             5000, 409, 1, unixepoch()),
@@ -101,18 +110,23 @@ ON CONFLICT(id) DO UPDATE SET
 -- it there. Editing this file only affects a database that has never been
 -- seeded for 2026.
 
--- Everything on the 2026 list, at its 2026 price.
+-- The clubbed pratima slot has no default price, so its 2026 figure is stated.
+INSERT INTO sponsorship_item_year (id, item_id, year, amount, is_active, notes)
+VALUES ('siy-durga-lakshmi-pratima-2026', 'durga-lakshmi-pratima', 2026, 70000, 1, 'Durga Puja Pratima 1–5 and Kojagari Lakshmi Puja Pratima, clubbed')
+ON CONFLICT(id) DO NOTHING;
+
+-- Everything else on the 2026 list, at its 2026 price.
 INSERT INTO sponsorship_item_year (id, item_id, year, amount, is_active, notes)
 SELECT 'siy-' || id || '-2026', id, 2026, default_amount, 1, NULL
 FROM sponsorship_item
 WHERE id NOT IN (SELECT item_id FROM sponsorship_item_year WHERE year = 2026)
 AND id IN (
-  'murti-slot-1','murti-slot-2','murti-slot-3','murti-slot-4','murti-slot-5','lakshmi-idol',
   'murti-moncha','mancha-lighting',
   'pratima-homecoming','pratima-farewell',
-  'saptami-bhog-1','ashtami-bhog-1','sandhi-luchi-bhog','nabami-bhog-1',
-  'thakurer-mala','all-garlands','sandhi-puja-flowers','padma-phul',
+  'saptami-bhog-1','saptami-bhog-2','ashtami-bhog-1','sandhi-luchi-bhog','nabami-bhog-1',
+  'thakurer-mala','all-garlands','pujor-phul','sandhi-puja-flowers','padma-phul',
   'kala-bou-saree',
+  'shashthi-puja-1','shashthi-puja-2',
   'saptami-puja-1','saptami-puja-2','saptami-puja-3',
   'ashtami-puja-1','ashtami-puja-2','ashtami-puja-3','ashtami-puja-4','ashtami-puja-5','ashtami-puja-6','ashtami-puja-7',
   'sandhi-puja-1','sandhi-puja-2','sandhi-puja-3','sandhi-puja-4','sandhi-puja-5',
@@ -120,6 +134,7 @@ AND id IN (
   'nabami-puja-1','nabami-puja-2','nabami-puja-3',
   'dashami-puja','dashami-puja-2','dashami-puja-3',
   'lakshmi-pujo-bhog',
+  'purohit-dakshina-1', -- from the older catalog (seed-ledger.sql); on the 2026 board since 20 Sep
   'cultural-external-artist','cultural-prizes',
   'banner-sponsor-1','banner-sponsor-2','banner-sponsor-3','banner-sponsor-4',
   'banner-sponsor-5','banner-sponsor-6','banner-sponsor-7'
@@ -158,4 +173,9 @@ INSERT INTO sponsorship_pledge (id, item_id, year, person_id, amount, status, le
   ('plg-ashtami-puja-1-2026', 'ashtami-puja-1', 2026, 'arc-devashish-bhattacharya', 5000, 'pledged', NULL, '2026-09-01', NULL),
   -- Pradyumna Das Roy
   ('plg-murti-moncha-2026', 'murti-moncha', 2026, 'p-prady', 5000, 'pledged', NULL, '2026-09-01', NULL)
+ON CONFLICT(id) DO NOTHING;
+
+-- The clubbed pratima slot is Tapash Basu's, pledged 19 Sep 2026 at its full price.
+INSERT INTO sponsorship_pledge (id, item_id, year, person_id, amount, status, ledger_entry_id, pledged_on, notes) VALUES
+  ('plg-durga-lakshmi-pratima-2026', 'durga-lakshmi-pratima', 2026, 'arc-tapash-basu', 70000, 'pledged', NULL, '2026-09-19', NULL)
 ON CONFLICT(id) DO NOTHING;

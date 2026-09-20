@@ -20,7 +20,9 @@
 -- Apply:  npx wrangler d1 execute pujosamiti --local --file seed-sponsorship-taglines.sql
 
 WITH t(id, en, bn) AS (VALUES
-  -- Murti
+  -- Murti. The clubbed 2026 slot takes Pratima 1's line: the six it replaced
+  -- are off the board, so the words are not repeated beside it.
+  ('durga-lakshmi-pratima', 'Your devotion shapes Ma''s very form.', 'আপনার ভক্তিতেই গড়ে ওঠে মায়ের রূপ।'),
   ('murti-slot-1', 'Your devotion shapes Ma''s very form.', 'আপনার ভক্তিতেই গড়ে ওঠে মায়ের রূপ।'),
   ('murti-slot-2', 'Reverence turns clay into Ma.', 'শ্রদ্ধার ছোঁয়ায় মাটি হয়ে ওঠেন মা।'),
   ('murti-slot-3', 'Ma takes form in devout hands.', 'ভক্তের হাতেই রূপ পান মা।'),
@@ -35,16 +37,20 @@ WITH t(id, en, bn) AS (VALUES
   ('pratima-farewell', 'See Ma off with full heart.', 'চোখের জলে মাকে বিদায় জানান।'),
   -- Bhog
   ('saptami-bhog-1', 'Saptami''s plate, full for every guest.', 'সপ্তমীতে সবার পাতে পড়ুক ভোগ।'),
+  ('saptami-bhog-2', 'Saptami''s plate, full for every guest.', 'সপ্তমীতে সবার পাতে পড়ুক ভোগ।'),
   ('ashtami-bhog-1', 'Ashtami''s khichuri, enough for everyone.', 'অষ্টমীর খিচুড়ি পৌঁছে যাক সবার পাতে।'),
   ('sandhi-luchi-bhog', 'The Mahabhog of the Divine Mother.', 'শক্তি আরাধনার শ্রেষ্ঠ মহাভোগ।'),
   ('nabami-bhog-1', 'A Nabami feast remembered all year.', 'নবমীর ভোগ মনে থাকবে সারা বছর।'),
   -- Flowers & Garlands
   ('thakurer-mala', 'Let Ma wear a garland of devotion.', 'ভক্তির মালা উঠুক মায়ের গলায়।'),
   ('all-garlands', 'Garlands for every deity, with reverence.', 'সব দেবতার মালা গাঁথা হোক শ্রদ্ধায়।'),
+  ('pujor-phul', 'Fresh flowers for Ma, every single day.', 'প্রতিদিন তাজা ফুলে সাজুক মায়ের পুজো।'),
   ('sandhi-puja-flowers', '108 bel leaves, offered in silence.', 'সন্ধিক্ষণে অর্পিত হোক ১০৮ বেলপাতা।'),
   ('padma-phul', '108 lotuses at Ma''s feet.', 'মায়ের চরণে অর্পিত হোক ১০৮ পদ্ম।'),
   -- Puja
   ('kala-bou-saree', 'Drape Nabapatrika in a new saree.', 'নবপত্রিকা সাজুক আপনার শ্রদ্ধায়।'),
+  ('shashthi-puja-1', 'Ma awakens on Shashthi evening.', 'ষষ্ঠীর সন্ধ্যায় জেগে উঠুন মা।'),
+  ('shashthi-puja-2', 'Welcome Ma with devotion at bodhon.', 'বোধনের লগ্নে ভক্তিভরে বরণ করুন মাকে।'),
   ('saptami-puja-1', 'Saptami morning, wanting for nothing.', 'সপ্তমীর সকাল হোক পরিপূর্ণ।'),
   ('saptami-puja-2', 'Let Saptami''s mantras rise unhurried.', 'সপ্তমীর মন্ত্র উঠুক নিষ্ঠাভরে।'),
   ('saptami-puja-3', 'The three days begin here.', 'এখান থেকেই শুরু তিন দিনের পুজো।'),
@@ -72,6 +78,8 @@ WITH t(id, en, bn) AS (VALUES
   ('dashami-puja-3', 'Help next year''s promise come true.', 'আসছে বছর আবার হবে — পাশে থাকুন।'),
   -- Lakshmi Puja
   ('lakshmi-pujo-bhog', 'Kojagari''s bhog under the full moon.', 'কোজাগরী পূর্ণিমার ভোগ হোক আপনার।'),
+  -- Dakshina (from the older catalog; on the 2026 board since 20 Sep)
+  ('purohit-dakshina-1', 'Tribute to the one who performs Ma''s puja.', 'যিনি মায়ের পুজো করেন, তাঁকে জানান আপনার প্রণাম।'),
   -- Cultural
   ('cultural-external-artist', 'Bring the artist our stage deserves.', 'আমাদের মঞ্চে আনুন প্রকৃত শিল্পীকে।'),
   ('cultural-prizes', 'Every child goes home holding something.', 'প্রতিটি শিশু ফিরুক পুরস্কার হাতে নিয়ে।'),
