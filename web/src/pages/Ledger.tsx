@@ -1137,6 +1137,21 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
     notes: notes || null,
   })
 
+  /**
+   * Counter flow: the next payer. Who paid, how much and the note are
+   * theirs alone and are cleared; the book, date, category and wallet are
+   * the counter's and stay. Until this is tapped a saved form is locked —
+   * a filled-in form with a live Save button is how one payment became two.
+   */
+  const addAnother = () => {
+    setSavedFor(null)
+    save.reset()
+    setAmount('')
+    setPersonId(null)
+    setCounterparty('')
+    setNotes('')
+  }
+
   const switchKind = (k: LedgerKind) => {
     setKind(k)
     setCategoryRaw(k === 'contribution' ? 'subscription' : k === 'expense' ? Object.keys(EXPENSE_TAXONOMY)[0] : '')
@@ -1154,7 +1169,8 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
         <CardTitle className="text-base">{editing ? `Edit ledger entry · ${initial.entryDate}` : 'New ledger entry'}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <div className="grid gap-3 sm:grid-cols-2">
+        {/* Saved means saved: the fields lock, so the filled-in form cannot be sent a second time. */}
+        <fieldset disabled={!!savedFor} className="grid min-w-0 gap-3 disabled:opacity-60 sm:grid-cols-2">
           <Field label="Kind">
             <select
               className={inputCls}
@@ -1239,7 +1255,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           <Field label="Notes">
             <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} />
           </Field>
-        </div>
+        </fieldset>
         {save.isError && <p className="text-sm text-destructive">{(save.error as Error).message}</p>}
         {savedFor && (
           <div className="flex flex-wrap items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm">
@@ -1255,13 +1271,19 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           </div>
         )}
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            disabled={save.isPending || !amount || !walletId}
-            onClick={() => (editing ? setConfirming(true) : save.mutate(buildBody()))}
-          >
-            {save.isPending && <Loader2 className="animate-spin" />} {editing ? 'Save changes' : 'Save entry'}
-          </Button>
+          {savedFor ? (
+            <Button size="sm" onClick={addAnother}>
+              <Plus /> Add another
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              disabled={save.isPending || !amount || !walletId}
+              onClick={() => (editing ? setConfirming(true) : save.mutate(buildBody()))}
+            >
+              {save.isPending && <Loader2 className="animate-spin" />} {editing ? 'Save changes' : 'Save entry'}
+            </Button>
+          )}
           <Button size="sm" variant="outline" onClick={onClose}>
             {savedFor ? 'Done' : 'Cancel'}
           </Button>
