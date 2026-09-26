@@ -61,27 +61,35 @@ Usage notes:
 
 Downloadable reports are built in the browser and loaded on first use. The
 ledger's three season lists (core subscriptions, non-core subscriptions,
-sponsorships) come as a spreadsheet or a PDF: a small **Excel | PDF** switch
-sits before the three pills, Excel by default. Which rows a list holds, and
-their order, is defined once in `web/src/lib/ledger-reports.ts`, so the two
-formats never disagree. The sponsorship board is PDF only.
+sponsorships) and the sponsorship board of a pujo year each come as a
+spreadsheet or a PDF: a small **Excel | PDF** switch sits before the
+download pills, Excel by default. What a report holds, its order and its
+totals are defined once in `web/src/lib/ledger-reports.ts`, so the two
+formats never disagree.
 
 ### Spreadsheets
 
 `web/src/lib/reports-xlsx.ts`, with write-excel-file. One sheet, named for
 the report:
 
-- Row 1 the title with book · season, bold and jaba; row 2 "Generated
-  <date, time> IST" in grey italics; a blank row; then the table, its header
-  in the `wash` fill and frozen with the rows above it.
+- Row 1 the title (with book · season, or the pujo year), bold and jaba;
+  row 2 "Generated <date, time> IST" in grey italics; a blank row; then the
+  table, its header in the `wash` fill and frozen with the rows above it.
 - The PDF's columns in the PDF's order. The values stay values: dates are
   real dates (`d mmm yyyy`), amounts real numbers shown as `₹1,00,000` —
   the sheet has the `₹` glyph the PDF fonts lack, and its format places
   lakh commas by hand, since spreadsheets have no Indian grouping of their
   own.
-- A total row: the entry count, and a `SUM` over the amounts, so it follows
-  any figure edited later.
-- An empty list is a sheet with the "No … recorded" line in place of the
+- Ledger lists end on a total row: the entry count, and a `SUM` over the
+  amounts, so it follows any figure edited later.
+- The sponsorship board is laid out landscape, like its PDF. Its English
+  and Bengali one-liners get a column each instead of sitting under the
+  title — Bengali as plain text, which the spreadsheet shapes itself. An
+  open slot reads "open" in grey italics, a slot without a price "at cost".
+  It ends on the PDF's summary line (slots, pledged, paid, received) as
+  text: the sheet lists prices, and a pledge may differ from its slot's
+  price, so no column adds up to the received figure.
+- An empty report is a sheet with the PDF's "No …" line in place of the
   table. The file name matches the PDF's, ending `.xlsx`.
 
 ### PDF

@@ -887,25 +887,33 @@ function DownloadPill({
   )
 }
 
-/** The sponsorship board of one year as a PDF — the rows exactly as drawn on screen. */
-function SponsorshipPdf({ year, items }: { year: number; items: SponsorshipItemView[] }) {
+/** The sponsorship board of one year as a spreadsheet or a PDF — the rows exactly as drawn on screen. */
+function SponsorshipDownload({ year, items }: { year: number; items: SponsorshipItemView[] }) {
+  // Excel first, as on the ledger's season lists.
+  const [format, setFormat] = useState<ReportFormat>('xlsx')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const download = async () => {
     setBusy(true)
     setError(null)
     try {
-      const { downloadSponsorshipPdf } = await import('@/lib/reports-pdf')
-      await downloadSponsorshipPdf({ year, items })
+      if (format === 'xlsx') {
+        const { downloadSponsorshipXlsx } = await import('@/lib/reports-xlsx')
+        await downloadSponsorshipXlsx({ year, items })
+      } else {
+        const { downloadSponsorshipPdf } = await import('@/lib/reports-pdf')
+        await downloadSponsorshipPdf({ year, items })
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'could not build the PDF')
+      setError(err instanceof Error ? err.message : `could not build the ${FORMAT_LABEL[format]}`)
     } finally {
       setBusy(false)
     }
   }
   return (
-    <span className="inline-flex items-center gap-1.5">
-      <DownloadPill label="Sponsorship" busy={busy} disabled={busy} onClick={() => void download()} />
+    <span className="inline-flex flex-wrap items-center gap-1.5">
+      <FormatSwitch value={format} onChange={setFormat} disabled={busy} />
+      <DownloadPill label="Sponsorship" format={FORMAT_LABEL[format]} busy={busy} disabled={busy} onClick={() => void download()} />
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   )
@@ -1458,7 +1466,7 @@ function SponsorshipTab({
   const paidTotal = shown.reduce((s, i) => s + (i.pledge?.status === 'paid' ? i.pledge.amount : 0), 0)
   /** A slot is on the board this year: offered (webmaster sees the rest too); archival years keep only what was paid. */
   const onBoard = (i: SponsorshipItemView) => (readOnly ? i.pledge?.status === 'paid' : isWebmaster || i.offered)
-  // The PDF lists the same rows in the same order as the cards below.
+  // The download lists the same rows in the same order as the cards below.
   const boardRows = categories.flatMap((cat) => shown.filter((i) => i.category === cat && onBoard(i)))
 
   return (
@@ -1471,7 +1479,7 @@ function SponsorshipTab({
           onChange={(v) => setYear(Number(v))}
           ariaLabel="Sponsorship year"
         />
-        {!isPending && boardRows.length > 0 && <SponsorshipPdf year={y} items={boardRows} />}
+        {!isPending && boardRows.length > 0 && <SponsorshipDownload year={y} items={boardRows} />}
         <span className="ml-auto text-sm text-muted-foreground">
           {readOnly ? `Received ${rupees(paidTotal)}` : `Pledged ${rupees(pledgedTotal)} · Received ${rupees(paidTotal)}`}
         </span>

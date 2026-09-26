@@ -10,7 +10,7 @@ import { jsPDF } from 'jspdf'
 import { autoTable, type RowInput, type UserOptions } from 'jspdf-autotable'
 import type { SponsorshipItemView } from '@pujosamiti/shared'
 
-import { ledgerReport, payerOf, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
+import { ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // jaba and kali from docs/012 — the two colours a report is allowed.
 const JABA: [number, number, number] = [0xd7, 0x00, 0x00]
@@ -180,10 +180,7 @@ const ITEM_W = 100 // Item column, mm — fixed so the row height can be sized b
  * price, who pledged, and the date the money came in — blank until it has.
  */
 export function renderSponsorshipPdf({ year, items, logo, bengali }: SponsorshipPdfInput): { doc: jsPDF; filename: string } {
-  const live = (i: SponsorshipItemView) => (i.pledge && i.pledge.status !== 'cancelled' ? i.pledge : null)
-  const taken = items.filter((i) => live(i)).length
-  const paidItems = items.filter((i) => i.pledge?.status === 'paid')
-  const receivedTotal = paidItems.reduce((s, i) => s + (i.pledge?.amount ?? 0), 0)
+  const { live, summary } = sponsorshipBoard(items)
 
   const page = openReport('Sponsorship board', `Durga Pujo ${year}`, logo, 'landscape')
   if (items.length === 0) {
@@ -213,7 +210,7 @@ export function renderSponsorshipPdf({ year, items, logo, bengali }: Sponsorship
     page.table({
       head: [['#', 'Category', 'Item', 'Price', 'Pledged', 'Payment received']],
       body,
-      foot: [[{ content: `${items.length} slots · ${taken} pledged · ${paidItems.length} paid · ${rs(receivedTotal)} received`, colSpan: 6 }]],
+      foot: [[{ content: summary(rs), colSpan: 6 }]],
       columnStyles: {
         0: { cellWidth: 8, halign: 'right', textColor: GREY },
         1: { cellWidth: 30 },
