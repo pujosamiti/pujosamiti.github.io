@@ -13,6 +13,7 @@ import { Award, GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck,
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { SearchSelect } from '@/components/SearchSelect'
 import { TierChoice } from '@/components/TierChoice'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { BackLink } from '@/components/BackLink'
@@ -533,14 +534,18 @@ function PersonForm({
               </select>
             </Field>
             <Field label="Family (optional group)">
-              <select className={inputCls} value={form.familyId ?? ''} onChange={(e) => set({ familyId: e.target.value || null })}>
-                <option value="">—</option>
-                {families.map((f) => (
-                  <option key={f.id} value={f.id}>
-                    {f.name}
-                  </option>
-                ))}
-              </select>
+              {/* "No family" is a row, not a clear button: SearchSelect only picks. */}
+              <SearchSelect
+                align="left"
+                fullWidth
+                options={[
+                  { value: '', label: 'No family' },
+                  ...families.map((f) => ({ value: f.id, label: f.name, hint: f.isActive ? undefined : 'Inactive' })),
+                ]}
+                value={form.familyId ?? ''}
+                onChange={(v) => set({ familyId: v || null })}
+                ariaLabel="Family"
+              />
             </Field>
           </div>
           {!invited && (
