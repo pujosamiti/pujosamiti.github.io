@@ -44,7 +44,7 @@ live in `web/src/index.css`; roles:
 | `genda` (secondary) | Marigold | Accents — **never as text colour** (`#EFA51E` / `#F2B440`) |
 | `shiuli` | Night-jasmine stem | Orange accent; blockquote borders in the book (`#D96410` / `#E88A34`) |
 | `matir` | Terracotta | Earth accent (`#9A5732` / `#B97A4C`) |
-| `sharat` | Autumn sky | Info states, native control accents (`#007CBE` / `#4FA8D8`) |
+| `sharat` | Autumn sky | Info states, native control accents, the chosen option of a two-way switch (e.g. the Excel/PDF switch beside the download pills) — text on it uses `sharat-foreground` (`#007CBE` / `#4FA8D8`) |
 | `aparajita` | Butterfly pea | Selection & info chips, small doses (`#3D5A9E` / `#8CA5E6`) |
 | `durba` | Sacred grass | Success: paid, settled, money in (`#3A7D44` / `#7FC08A`) |
 

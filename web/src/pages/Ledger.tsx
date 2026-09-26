@@ -834,7 +834,11 @@ function ReportDownload({ bookId, season, entries }: { bookId: BookId; season: n
 type ReportFormat = 'xlsx' | 'pdf'
 const FORMAT_LABEL: Record<ReportFormat, string> = { xlsx: 'Excel', pdf: 'PDF' }
 
-/** Which file the pills beside it download: a two-way switch, as small as the pills. */
+/**
+ * Which file the pills beside it download: a two-way switch, as small as the
+ * pills. The chosen format is filled in sharat blue — the choice — so it reads
+ * apart from the red download pills, the action.
+ */
 function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onChange: (f: ReportFormat) => void; disabled: boolean }) {
   return (
     <span role="radiogroup" aria-label="Download format" className="inline-flex rounded-full border p-0.5">
@@ -848,7 +852,7 @@ function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onCh
           onClick={() => onChange(f)}
           className={cn(
             'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-60',
-            value === f ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground',
+            value === f ? 'bg-sharat text-sharat-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
           )}
         >
           {FORMAT_LABEL[f]}

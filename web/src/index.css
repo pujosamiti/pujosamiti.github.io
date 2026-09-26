@@ -37,7 +37,8 @@
   --genda: #efa51e;
   --shiuli: #d96410;
   --matir: #9a5732;
-  --sharat: #007cbe; /* autumn sky — info states in admin tables only */
+  --sharat: #007cbe; /* autumn sky — info states, native control accents, the chosen option of a switch */
+  --sharat-foreground: #ffffff;
   --band: #d70000; /* jaba header bands carrying white alpona */
   --band-foreground: #ffffff;
   --jaba: #d70000; /* hibiscus — the primary red, by its pujo name */
@@ -79,6 +80,7 @@
   --shiuli: #e88a34;
   --matir: #b97a4c;
   --sharat: #4fa8d8;
+  --sharat-foreground: #0b2233;
   --band: #99090c;
   --band-foreground: #ffffff;
   --jaba: #e5322c;
@@ -123,6 +125,7 @@
   --color-shiuli: var(--shiuli);
   --color-matir: var(--matir);
   --color-sharat: var(--sharat);
+  --color-sharat-foreground: var(--sharat-foreground);
   --color-band: var(--band);
   --color-band-foreground: var(--band-foreground);
   --color-jaba: var(--jaba);
