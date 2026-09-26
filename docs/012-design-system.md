@@ -57,11 +57,36 @@ Usage notes:
 - Both themes are complete; components must work in each (the site follows
   the visitor's scheme).
 
-## PDF reports
+## Reports
 
-Downloadable reports (the ledger's season lists, the sponsorship board) are
-built in the browser with jsPDF + autotable (`web/src/lib/reports-pdf.ts`),
-loaded on first use. Ledger lists are portrait; the sponsorship board is
+Downloadable reports are built in the browser and loaded on first use. The
+ledger's three season lists (core subscriptions, non-core subscriptions,
+sponsorships) come as a spreadsheet or a PDF: a small **Excel | PDF** switch
+sits before the three pills, Excel by default. Which rows a list holds, and
+their order, is defined once in `web/src/lib/ledger-reports.ts`, so the two
+formats never disagree. The sponsorship board is PDF only.
+
+### Spreadsheets
+
+`web/src/lib/reports-xlsx.ts`, with write-excel-file. One sheet, named for
+the report:
+
+- Row 1 the title with book · season, bold and jaba; row 2 "Generated
+  <date, time> IST" in grey italics; a blank row; then the table, its header
+  in the `wash` fill and frozen with the rows above it.
+- The PDF's columns in the PDF's order. The values stay values: dates are
+  real dates (`d mmm yyyy`), amounts real numbers shown as `₹1,00,000` —
+  the sheet has the `₹` glyph the PDF fonts lack, and its format places
+  lakh commas by hand, since spreadsheets have no Indian grouping of their
+  own.
+- A total row: the entry count, and a `SUM` over the amounts, so it follows
+  any figure edited later.
+- An empty list is a sheet with the "No … recorded" line in place of the
+  table. The file name matches the PDF's, ending `.xlsx`.
+
+### PDF
+
+Built with jsPDF + autotable (`web/src/lib/reports-pdf.ts`). Ledger lists are portrait; the sponsorship board is
 landscape, each item carrying its English and Bengali one-liners in small
 grey type under the title. **Bengali is drawn by the browser**: the PDF's
 built-in fonts have no Bengali and jsPDF cannot shape the script even with a

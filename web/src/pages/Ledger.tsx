@@ -17,7 +17,7 @@ import type {
 import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ban, FileDown, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
-import type { LedgerReportId } from '@/lib/reports-pdf'
+import type { LedgerReportId } from '@/lib/ledger-reports'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -715,7 +715,7 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
           <option value="transfer">Transfers</option>
         </select>
         {book !== 'all' && typeof season === 'number' && season >= LEDGER_PDF_FROM_SEASON && (
-          <PdfDownload bookId={book as BookId} season={season} entries={entries ?? []} />
+          <ReportDownload bookId={book as BookId} season={season} entries={entries ?? []} />
         )}
         <span className="ml-auto text-sm text-muted-foreground">Net: {rupees(total)}</span>
       </div>
@@ -777,25 +777,33 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
  */
 /**
  * One book, one season, three reports — core subscriptions, non-core
- * subscriptions, sponsorships — as a PDF with the jaba band on top. The
- * builder and jsPDF load on first use so the ledger page stays light.
+ * subscriptions, sponsorships — as a spreadsheet or a PDF. Each builder and
+ * its library load on first use so the ledger page stays light.
  */
-function PdfDownload({ bookId, season, entries }: { bookId: BookId; season: number; entries: LedgerEntry[] }) {
+function ReportDownload({ bookId, season, entries }: { bookId: BookId; season: number; entries: LedgerEntry[] }) {
+  // A spreadsheet unless asked otherwise: the treasurer's lists get sorted and added up more than printed.
+  const [format, setFormat] = useState<ReportFormat>('xlsx')
   const [busy, setBusy] = useState<LedgerReportId | null>(null)
   const [error, setError] = useState<string | null>(null)
   const download = async (report: LedgerReportId) => {
     setBusy(report)
     setError(null)
+    const input = {
+      report,
+      bookId,
+      season,
+      entries: entries.filter((e) => e.bookId === bookId && seasonOf(e.entryDate) === season),
+    }
     try {
-      const { downloadLedgerPdf } = await import('@/lib/reports-pdf')
-      await downloadLedgerPdf({
-        report,
-        bookId,
-        season,
-        entries: entries.filter((e) => e.bookId === bookId && seasonOf(e.entryDate) === season),
-      })
+      if (format === 'xlsx') {
+        const { downloadLedgerXlsx } = await import('@/lib/reports-xlsx')
+        await downloadLedgerXlsx(input)
+      } else {
+        const { downloadLedgerPdf } = await import('@/lib/reports-pdf')
+        await downloadLedgerPdf(input)
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'could not build the PDF')
+      setError(err instanceof Error ? err.message : `could not build the ${FORMAT_LABEL[format]}`)
     } finally {
       setBusy(null)
     }
@@ -807,23 +815,71 @@ function PdfDownload({ bookId, season, entries }: { bookId: BookId; season: numb
   ]
   return (
     <span className="inline-flex flex-wrap items-center gap-1.5">
+      <FormatSwitch value={format} onChange={setFormat} disabled={busy !== null} />
       {pills.map((pill) => (
-        <PdfPill key={pill.id} label={pill.label} busy={busy === pill.id} disabled={busy !== null} onClick={() => void download(pill.id)} />
+        <DownloadPill
+          key={pill.id}
+          label={pill.label}
+          format={FORMAT_LABEL[format]}
+          busy={busy === pill.id}
+          disabled={busy !== null}
+          onClick={() => void download(pill.id)}
+        />
       ))}
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   )
 }
 
-/** A red pill with the download mark: one tap, one PDF. */
-function PdfPill({ label, busy, disabled, onClick }: { label: string; busy: boolean; disabled: boolean; onClick: () => void }) {
+type ReportFormat = 'xlsx' | 'pdf'
+const FORMAT_LABEL: Record<ReportFormat, string> = { xlsx: 'Excel', pdf: 'PDF' }
+
+/** Which file the pills beside it download: a two-way switch, as small as the pills. */
+function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onChange: (f: ReportFormat) => void; disabled: boolean }) {
+  return (
+    <span role="radiogroup" aria-label="Download format" className="inline-flex rounded-full border p-0.5">
+      {(['xlsx', 'pdf'] as const).map((f) => (
+        <button
+          key={f}
+          type="button"
+          role="radio"
+          aria-checked={value === f}
+          disabled={disabled}
+          onClick={() => onChange(f)}
+          className={cn(
+            'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-60',
+            value === f ? 'bg-accent text-accent-foreground' : 'text-muted-foreground hover:text-foreground',
+          )}
+        >
+          {FORMAT_LABEL[f]}
+        </button>
+      ))}
+    </span>
+  )
+}
+
+/** A red pill with the download mark: one tap, one file. */
+function DownloadPill({
+  label,
+  format = 'PDF',
+  busy,
+  disabled,
+  onClick,
+}: {
+  label: string
+  /** What the tap downloads, for screen readers: "Excel" or "PDF". */
+  format?: string
+  busy: boolean
+  disabled: boolean
+  onClick: () => void
+}) {
   return (
     <button
       type="button"
       disabled={disabled}
       onClick={onClick}
       className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-sindoor disabled:opacity-60"
-      aria-label={`Download ${label} PDF`}
+      aria-label={`Download ${label} ${format}`}
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
       {label}
@@ -849,7 +905,7 @@ function SponsorshipPdf({ year, items }: { year: number; items: SponsorshipItemV
   }
   return (
     <span className="inline-flex items-center gap-1.5">
-      <PdfPill label="Sponsorship" busy={busy} disabled={busy} onClick={() => void download()} />
+      <DownloadPill label="Sponsorship" busy={busy} disabled={busy} onClick={() => void download()} />
       {error && <span className="text-xs text-destructive">{error}</span>}
     </span>
   )

@@ -4,11 +4,13 @@
  *
  * Pure with respect to the page: each builder takes the already-filtered
  * rows and the logo as a data URL, so the same code runs in a Node smoke
- * test. Look: docs/012-design-system §PDF reports.
+ * test. Look: docs/012-design-system §Reports.
  */
 import { jsPDF } from 'jspdf'
 import { autoTable, type RowInput, type UserOptions } from 'jspdf-autotable'
-import { BOOKS, type BookId, type LedgerEntry, type SponsorshipItemView } from '@pujosamiti/shared'
+import type { SponsorshipItemView } from '@pujosamiti/shared'
+
+import { ledgerReport, payerOf, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // jaba and kali from docs/012 — the two colours a report is allowed.
 const JABA: [number, number, number] = [0xd7, 0x00, 0x00]
@@ -20,17 +22,6 @@ const BAND_H = 12 // mm
 const MARGIN = 12
 
 const rs = (n: number) => `Rs ${n.toLocaleString('en-IN')}`
-const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)} season`
-/** "5 Sept 2026, 2:35 pm IST" — the samiti's clock, whatever the device is set to. */
-const stampIST = (d: Date) =>
-  d.toLocaleString('en-IN', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-    timeZone: 'Asia/Kolkata',
-  }) + ' IST'
 
 // ── Page furniture shared by every report ───────────────────────────────────
 
@@ -111,73 +102,33 @@ async function loadLogo(): Promise<string> {
 
 // ── Ledger: one book, one season, three lists ───────────────────────────────
 
-export type LedgerReportId = 'core' | 'non-core' | 'sponsorship'
-
-interface LedgerReport {
-  title: string
-  /** The column that tells entries apart: subscription tier is implied by the report, an item for a sponsorship. */
-  detail: { header: string; of: (e: LedgerEntry) => string } | null
-  matches: (e: LedgerEntry) => boolean
-}
-
-const LEDGER_REPORTS: Record<LedgerReportId, LedgerReport> = {
-  core: {
-    title: 'Core subscriptions',
-    detail: null,
-    matches: (e) => e.category === 'subscription' && e.subCategory === 'core',
-  },
-  'non-core': {
-    title: 'Non-core subscriptions',
-    detail: null,
-    matches: (e) => e.category === 'subscription' && e.subCategory === 'non-core',
-  },
-  sponsorship: {
-    title: 'Sponsorships',
-    detail: { header: 'Item', of: (e) => e.subCategory ?? '' },
-    matches: (e) => e.category === 'sponsorship',
-  },
-}
-
-export interface LedgerPdfInput {
-  report: LedgerReportId
-  bookId: BookId
-  season: number
-  /** Entries of this book and season; the report picks its own rows from them. */
-  entries: LedgerEntry[]
+export interface LedgerPdfInput extends LedgerReportInput {
   /** PNG as a data URL, drawn inside the band. */
   logo: string
 }
 
 /** Build the document. Returns it unsaved so the caller decides where it goes. */
-export function renderLedgerPdf({ report, bookId, season, entries, logo }: LedgerPdfInput): { doc: jsPDF; filename: string } {
-  const spec = LEDGER_REPORTS[report]
-  const bookName = BOOKS.find((b) => b.id === bookId)?.name ?? bookId
-  const rows = entries
-    .filter((e) => e.isActive && e.kind === 'contribution' && spec.matches(e))
-    // Payment order: by date, then by when the record was made — on a
-    // counter day that is the order people actually paid in.
-    .sort((a, b) => a.entryDate.localeCompare(b.entryDate) || a.createdAt - b.createdAt)
-  const total = rows.reduce((s, e) => s + e.amount, 0)
-
-  const page = openReport(spec.title, `${bookName} · ${seasonLabel(season)}`, logo, 'portrait')
-  if (rows.length === 0) {
-    page.empty(`No ${spec.title.toLowerCase()} recorded for the ${seasonLabel(season)}.`)
+export function renderLedgerPdf({ logo, ...input }: LedgerPdfInput): { doc: jsPDF; filename: string } {
+  const r = ledgerReport(input)
+  const page = openReport(r.title, `${r.bookName} · ${r.seasonName}`, logo, 'portrait')
+  if (r.rows.length === 0) {
+    page.empty(`No ${r.title.toLowerCase()} recorded for the ${r.seasonName}.`)
   } else {
-    const head = ['#', 'Date', 'Family', ...(spec.detail ? [spec.detail.header] : []), 'Amount', 'Wallet', 'Notes']
-    const body: RowInput[] = rows.map((e, i) => [
+    const head = ['#', 'Date', 'Family', ...(r.detail ? [r.detail.header] : []), 'Amount', 'Wallet', 'Notes']
+    const body: RowInput[] = r.rows.map((e, i) => [
       String(i + 1),
       e.entryDate,
-      e.familyName ?? e.personName ?? e.counterparty ?? '',
-      ...(spec.detail ? [spec.detail.of(e)] : []),
+      payerOf(e),
+      ...(r.detail ? [r.detail.of(e)] : []),
       rs(e.amount),
       e.walletName,
       e.notes ?? '',
     ])
-    const amountCol = spec.detail ? 4 : 3
+    const amountCol = r.detail ? 4 : 3
     page.table({
       head: [head],
       body,
-      foot: [[{ content: `${rows.length} ${rows.length === 1 ? 'entry' : 'entries'}`, colSpan: amountCol }, { content: rs(total), styles: { halign: 'right' } }, '', '']],
+      foot: [[{ content: `${r.rows.length} ${r.rows.length === 1 ? 'entry' : 'entries'}`, colSpan: amountCol }, { content: rs(r.total), styles: { halign: 'right' } }, '', '']],
       columnStyles: {
         0: { cellWidth: 8, halign: 'right', textColor: GREY },
         1: { cellWidth: 20 },
@@ -186,9 +137,7 @@ export function renderLedgerPdf({ report, bookId, season, entries, logo }: Ledge
       },
     })
   }
-
-  const slug = spec.title.toLowerCase().replace(/[^a-z]+/g, '-')
-  return { doc: page.finish(), filename: `${bookId}-${slug}-${season}-${String(season + 1).slice(2)}.pdf` }
+  return { doc: page.finish(), filename: `${r.fileStem}.pdf` }
 }
 
 /** Browser entry point: fetch the logo, build, hand the file to the browser. */
