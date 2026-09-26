@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
-import { BrowserRouter, Route, Routes } from 'react-router'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 
 import { AppLayout } from '@/components/AppLayout'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
@@ -21,8 +21,7 @@ import { ProcurementMaster } from '@/pages/ProcurementMaster'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
-import { UmaArchive, UmaArticle, UmaHome, UmaIssue, UmaSectionPage } from '@/pages/Uma'
-import { UmaDesk } from '@/pages/UmaDesk'
+import { Uma } from '@/pages/Uma'
 
 import { captureTokenFromUrl } from '@/lib/auth'
 
@@ -77,12 +76,10 @@ createRoot(document.getElementById('root')!).render(
               <Route path="schedule" element={<Schedule />} />
               <Route path="durga-puja" element={<DurgaPujaIndex />} />
               <Route path="durga-puja/:slug" element={<DurgaPujaChapter />} />
-              {/* Uma — the magazine is fully public (SEO + WhatsApp sharing) */}
-              <Route path="uma" element={<UmaHome />} />
-              <Route path="uma/sankhya" element={<UmaArchive />} />
-              <Route path="uma/sankhya/:number" element={<UmaIssue />} />
-              <Route path="uma/bibhag/:section" element={<UmaSectionPage />} />
-              <Route path="uma/:slug" element={<UmaArticle />} />
+              {/* Uma — the daily quiz and puzzle, public. The magazine that
+                  lived here is archived; its old links land on the games. */}
+              <Route path="uma" element={<Uma />} />
+              <Route path="uma/*" element={<Navigate to="/uma" replace />} />
               <Route path="membersonly" element={<MembersOnly />} />
               <Route path="login" element={<Login />} />
               <Route path="profile" element={<Profile />} />
@@ -101,7 +98,6 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="wallets" element={<WalletsPage />} />
                 <Route path="sponsorship" element={<SponsorshipPage />} />
                 <Route path="reimbursements" element={<ReimbursementsPage />} />
-                <Route path="uma-desk" element={<UmaDesk />} />
                 <Route path="brandcolours" element={<BrandColours />} />
               </Route>
               <Route path="*" element={<Home />} />

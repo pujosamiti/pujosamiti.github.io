@@ -1,4 +1,4 @@
-import { BookOpen, CalendarDays, Feather, Home, Users } from 'lucide-react'
+import { BookOpen, CalendarDays, Home, Puzzle, Users } from 'lucide-react'
 import { NavLink } from 'react-router'
 
 import { cn } from '@/lib/utils'
@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils'
 const items = [
   { to: '/', label: 'Home', icon: Home, end: true },
   { to: '/schedule', label: 'Schedule', icon: CalendarDays, end: false },
-  { to: '/uma', label: 'উমা', icon: Feather, end: false },
+  { to: '/uma', label: 'উমা', icon: Puzzle, end: false },
   { to: '/durga-puja', label: 'Durga Puja', icon: BookOpen, end: false },
   { to: '/membersonly', label: 'Members', icon: Users, end: false },
 ]

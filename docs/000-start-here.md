@@ -36,7 +36,8 @@ trust for everything.
 | 012 | [Design system](012-design-system.md) | The লাল-পাড় সাদা palette, typography, mobile-first rules |
 | 013 | [Known gaps & roadmap](013-known-gaps.md) | Everything currently broken, dormant, or deliberately deferred |
 | 014 | [Roles & access](014-roles-and-access.md) | Who sees and changes what, surface by surface — and where each rule is actually enforced |
-| 015 | [উমা — the magazine](015-uma-magazine.md) | Sections, sankhyas, the editorial lifecycle, the masthead, prerendering |
+| 015 | [উমা — the magazine (archived)](015-uma-magazine.md) | The retired magazine, kept as a record: sections, sankhyas, the masthead |
+| 016 | [উমা — daily quiz and puzzle](016-uma-games.md) | What /uma is now: the question of the day and the face puzzle |
 
 New engineer fast path: **001 → 002 → 003** gets you running locally.
 Read 004 and 009 before touching any feature code; 006–008 before touching

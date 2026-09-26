@@ -1,5 +1,5 @@
-// Shared markdown plumbing for content sections (the Durga Puja book now,
-// Pujo Sankhya later): frontmatter parsing and filename→slug rules.
+// Shared markdown plumbing for content sections (the Durga Puja book):
+// frontmatter parsing and filename→slug rules.
 
 export interface Frontmatter {
   title: string

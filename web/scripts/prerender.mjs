@@ -72,27 +72,15 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
   })
 }
 
-// ── Uma: routes live in the Worker's D1, fetched at build time ──────────────
-// Publishing a Sankhya fires repository_dispatch → this build reruns → each
-// article gets real HTML with its own OG tags + Article JSON-LD. Best-effort:
-// if the API is unreachable the build still ships (articles render client-side
-// and the /uma home route below keeps its tags).
-const API = process.env.VITE_API_URL || 'https://pujosamiti-api.pujosamiti.workers.dev'
-try {
-  const res = await fetch(`${API}/api/public/uma/prerender`, { signal: AbortSignal.timeout(15000) })
-  const body = await res.json()
-  if (!body.ok) throw new Error(body.error)
-  for (const r of body.data) ROUTES.push({ ...r, title: `${r.title} ${TITLE_SUFFIX}` })
-  console.log(`uma: ${body.data.length} routes from ${API}`)
-} catch (e) {
-  console.warn('uma prerender skipped (API unreachable?):', e.message)
-  ROUTES.push({
-    path: '/uma',
-    title: `Uma · উমা — the samiti magazine ${TITLE_SUFFIX}`,
-    description:
-      'Uma (উমা) — the Magarpatta pujo samiti magazine: stories, poetry, commentary, mythology, recipes, travel and art.',
-  })
-}
+// ── Uma: the daily quiz and puzzle — one static page ───────────────────────
+// (Until 26 Sep 2026 this fetched the magazine's article routes from the
+// Worker; the magazine is archived and its old URLs redirect to /uma.)
+ROUTES.push({
+  path: '/uma',
+  title: `Uma · উমা — a daily puzzle and quiz ${TITLE_SUFFIX}`,
+  description:
+    "A sliding puzzle of Maa Durga's face and a question about Durga Puja — new every day from the Magarpatta pujo samiti.",
+})
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
 const template = readFileSync(join(dist, 'index.html'), 'utf8')

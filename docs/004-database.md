@@ -188,6 +188,8 @@ exist from season 2026 onward — no historical budgets.
 
 ### উমা, the magazine: `uma_issue`, `uma_article`, `uma_section_editor`
 
+> **Archived 26 Sep 2026** — kept as a record, read by no code. See [015](015-uma-magazine.md).
+
 Added after this doc's audit — see **[015](015-uma-magazine.md)** for the
 model in full. In short: a `uma_issue` is one numbered সংখ্যা; `uma_article`
 carries the whole editorial lifecycle (`draft → in_review → accepted/held/

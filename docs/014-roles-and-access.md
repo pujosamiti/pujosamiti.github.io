@@ -6,7 +6,7 @@ do. Verified against the code on **1 Sep 2026**.
 
 ## 1. The three axes
 
-Access is not one ladder. Three independent things decide what somebody sees:
+Access is not one ladder. Two independent things decide what somebody sees:
 
 **The member role** — computed per request from the person row, in priority
 order (`api/src/routes/members.ts`):
@@ -34,10 +34,9 @@ identified by `isWebmaster(personId)` in `shared`. It curates the sponsorship
 catalog: which slots exist and which a given year offers. Nobody else, admins
 included, gets those controls.
 
-**The Uma seat** — `person.uma_role` (`chief_editor`) and rows in
-`uma_section_editor`, orthogonal to tier. A plain `member` holding a section
-runs that section's queue while still being locked out of the ledger. See
-[015](015-uma-magazine.md).
+(A third axis, **the Uma seat** on the magazine masthead, retired with the
+magazine on 26 Sep 2026 — see [015](015-uma-magazine.md). `/uma` is now the
+public daily quiz and puzzle, open to everyone with no sign-in.)
 
 ## 2. The Members Area, card by card
 
@@ -52,20 +51,17 @@ runs that section's queue while still being locked out of the ledger. See
 | Puja Planning | — | R | **W** + volunteer | **W** + volunteer | **W** + volunteer |
 | Procurement | — | — | **W** | **W** | **W** |
 | Bhog & Food Menu | R + headcount | R + headcount | R + headcount + responses | + ₹ + proxy count | **W** |
-| Uma · Editorial Desk | seat-gated ² | seat-gated ² | seat-gated ² | seat-gated ² | **W** |
 | Membership | — | — | R | R | **W** |
 | Nirghanto | — | — | R | R | **W** |
 | Events | — | — | R | R | **W** |
-| Brand Colours | — ³ | R | R | R | R |
+| Brand Colours | — ² | R | R | R | R |
 
 ¹ Admin-only until **25 Sep 2026 IST** (`SPONSORSHIP_OPENS_ON`). From that
 morning every member and new sign-in reads the board and pledges for
 themselves; fin_admin and admin pledge for another household, record payment
 and release a pledge; the **webmaster** alone offers or skips a slot.
 
-² Shown to anyone holding a Uma seat, whatever their tier, plus admins.
-
-³ Reachable by URL; simply not carded for new sign-ins.
+² Reachable by URL; simply not carded for new sign-ins.
 
 ## 3. The lines that matter
 
@@ -114,7 +110,6 @@ reader should know which is which.
 | Pledge for another household → proxy | ✅ | ✅ |
 | Release a pledge → proxy | ✅ | ✅ (also removed from `MEMBER_OPEN` and the new-signin allowlist) |
 | Per-plate cost → proxy | ✅ | ✅ (a core member's menu edit carries the stored price through) |
-| Uma section scope | ✅ | ✅ |
 | Bhog day add/edit/publish/delete → admin | ✅ | ❌ still `isCoreRole` |
 | Sponsorship page closed until 25 Sep | ✅ | ❌ endpoints answer |
 | Offer/skip a slot → webmaster | ✅ | ❌ route admits finance too |

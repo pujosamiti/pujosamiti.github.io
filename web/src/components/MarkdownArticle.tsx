@@ -3,9 +3,8 @@ import remarkGfm from 'remark-gfm'
 import { Link } from 'react-router'
 
 /**
- * The shared markdown renderer for content sections — the Durga Puja book
- * today, Pujo Sankhya articles later. GFM (tables!) enabled; internal
- * relative links are mapped to routes via `resolveLink`; wide tables scroll
+ * The shared markdown renderer for content sections — the Durga Puja book.
+ * GFM (tables!) enabled; internal relative links are mapped to routes via `resolveLink`; wide tables scroll
  * inside their own container so phones never scroll the whole page sideways.
  */
 export function MarkdownArticle({

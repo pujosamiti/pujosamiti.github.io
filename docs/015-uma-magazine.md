@@ -1,4 +1,12 @@
-# উমা — the samiti magazine
+# উমা — the samiti magazine · ARCHIVED
+
+> **Archived on 26 Sep 2026.** The magazine is retired and hidden from the
+> site; `/uma` is now the daily quiz and puzzle ([016](016-uma-games.md)).
+> Nothing was deleted: Sankhya 1 and its articles stay in the `uma_issue`,
+> `uma_article` and `uma_section_editor` tables (and in every backup), the art
+> stays in `web/public/uma-media`, and the last code that served it all is
+> the git tag **`uma-magazine-archive`**. The rest of this chapter describes
+> that archived system as it was.
 
 Uma is the samiti's own magazine: bilingual articles in ten sections, gathered
 into numbered editions called **সংখ্যা (sankhya)**, edited by samiti members and

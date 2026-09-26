@@ -176,9 +176,8 @@ export const person = sqliteTable('person', {
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   /**
-   * Seat on the Uma magazine masthead: one 'chief_editor' + up to two
-   * 'editor's, core members only, assigned by an admin. Gates the editorial
-   * desk; the chief editor additionally publishes Sankhyas.
+   * ARCHIVED 26 Sep 2026 with the Uma magazine — kept for the record, read by
+   * no code. Was the seat on the magazine masthead ('chief_editor' / 'editor').
    */
   umaRole: text('uma_role', { enum: ['chief_editor', 'editor'] }),
   notes: text('notes'),
@@ -550,7 +549,12 @@ export const bhogRsvp = sqliteTable('bhog_rsvp', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 11 · Uma (উমা) — the samiti's magazine
+// 11 · Uma (উমা) — the samiti's magazine · ARCHIVED 26 Sep 2026
+// The magazine was retired; /uma is now the daily quiz and puzzle, which need
+// no tables. These three tables keep Sankhya 1 and its articles as a record
+// and are read by no code. The last code that served them is the git tag
+// `uma-magazine-archive`; the art stays in web/public/uma-media.
+//
 // A Sankhya (uma_issue) is one edition — no fixed cadence, the chief editor
 // opens one when enough accepted material exists. Articles arrive out of band
 // (WhatsApp/email → a dev converts to markdown) and move draft → in_review →

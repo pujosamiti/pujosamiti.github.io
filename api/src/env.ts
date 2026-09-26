@@ -21,13 +21,4 @@ export interface Env {
   GOOGLE_SERVICE_ACCOUNT_KEY: string
   ACCOUNTS_SHEET_ID: string
   CONTENT_DRIVE_FOLDER_ID: string
-
-  /**
-   * Fine-grained GitHub token (contents: read/write on the repo is NOT needed —
-   * only the ability to fire repository_dispatch, i.e. "Contents" read +
-   * "Metadata"). Publishing a Sankhya uses it to trigger the Pages rebuild so
-   * crawlers get prerendered article HTML. Optional: when unset, publishing
-   * still works and the site serves articles client-side until the next deploy.
-   */
-  GITHUB_DISPATCH_TOKEN?: string
 }

@@ -1,4 +1,4 @@
-import type { AccountsSummary, ApiResult, CollectorWallet, CounterPersonInput, Me, MemberLite, PickerPerson, PujaDaysView, PujoEvent, UmaSectionId } from '@pujosamiti/shared'
+import type { AccountsSummary, ApiResult, CollectorWallet, CounterPersonInput, Me, MemberLite, PickerPerson, PujaDaysView, PujoEvent } from '@pujosamiti/shared'
 import { isFamilyTier, isProxyRole, openMembershipActive } from '@pujosamiti/shared'
 import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
@@ -13,7 +13,6 @@ import { bhogRoutes } from './bhog'
 import { ledgerRoutes } from './ledger'
 import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
-import { umaDeskRoutes } from './uma'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -49,11 +48,6 @@ memberRoutes.use('*', async (c, next) => {
   if (!p || !p.isActive || (!open && p.tier === 'non_member'))
     return c.json({ ok: false, error: 'not a samiti member' }, 403)
 
-  // The Uma sections this person edits — the masthead's working half.
-  const seats = await db
-    .select({ section: schema.umaSectionEditor.section })
-    .from(schema.umaSectionEditor)
-    .where(eq(schema.umaSectionEditor.personId, p.id))
   const role: Me['role'] = p.isAdmin
     ? 'admin'
     : p.isFinAdmin
@@ -85,8 +79,6 @@ memberRoutes.use('*', async (c, next) => {
     image: session.user.image ?? null,
     role,
     portfolio: p.portfolio,
-    umaRole: p.umaRole,
-    umaSections: seats.map((s) => s.section as UmaSectionId),
   })
   await next()
 })
@@ -190,7 +182,6 @@ memberRoutes.route('/tasks', taskRoutes)
 memberRoutes.route('/ledger', ledgerRoutes)
 memberRoutes.route('/procurement', procurementRoutes)
 memberRoutes.route('/bhog', bhogRoutes)
-memberRoutes.route('/uma', umaDeskRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.
