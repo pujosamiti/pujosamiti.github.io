@@ -152,6 +152,14 @@ export function Uma() {
                 aria-selected={tab === key}
                 size="sm"
                 variant={tab === key ? 'default' : 'outline'}
+                // the quiz is the second game, easy to miss: while it is not the
+                // tab on screen it wears marigold (genda), which calls without
+                // competing with the red of the chosen tab
+                className={
+                  key === 'quiz' && tab !== 'quiz'
+                    ? 'border-genda bg-genda text-secondary-foreground hover:bg-genda/85 hover:text-secondary-foreground'
+                    : undefined
+                }
                 onClick={() => setTab(key)}
               >
                 <Icon /> {label}
