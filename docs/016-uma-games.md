@@ -27,6 +27,14 @@ and members can compare scores on WhatsApp.
 Old magazine links (`/uma/<anything>`) redirect to `/uma`. The page is
 prerendered once, as a single static route, for link previews.
 
+**Share card.** Shared on WhatsApp, Facebook or X, `/uma` previews as
+"UMA · A Durga Pujo puzzle and quiz, every day" with a shuffled puzzle of Maa's face
+(`web/public/uma-share.webp`, 782 × 782, ~100 KB — WhatsApp drops preview
+images much over 300 KB; made from the 1.1 MB PNG kept in `docs/tmp/`). The
+prerender also writes the image's size, type and alt text, which lets
+WhatsApp and Facebook draw the card on the first share. Facebook caches
+cards: after changing one, re-scrape the link in Facebook's Sharing Debugger.
+
 ## 2. The day
 
 Day 0 is **26 Sep 2026** (`UMA_LAUNCH`); the season is `UMA_SEASON_DAYS` = 26. The Uma day turns over at **5 am

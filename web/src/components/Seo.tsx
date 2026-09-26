@@ -52,8 +52,9 @@ export function Seo({
   image,
   type = 'website',
   noindex = false,
+  bareTitle = false,
 }: {
-  /** Page title; "Magarpatta City Pune" is appended automatically */
+  /** Page title; "Magarpatta City Pune" is appended automatically (unless `bareTitle`) */
   title: string
   description: string
   /** Route path beginning with "/", used for the canonical URL */
@@ -64,8 +65,10 @@ export function Seo({
   type?: 'website' | 'article'
   /** Keep this page out of search results (members-only areas) */
   noindex?: boolean
+  /** Use the title exactly as given — for a page whose share card has a title of its own */
+  bareTitle?: boolean
 }) {
-  const full = `${title} ${TITLE_SUFFIX}`
+  const full = bareTitle ? title : `${title} ${TITLE_SUFFIX}`
   const url = `${ORIGIN}${path}`
   const img = image ?? DEFAULT_IMAGE
 

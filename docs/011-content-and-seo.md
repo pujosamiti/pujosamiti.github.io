@@ -86,7 +86,11 @@ GitHub Pages serves the same `index.html` for every route, and deep links go
 through the `404.html` SPA fallback (**HTTP 404 status**). So un-prerendered
 routes show site-default previews and a 404 status to crawlers; Layer 1 alone
 is fine for routes people don't deep-share, Layer 2 is what the book needs —
-its links live on WhatsApp. (The Uma magazine was prerendered the same way
+its links live on WhatsApp.
+(Prerendered pages set `og:*` and, since 26 Sep 2026, the matching
+`twitter:title` / `twitter:description` / `twitter:image` too — before that
+X showed every page with the home page's title. A route may also give
+`imageWidth`, `imageHeight`, `imageType` and `imageAlt` for its card.) (The Uma magazine was prerendered the same way
 until it was archived on 26 Sep 2026; `/uma` is now one static page.) Full recipe and history:
 the archived `seotags.md` (git history, or locally `docs/tmp/docs-v1/`).
 

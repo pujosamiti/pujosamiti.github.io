@@ -134,9 +134,11 @@ export function Uma() {
   return (
     <div ref={topRef} className="mx-auto flex w-full max-w-xl scroll-mt-4 flex-col gap-4">
       <Seo
-        title="Uma · উমা — a daily puzzle and quiz"
-        description="A sliding puzzle of Maa Durga's face and a question about Durga Puja — new every day from the Magarpatta pujo samiti."
+        title="UMA · A Durga Pujo puzzle and quiz, every day"
+        bareTitle
+        description="Slide Maa Durga's face back together and answer one question about the pujo, in Bengali/English — new every morning till Dashami, with a badge and a prayer for every win. From the Magarpatta Pujo Samiti."
         path="/uma"
+        image="https://pujosamiti.github.io/uma-share.webp"
       />
       {/* the title and the Puzzle / Quiz switch share one line */}
       <div className="flex items-center justify-between gap-3">

@@ -75,11 +75,19 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
 // ── Uma: the daily quiz and puzzle — one static page ───────────────────────
 // (Until 26 Sep 2026 this fetched the magazine's article routes from the
 // Worker; the magazine is archived and its old URLs redirect to /uma.)
+// The share card (WhatsApp, Facebook, X): a shuffled puzzle of Maa's face,
+// 782 × 782 WebP, ~100 KB — WhatsApp drops preview images much over 300 KB.
 ROUTES.push({
   path: '/uma',
-  title: `Uma · উমা — a daily puzzle and quiz ${TITLE_SUFFIX}`,
+  // the share card's own title, without the site suffix
+  title: 'UMA · A Durga Pujo puzzle and quiz, every day',
   description:
-    "A sliding puzzle of Maa Durga's face and a question about Durga Puja — new every day from the Magarpatta pujo samiti.",
+    "Slide Maa Durga's face back together and answer one question about the pujo, in Bengali/English — new every morning till Dashami, with a badge and a prayer for every win. From the Magarpatta Pujo Samiti.",
+  image: `${ORIGIN}/uma-share.webp`,
+  imageWidth: 782,
+  imageHeight: 782,
+  imageType: 'image/webp',
+  imageAlt: "A shuffled 3 × 3 sliding puzzle of Maa Durga's face",
 })
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
@@ -99,12 +107,32 @@ for (const r of ROUTES) {
     /<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/s,
     `<meta property="og:description" content="${esc(r.description)}" />`,
   )
+  // X/Twitter reads its own title and description; keep them in step with og:
+  html = html.replace(/<meta name="twitter:title" content="[^"]*" \/>/, `<meta name="twitter:title" content="${esc(r.title)}" />`)
+  html = html.replace(
+    /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/>/s,
+    `<meta name="twitter:description" content="${esc(r.description)}" />`,
+  )
   html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ORIGIN}${r.path}" />`)
   html = html.replace(
     /<meta name="robots" content="[^"]*" \/>/,
     `<meta name="robots" content="${r.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'}" />`,
   )
-  if (r.image) html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${esc(r.image)}" />`)
+  if (r.image) {
+    html = html.replace(/<meta property="og:image" content="[^"]*" \/>/, `<meta property="og:image" content="${esc(r.image)}" />`)
+    html = html.replace(/<meta name="twitter:image" content="[^"]*" \/>/, `<meta name="twitter:image" content="${esc(r.image)}" />`)
+  }
+  // size, type and alt let WhatsApp and Facebook render the card on first share
+  if (r.image && r.imageWidth) {
+    const extra = [
+      `<meta property="og:image:width" content="${r.imageWidth}" />`,
+      `<meta property="og:image:height" content="${r.imageHeight}" />`,
+      r.imageType && `<meta property="og:image:type" content="${r.imageType}" />`,
+      r.imageAlt && `<meta property="og:image:alt" content="${esc(r.imageAlt)}" />`,
+      r.imageAlt && `<meta name="twitter:image:alt" content="${esc(r.imageAlt)}" />`,
+    ].filter(Boolean).join('')
+    html = html.replace('</head>', `${extra}</head>`)
+  }
   html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${ORIGIN}${r.path}" />`)
   if (r.type === 'article') html = html.replace(/<meta property="og:type" content="[^"]*" \/>/, `<meta property="og:type" content="article" />`)
   if (r.jsonLd)
