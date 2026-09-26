@@ -4,12 +4,13 @@ import type {
   AdminFamily,
   AdminFamilyInput,
   AdminPerson,
+  AdminPersonCreateInput,
   AdminPersonInput,
   ApiResult,
   FamilyTier,
   PujoEvent,
 } from '@pujosamiti/shared'
-import { isMaskedEmail, maskEmail, EVENT_KINDS } from '@pujosamiti/shared'
+import { isFamilyTier, isMaskedEmail, maskEmail, EVENT_KINDS } from '@pujosamiti/shared'
 import { desc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -17,13 +18,12 @@ import { Hono } from 'hono'
 import { createAuth } from '../auth'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
-import { deriveDaysFromNirghanto } from '../lib/pujo'
+import { currentSeason, deriveDaysFromNirghanto } from '../lib/pujo'
+import { coreQualifiers } from '../lib/roll'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
 }
-
-const TIERS: FamilyTier[] = ['non_member', 'member', 'core']
 
 type Vars = { adminPersonId: string; isAdmin: boolean }
 
@@ -58,7 +58,11 @@ function requireAdmin(c: { get: (k: 'isAdmin') => boolean; json: (b: unknown, s:
   return c.get('isAdmin') ? null : c.json({ ok: false, error: 'admins only' }, 403)
 }
 
-function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string | null): AdminPerson {
+function toAdminPerson(
+  p: typeof schema.person.$inferSelect,
+  familyName: string | null,
+  qualifiesForCore: AdminPerson['qualifiesForCore'] = null,
+): AdminPerson {
   return {
     id: p.id,
     familyId: p.familyId,
@@ -81,6 +85,7 @@ function toAdminPerson(p: typeof schema.person.$inferSelect, familyName: string 
     notes: p.notes,
     origin: p.origin,
     createdAt: p.createdAt.getTime(),
+    qualifiesForCore,
   }
 }
 
@@ -132,8 +137,13 @@ adminRoutes.get('/people', async (c) => {
     return digits.length >= 3 && !!p.phone?.replace(/\D/g, '').includes(digits)
   }
   const isAdmin = c.get('isAdmin')
+  // The core marker: this season's qualifiers who aren't core yet. Shown to
+  // the admin to act on; nothing is promoted here.
+  const season = currentSeason()
+  const qualifiers = await coreQualifiers(db, season)
   const out = rows.filter(matches).map(({ p, familyName }) => {
-    const full = toAdminPerson(p, familyName)
+    const total = qualifiers.get(p.id)
+    const full = toAdminPerson(p, familyName, total ? { season, total } : null)
     if (isAdmin) return full
     // names and samiti statuses only — no personal data leaves the server
     return {
@@ -170,15 +180,19 @@ async function emailClash(
 adminRoutes.post('/people', async (c) => {
   const guard = requireAdmin(c)
   if (guard) return guard
-  const body = (await c.req.json()) as AdminPersonInput
+  const body = (await c.req.json()) as AdminPersonCreateInput
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  // Nobody joins the roll by default: the admin names the tier every time.
+  if (!isFamilyTier(body.tier)) return c.json({ ok: false, error: 'choose Core, Member or Non-member' }, 400)
   const db = drizzle(c.env.DB, { schema })
   const email = isMaskedEmail(body.email) ? null : body.email?.trim() || null
   const altEmail = isMaskedEmail(body.altEmail) ? null : body.altEmail?.trim() || null
   const clash = await emailClash(db, [email, altEmail])
   if (clash) return c.json({ ok: false, error: clash }, 409)
   const id = crypto.randomUUID()
-  await db.insert(schema.person).values({ id, email, altEmail, createdAt: new Date(), ...personValues(body) })
+  await db
+    .insert(schema.person)
+    .values({ id, email, altEmail, tier: body.tier, createdAt: new Date(), ...personValues(body) })
   return c.json(ok({ id }))
 })
 
@@ -211,7 +225,7 @@ adminRoutes.post('/people/:id/tier', async (c) => {
   const guard = requireAdmin(c)
   if (guard) return guard
   const tier = ((await c.req.json()) as { tier: FamilyTier }).tier
-  if (!TIERS.includes(tier)) return c.json({ ok: false, error: 'invalid tier' }, 400)
+  if (!isFamilyTier(tier)) return c.json({ ok: false, error: 'invalid tier' }, 400)
   const db = drizzle(c.env.DB, { schema })
   const id = c.req.param('id')
   const [p] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.id, id)).limit(1)

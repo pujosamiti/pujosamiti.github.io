@@ -26,7 +26,6 @@ import {
 } from '@/lib/bhog'
 import { useMemberState } from '@/lib/member'
 import { PersonPicker } from '@/components/PersonPicker'
-import { usePickerPeople } from '@/lib/people'
 import { usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
 
@@ -382,9 +381,7 @@ function HeadcountForm({
   // Counter entry: admins/fin_admins record for any household on the roll
   const [personId, setPersonId] = useState(initialPersonId ?? me.personId)
   const [note, setNote] = useState('')
-  const [savedMsg, setSavedMsg] = useState<string | null>(null)
   const { data: sheetRows } = useBhogCounts(proxy ? event.id : null)
-  const { data: people } = usePickerPeople()
 
   const countsFor = (pid: string): Record<string, string> =>
     pid === me.personId
@@ -399,7 +396,6 @@ function HeadcountForm({
   const pickPerson = (pid: string) => {
     setPersonId(pid)
     setCounts(countsFor(pid))
-    setSavedMsg(null)
   }
   // The sheet may arrive after the form opened on someone else (deep link)
   useEffect(() => {
@@ -421,20 +417,7 @@ function HeadcountForm({
       void queryClient.invalidateQueries({ queryKey: ['bhog', season] })
       void queryClient.invalidateQueries({ queryKey: ['bhog-counts', event.id] })
     },
-    onSuccess: (r) => {
-      if (r.rollUpdated) {
-        const name = (people ?? []).find((p) => p.id === personId)?.name ?? 'They'
-        setSavedMsg(
-          r.rollUpdated === 'core'
-            ? `Saved — ${name} is now a CORE member.`
-            : r.rollUpdated === 'member'
-              ? `Saved — ${name} is now a member.`
-              : `Saved — ${name} is back on the active roll.`,
-        )
-        void queryClient.invalidateQueries({ queryKey: ['people-full'] })
-        void queryClient.invalidateQueries({ queryKey: ['admin-people'] })
-      } else onClose()
-    },
+    onSuccess: () => onClose(),
   })
 
   return (
@@ -473,13 +456,12 @@ function HeadcountForm({
             <input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. via WhatsApp, will pay at the pandal" />
           </Field>
         )}
-        {savedMsg && <p className="rounded-md bg-accent px-3 py-2 text-sm font-medium">{savedMsg}</p>}
         <div className="flex gap-2">
           <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
             {save.isPending ? <Loader2 className="animate-spin" /> : null} Save count
           </Button>
           <Button size="sm" variant="ghost" onClick={onClose}>
-            {savedMsg ? 'Done' : 'Cancel'}
+            Cancel
           </Button>
         </div>
         {save.error && <p className="text-sm text-destructive">{save.error.message}</p>}

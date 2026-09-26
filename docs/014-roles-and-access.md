@@ -75,6 +75,13 @@ sponsorship price and payment is `fin_admin` or `admin` (`canFinance`).
 A ledger entry hardens 48 hours after creation: after that nobody edits or
 voids it, admins included, and a correction needs a direct database write.
 
+**Tiers are an admin's decision alone.** Only `admin` sets core, member or
+non-member — at creation, where the choice is compulsory on every form, and
+afterwards with the card buttons on /membership. No payment, pledge or
+headcount changes a tier or active status, so a finance entry can never grant
+committee access. People whose season's puja subscriptions and sponsorships
+reach ₹10,000 are marked **Qualifies for Core** for the admin to act on.
+
 **A new sign-in has exactly two writes**, enforced centrally in the members
 middleware rather than route by route: their household's headcount, and their
 own sponsorship pledge. Every other non-GET returns 403.
@@ -88,7 +95,7 @@ board only when an admin decides the money is not coming.
 headcount. Core members also see the responses table (plate counts). fin_admin
 and admin additionally see the per-plate cost — on the cards, in the `Total ₹`
 row, and in the CSV and printed sheet — and may record a headcount for another
-household, which runs the participation rule and can promote a non-member.
+household. Recording a count never changes that household's tier.
 Only `admin` adds, edits, publishes, unpublishes or deletes a menu day.
 
 **Archival seasons are read-only for everyone**, admins included. Past

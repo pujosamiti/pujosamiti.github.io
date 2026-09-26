@@ -1,18 +1,14 @@
 import type { FamilyTier } from '@pujosamiti/shared'
+import { TIER_LABEL } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Loader2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
 import { SearchSelect } from '@/components/SearchSelect'
+import { TierChoice } from '@/components/TierChoice'
 import { Button } from '@/components/ui/button'
 import { createCounterPerson, usePickerPeople } from '@/lib/people'
-
-const TIER_HINT: Record<FamilyTier, string> = {
-  core: 'Core',
-  member: 'Member',
-  non_member: 'Non-member',
-}
 
 /**
  * The counter person picker (admin/fin_admin): the WHOLE roll — members,
@@ -44,10 +40,16 @@ export function PersonPicker({
   const [name, setName] = useState('')
   const [phone, setPhone] = useState('')
   const [society, setSociety] = useState('')
+  const [tier, setTier] = useState<FamilyTier | null>(null)
 
   const create = useMutation({
     mutationFn: () =>
-      createCounterPerson({ displayName: name.trim(), phone: phone.trim() || null, society: society.trim() || null }),
+      createCounterPerson({
+        displayName: name.trim(),
+        phone: phone.trim() || null,
+        society: society.trim() || null,
+        tier: tier!,
+      }),
     onSuccess: (r) => {
       void queryClient.invalidateQueries({ queryKey: ['people-full'] })
       void queryClient.invalidateQueries({ queryKey: ['members-lite'] })
@@ -57,6 +59,7 @@ export function PersonPicker({
       setName('')
       setPhone('')
       setSociety('')
+      setTier(null)
     },
   })
 
@@ -68,7 +71,7 @@ export function PersonPicker({
   const options = roll.map((p) => ({
     value: p.id,
     label: p.name,
-    hint: [p.id === pinnedId ? 'You' : null, p.isActive ? TIER_HINT[p.tier] : 'Inactive', p.society]
+    hint: [p.id === pinnedId ? 'You' : null, p.isActive ? TIER_LABEL[p.tier] : 'Inactive', p.society]
       .filter(Boolean)
       .join(' · '),
   }))
@@ -97,9 +100,11 @@ export function PersonPicker({
       {creating && (
         <div className="flex flex-col gap-2 rounded-md border bg-accent/30 p-3">
           <p className="text-xs text-muted-foreground">
-            Someone new at the counter — no sign-in needed. They join the roll as a member; add their
-            email later on the Membership page to link their Google account.
+            Someone new at the counter — no sign-in needed. Choose their membership type; only an admin
+            changes it later, on the Membership page, where their email can also be added to link their
+            Google account.
           </p>
+          <TierChoice value={tier} onChange={setTier} invalid />
           <div className="flex flex-wrap items-end gap-2">
             <Field label="Name">
               <input className={inputCls} value={name} onChange={(e) => setName(e.target.value)} placeholder="Full name" />
@@ -110,7 +115,7 @@ export function PersonPicker({
             <Field label="Society">
               <input className={inputCls} value={society} onChange={(e) => setSociety(e.target.value)} placeholder="optional" />
             </Field>
-            <Button type="button" size="sm" onClick={() => create.mutate()} disabled={create.isPending || !name.trim()}>
+            <Button type="button" size="sm" onClick={() => create.mutate()} disabled={create.isPending || !name.trim() || !tier}>
               {create.isPending ? <Loader2 className="animate-spin" /> : null} Add person
             </Button>
           </div>

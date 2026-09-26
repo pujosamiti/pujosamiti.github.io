@@ -52,7 +52,7 @@ local `http://localhost:8787`.
 | `GET /api/members/people` | Light people list (pickers) |
 | `GET /api/members/events` | Events **including purohit phone** |
 | `GET /api/members/people-full` | **Admin/fin_admin**: the counter picker roster — every person, active or not (name, tier, society only) |
-| `POST /api/members/counter-person` | **Admin/fin_admin**: walk-up creation — joins the roll as an active member, `origin='counter'` |
+| `POST /api/members/counter-person` | **Admin/fin_admin**: walk-up creation — joins the roll active at the `tier` the admin chose (required: `core` · `member` · `non_member`), `origin='counter'` |
 | `GET /api/members/accounts/:eventId` | Wallet/expense summary read live from the treasurers' **Google Sheet** (`Wallets`/`Expenses` tabs) | ⚠️ **dormant — no frontend caller**; needs `ACCOUNTS_SHEET_ID` (unset in prod); superseded in practice by `/ledger/*` |
 
 ### Tasks (`/api/members/tasks` — Puja Planning; writes are member-wide, reads too)
@@ -116,14 +116,14 @@ One menu per calendar date per event — five occasions a season
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (event/label/date/per-plate ₹/notes) — single-meal events add their one menu here |
 | `POST /days/:id/publish` | Publish/unpublish a day to the members |
 | `POST /days/:id/items` | Replace a day's dishes wholesale |
-| `POST /rsvp` | **Any member**: their household's headcount, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`) — the participation rule then updates the roll |
+| `POST /rsvp` | **Any member**: their household's headcount, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`); never changes a tier |
 | `GET /counts?eventId=` | **Core**: the household-by-household count sheet for one event |
 
 ## Admin (`/api/admin` — core/admin read, admin write)
 
 | Route | Purpose |
 | --- | --- |
-| `GET/POST /people` · `POST /people/:id` · `POST /people/:id/tier` · `POST /people/:id/merge` · `DELETE /people/:id` | The membership roll |
+| `GET/POST /people` · `POST /people/:id` · `POST /people/:id/tier` · `POST /people/:id/merge` · `DELETE /people/:id` | The membership roll. Creating (`POST /people`) requires `tier` — `core` · `member` · `non_member`, no default. `GET /people` rows carry `qualifiesForCore` (`{season, total}` or null), the core marker |
 | `GET/POST /families` · `POST /families/:id` | Family groupings |
 | `GET/POST /events` · `POST /events/:id` · `DELETE /events/:id` | Event calendar (incl. purohit fields, notes) |
 | `POST /timetable` · `POST /timetable/:id` · `DELETE /timetable/:id` | Nirghanto rows |

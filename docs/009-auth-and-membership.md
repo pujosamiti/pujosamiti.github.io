@@ -120,22 +120,37 @@ Gates in practice:
   there" screen.
 - **Activation is manual**: an admin promotes tier (admin UI → `/api/admin/
   people/:id/tier`, or SQL). Only then does member content open.
-- **The participation rule** (`api/src/lib/roll.ts`, counter entries): when an
-  admin/fin_admin records a headcount or a contribution for someone, the
-  roll updates itself — subscription/sponsorship ≥ ₹10,000
-  (`CORE_CONTRIBUTION_THRESHOLD`) → **core**, any other recorded
-  participation → non-member becomes **member**, inactive people reactivate.
-  Upgrades only; nothing auto-demotes. Fires on ledger contribution entries,
-  pledge payments and proxied headcounts — not on self-service actions.
+- **Every new person gets a tier on purpose**: whoever creates a person —
+  an admin on /membership (**Add person**) or an admin/fin_admin at the
+  counter (walk-up **New person** on a ledger contribution, a sponsorship
+  pledge or a bhog headcount) — must choose **Core**, **Member** or
+  **Non-member**. Nothing is pre-selected and the API refuses a create
+  without one (`POST /api/admin/people`, `POST /api/members/counter-person`).
+  Self-registration is the one exception: it always lands at `non_member`
+  under Pending activation, because nobody picks their own tier.
+- **Tiers change only by an admin's hand.** No payment, pledge or headcount
+  changes anyone's tier or active status — not at the counter, not in the
+  ledger. (Until Sept 2026 an automatic "participation rule" promoted people
+  on recorded payments; it was removed because it let finance entries grant
+  committee access, and a wrong pick in the person picker stuck.)
+- **The core marker** (`api/src/lib/roll.ts`): a person whose **puja
+  subscriptions and puja sponsorships in the current season** (1 July →
+  30 June, pujo ledger, active entries) add up to ≥ ₹10,000
+  (`CORE_CONTRIBUTION_THRESHOLD`) — one payment or several, either category
+  or both — and who isn't core yet carries a **Qualifies for Core** badge on
+  /membership, with a tab of their own while anyone qualifies. Donations,
+  food coupons and other income don't count. Saving a contribution that
+  carries someone over the line says so on the ledger form. The admin
+  promotes with the Core button.
 - **Counter entries**: admins/fin_admins carry a full-roster person picker
   (ex/non-members and inactive included, `/people-full`) on the headcount
   form and the ledger contributor/pledger fields, plus walk-up creation
-  (`/counter-person`, `origin='counter'`, no email). A fresh contribution
-  offers a one-tap jump to `/bhog?count=<personId>` to take the household's
-  headcount immediately.
-- **Tier meaning**: `core` ≈ committee (typically follows the Durga Pujo
-  subscription ≥ the threshold constant); `member` = regular; promotion is
-  always an explicit admin act — sponsorships never affect tier.
+  (`/counter-person`, `origin='counter'`, no email, tier chosen by the
+  admin). A fresh contribution offers a one-tap jump to
+  `/bhog?count=<personId>` to take the household's headcount immediately.
+- **Tier meaning**: `core` ≈ committee, usually granted once the season total
+  above is reached; `member` = regular; `non_member` = on the rolls without
+  membership. Admins change a tier with the buttons on the person's card.
 - **Leaving**: `is_active=false` (soft), or the self-service "leave" endpoint.
 - **Duplicates**: admin merge endpoint (`/people/:id/merge`) folds one person
   into another.

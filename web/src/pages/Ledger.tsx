@@ -1101,23 +1101,23 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   const [toWalletId, setToWalletId] = useState<string | null>(initial?.toWalletPersonId ?? null)
   const [notes, setNotes] = useState(initial?.notes ?? '')
   const [confirming, setConfirming] = useState(false)
-  const [savedFor, setSavedFor] = useState<{ personId: string; rollUpdated: 'core' | 'member' | 'reactivated' | null } | null>(null)
+  const [savedFor, setSavedFor] = useState<{ personId: string; coreQualified: boolean } | null>(null)
   const queryClient = useQueryClient()
 
   const save = useMutation({
     mutationFn: (body: LedgerEntryInput) =>
       post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body) as Promise<{
         id: string
-        rollUpdated?: 'core' | 'member' | 'reactivated' | null
+        coreQualified?: boolean
       }>,
     onSuccess: (r) => {
       invalidate()
       // Counter flow: a fresh contribution keeps the panel open with the
       // roll-update message and a one-tap jump to their headcount.
       if (!editing && kind === 'contribution' && personId) {
-        void queryClient.invalidateQueries({ queryKey: ['people-full'] })
+        // the Membership page's core marker may have changed
         void queryClient.invalidateQueries({ queryKey: ['admin-people'] })
-        setSavedFor({ personId, rollUpdated: r.rollUpdated ?? null })
+        setSavedFor({ personId, coreQualified: !!r.coreQualified })
       } else onClose()
     },
   })
@@ -1261,9 +1261,8 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           <div className="flex flex-wrap items-center gap-2 rounded-md bg-accent px-3 py-2 text-sm">
             <span className="font-medium">
               Entry saved.
-              {savedFor.rollUpdated === 'core' && ' They are now a CORE member.'}
-              {savedFor.rollUpdated === 'member' && ' They are now a member.'}
-              {savedFor.rollUpdated === 'reactivated' && ' They are back on the active roll.'}
+              {savedFor.coreQualified &&
+                ' They now qualify for Core this season — an admin can promote them on the Membership page.'}
             </span>
             <Button size="sm" variant="outline" asChild>
               <Link to={`/bhog?count=${savedFor.personId}`}>Take their headcount →</Link>

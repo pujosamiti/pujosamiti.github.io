@@ -1,11 +1,19 @@
-import type { AdminFamily, AdminFamilyInput, AdminPerson, AdminPersonInput, FamilyTier } from '@pujosamiti/shared'
-import { isCoreRole, openMembershipActive } from '@pujosamiti/shared'
+import type {
+  AdminFamily,
+  AdminFamilyInput,
+  AdminPerson,
+  AdminPersonCreateInput,
+  AdminPersonInput,
+  FamilyTier,
+} from '@pujosamiti/shared'
+import { isCoreRole, openMembershipActive, TIER_LABEL } from '@pujosamiti/shared'
 import { LOCATION_OTHER, MAGARPATTA_SOCIETIES, MAGARPATTA_WORKPLACE_GROUPS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, UserMinus, Users } from 'lucide-react'
+import { Award, GitMerge, Hourglass, Loader2, Pencil, Plus, Search, ShieldCheck, Trash2, UserMinus, Users } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 
 import { Field, inputCls } from '@/components/form'
+import { TierChoice } from '@/components/TierChoice'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { BackLink } from '@/components/BackLink'
 import { Badge } from '@/components/ui/badge'
@@ -16,16 +24,15 @@ import { useMemberState } from '@/lib/member'
 import { Seo } from '@/components/Seo'
 
 const TIERS: FamilyTier[] = ['non_member', 'member', 'core']
-const TIER_LABEL: Record<FamilyTier, string> = {
-  non_member: 'Non-member',
-  member: 'Member',
-  core: 'Core',
-}
+
+const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
+/** 2026 → "2026–27", the samiti's 1 July season. */
+const seasonLabel = (y: number) => `${y}–${String(y + 1).slice(2)}`
 
 const post = (path: string, body: unknown) =>
   api(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) })
 
-type View = 'members' | 'pending' | 'exmembers' | 'families'
+type View = 'members' | 'pending' | 'exmembers' | 'qualifies' | 'families'
 
 /** Membership roll. Core members view; admins manage. */
 export function Membership() {
@@ -65,6 +72,8 @@ export function Membership() {
     () => people?.filter((p) => p.tier === 'non_member' && p.origin !== 'self') ?? [],
     [people],
   )
+  // Reached the core line this season but not core yet — the admin decides.
+  const qualifying = useMemo(() => people?.filter((p) => p.qualifiesForCore) ?? [], [people])
 
   if (sessionPending || memberPending) {
     return (
@@ -88,6 +97,9 @@ export function Membership() {
     { key: 'members', label: 'Members', icon: ShieldCheck, count: members.length },
     { key: 'pending', label: 'Pending activation', icon: Hourglass, count: pending.length },
     { key: 'exmembers', label: 'Ex-members', icon: UserMinus, count: exMembers.length },
+    ...(qualifying.length || view === 'qualifies'
+      ? [{ key: 'qualifies' as const, label: 'Qualifies for Core', icon: Award, count: qualifying.length }]
+      : []),
     { key: 'families', label: 'Families', icon: Users, count: families?.length ?? 0 },
   ]
 
@@ -140,7 +152,15 @@ export function Membership() {
         <FamiliesView families={families} q={q} canEdit={canEdit} />
       ) : (
         <PeopleView
-          people={view === 'members' ? members : view === 'exmembers' ? exMembers : pending}
+          people={
+            view === 'members'
+              ? members
+              : view === 'exmembers'
+                ? exMembers
+                : view === 'qualifies'
+                  ? qualifying
+                  : pending
+          }
           q={q}
           families={families ?? []}
           loading={peoplePending}
@@ -149,7 +169,9 @@ export function Membership() {
               ? 'No members yet.'
               : view === 'exmembers'
                 ? 'Nobody on the rolls outside the membership.'
-                : 'Nobody is waiting for activation.'
+                : view === 'qualifies'
+                  ? 'Nobody is waiting on a promotion to Core.'
+                  : 'Nobody is waiting for activation.'
           }
           allowAdd={canEdit && view === 'members'}
           canEdit={canEdit}
@@ -248,6 +270,15 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
               {!p.isActive && (
                 <Badge variant="outline" className="ml-1 align-middle">
                   inactive
+                </Badge>
+              )}
+              {p.qualifiesForCore && (
+                <Badge
+                  variant="aparajita"
+                  className="ml-1 align-middle"
+                  title={`Puja subscriptions and sponsorships in ${seasonLabel(p.qualifiesForCore.season)} total ${inr(p.qualifiesForCore.total)}. Promote with the Core button.`}
+                >
+                  Qualifies for Core · {inr(p.qualifiesForCore.total)}
                 </Badge>
               )}
             </p>
@@ -440,9 +471,14 @@ function PersonForm({
     portfolio: person?.portfolio ?? null,
     notes: person?.notes ?? null,
   })
+  // A new person's tier has no default; edits change tier on the card instead.
+  const [tier, setTier] = useState<FamilyTier | null>(null)
   const [error, setError] = useState<string | null>(null)
   const save = useMutation({
-    mutationFn: () => (person ? post(`/api/admin/people/${person.id}`, form) : post('/api/admin/people', form)),
+    mutationFn: () =>
+      person
+        ? post(`/api/admin/people/${person.id}`, form)
+        : post('/api/admin/people', { ...form, tier: tier! } satisfies AdminPersonCreateInput),
     onSuccess: async () => {
       await queryClient.invalidateQueries()
       onClose()
@@ -478,6 +514,7 @@ function PersonForm({
               <input className={inputCls} type="email" value={form.email ?? ''} onChange={(e) => set({ email: e.target.value || null })} placeholder="masked for privacy — type a full address to change" />
             </Field>
           </div>
+          {!person && <TierChoice value={tier} onChange={setTier} invalid />}
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Second email (if they sign in with either)">
               <input className={inputCls} type="email" value={form.altEmail ?? ''} onChange={(e) => set({ altEmail: e.target.value || null })} />
@@ -601,7 +638,7 @@ function PersonForm({
           </div>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">
-            <Button type="submit" size="sm" disabled={save.isPending}>
+            <Button type="submit" size="sm" disabled={save.isPending || (!person && !tier)}>
               {save.isPending && <Loader2 className="animate-spin" />} Save
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={onClose} disabled={save.isPending}>

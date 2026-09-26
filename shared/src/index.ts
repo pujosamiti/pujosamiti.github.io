@@ -411,18 +411,24 @@ export interface PickerPerson {
 }
 
 /**
- * The automatic tier rule for recorded payments: a subscription or
- * sponsorship of ≥ this amount makes the payer CORE; any smaller recorded
- * participation (payment or headcount) makes a non-member a MEMBER.
- * Upgrades only — nothing ever demotes automatically.
+ * The core line: a person whose puja subscriptions and puja sponsorships in
+ * one season (1 July → 30 June, the pujo ledger only) add up to at least this
+ * amount QUALIFIES for core — one payment or several, either category or both.
+ * Donations and other income don't count. Qualifying changes nothing by
+ * itself: the Membership page marks the person and an admin promotes them.
+ * No payment or headcount ever changes a tier or active status.
  */
 export const CORE_CONTRIBUTION_THRESHOLD = 10000;
 
-/** Walk-up creation at the counter: no email, no sign-in — joins as a member. */
+/**
+ * Walk-up creation at the counter: no email, no sign-in. The admin always
+ * names the tier — nobody joins the roll by default.
+ */
 export interface CounterPersonInput {
   displayName: string;
   phone: string | null;
   society: string | null;
+  tier: FamilyTier;
 }
 
 /** One cell of the household-by-household count sheet (core view). */
@@ -460,6 +466,13 @@ export interface MemberLite {
 // ── Onboarding & membership admin ───────────────────────────────────────────
 
 export type FamilyTier = 'non_member' | 'member' | 'core';
+export const FAMILY_TIERS: readonly FamilyTier[] = ['core', 'member', 'non_member'];
+export const isFamilyTier = (t: unknown): t is FamilyTier => FAMILY_TIERS.includes(t as FamilyTier);
+export const TIER_LABEL: Record<FamilyTier, string> = {
+  core: 'Core',
+  member: 'Member',
+  non_member: 'Non-member',
+};
 export type FamilyEligibility = 'resident' | 'works_in_mgp' | 'by_invitation';
 
 /**
@@ -531,6 +544,12 @@ export interface AdminPerson {
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;
+  /**
+   * Set when this season's puja subscriptions and sponsorships reach
+   * CORE_CONTRIBUTION_THRESHOLD and the person isn't core yet — a marker for
+   * the admin, never an automatic promotion. Null otherwise.
+   */
+  qualifiesForCore: { season: number; total: number } | null;
 }
 
 /** Admin person payload. Email nullable = manual/no-Google member. */
@@ -553,6 +572,15 @@ export interface AdminPersonInput {
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;
+}
+
+/**
+ * Creating a person (admin): the profile plus the tier, which the admin must
+ * choose — there is no default. Edits leave tier out; the card's tier
+ * buttons change it.
+ */
+export interface AdminPersonCreateInput extends AdminPersonInput {
+  tier: FamilyTier;
 }
 
 export interface AdminFamily {

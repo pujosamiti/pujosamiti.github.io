@@ -56,9 +56,13 @@ admin-curated grouping — **it gates nothing**. Key columns:
 - `alt_email` — a second Google account, matched the same way.
 - `is_admin` — full admin. `is_fin_admin` — finance authority *without* the
   membership roll (the treasurer case); admins hold fin powers implicitly.
+- `tier` — `core` · `member` · `non_member`. The column defaults to
+  `non_member`, but every insert names its tier: admins choose it when
+  creating anyone, and self-registration writes `non_member` explicitly.
 - `origin` — `roster` (entered by an admin / historical import) vs `self`
-  (signed in and registered themselves); separates people genuinely awaiting
-  activation from the long tail of names on the rolls.
+  (signed in and registered themselves) vs `counter` (walk-up creation);
+  separates people genuinely awaiting activation from the long tail of names
+  on the rolls.
 - `is_active` false = left the portal (soft delete).
 
 ### Task planning: `durgapuja_task`, `task_year`, `task_assignment`
@@ -166,9 +170,11 @@ Sponsorship mirrors the task catalog: `sponsorship_item` (master, e.g.
 `sandhi-puja-3`, with `default_amount`) → `sponsorship_item_year` (offered
 this year? priced this year?) → `sponsorship_pledge` (person, year, amount,
 `pledged`/`paid`/`cancelled`). **Pledges move no money** — paying one writes
-the ledger entry and links it (`ledger_entry_id`). Only the Durga Pujo
-subscription (≥ threshold, a shared constant) confers core tier; sponsorships
-are separate generosity and never affect tier.
+the ledger entry and links it (`ledger_entry_id`). Paid sponsorships count
+toward core alongside subscriptions: a person whose puja subscriptions and
+sponsorships in one season total ≥ the threshold (a shared constant,
+₹10,000) is marked **Qualifies for Core** for an admin to promote — nothing
+changes a tier automatically. See [009](009-auth-and-membership.md) §5.
 
 `expense_reimbursement`: a core member spent from their own pocket; a wallet
 holder self-assigns the claim ("I'll pay this one" — prevents double payment),

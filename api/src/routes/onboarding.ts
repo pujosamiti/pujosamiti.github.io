@@ -133,6 +133,10 @@ onboardingRoutes.post('/profile', async (c) => {
   }
 
   const id = crypto.randomUUID()
-  await db.insert(schema.person).values({ id, email, origin: 'self', createdAt: new Date(), ...values })
+  // Self-registration never picks a tier: they wait as a non-member until an
+  // admin activates them (Pending activation on /membership).
+  await db
+    .insert(schema.person)
+    .values({ id, email, origin: 'self', tier: 'non_member', createdAt: new Date(), ...values })
   return c.json(ok({ id }))
 })

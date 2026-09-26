@@ -7,7 +7,6 @@ import { Hono } from 'hono'
 import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { currentSeason, seasonOf, tithiOf } from '../lib/pujo'
-import { applyParticipationRule } from '../lib/roll'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -149,9 +148,7 @@ bhogRoutes.post('/rsvp', async (c) => {
       })
     saved++
   }
-  // A recorded count is participation — non-members become members
-  const rollUpdated = saved > 0 && isProxyRole(me.role) ? await applyParticipationRule(db, targetId) : null
-  return c.json(ok({ saved, rollUpdated }))
+  return c.json(ok({ saved }))
 })
 
 /** The household-by-household count sheet for one event (core). */

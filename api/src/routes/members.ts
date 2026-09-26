@@ -1,5 +1,5 @@
 import type { AccountsSummary, ApiResult, CollectorWallet, CounterPersonInput, Me, MemberLite, PickerPerson, PujaDaysView, PujoEvent, UmaSectionId } from '@pujosamiti/shared'
-import { isProxyRole, openMembershipActive } from '@pujosamiti/shared'
+import { isFamilyTier, isProxyRole, openMembershipActive } from '@pujosamiti/shared'
 import { asc, eq, or } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
@@ -127,15 +127,18 @@ memberRoutes.get('/people-full', async (c) => {
 
 /**
  * Walk-up creation at the counter (admin/fin_admin): someone new pays cash
- * during the pujo — no sign-in, no email. They join the roll as an active
- * MEMBER with origin='counter' so these rows are findable for later cleanup
- * or merging; adding their email later links their Google sign-in.
+ * during the pujo — no sign-in, no email. They join the roll active, at the
+ * tier the admin chose (there is no default), with origin='counter' so these
+ * rows are findable for later cleanup or merging; adding their email later
+ * links their Google sign-in. Nothing changes that tier afterwards except an
+ * admin on /membership.
  */
 memberRoutes.post('/counter-person', async (c) => {
   const me = c.get('me')
   if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'admins only' }, 403)
   const body = (await c.req.json()) as CounterPersonInput
   if (!body.displayName?.trim()) return c.json({ ok: false, error: 'name is required' }, 400)
+  if (!isFamilyTier(body.tier)) return c.json({ ok: false, error: 'choose Core, Member or Non-member' }, 400)
   const db = drizzle(c.env.DB, { schema })
   const id = crypto.randomUUID()
   await db.insert(schema.person).values({
@@ -143,7 +146,7 @@ memberRoutes.post('/counter-person', async (c) => {
     displayName: body.displayName.trim(),
     phone: body.phone?.trim() || null,
     society: body.society?.trim() || null,
-    tier: 'member',
+    tier: body.tier,
     origin: 'counter',
     isActive: true,
     notes: `Counter entry, ${new Date().toISOString().slice(0, 10)} (by ${me.name})`,
