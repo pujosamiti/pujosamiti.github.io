@@ -1,5 +1,5 @@
 import { CircleHelp, Eye, History, Puzzle } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
 import { Seo } from '@/components/Seo'
@@ -71,6 +71,12 @@ export function Uma() {
       },
       { replace: true },
     )
+  const topRef = useRef<HTMLDivElement>(null)
+  const pick = (day: number) => {
+    select(day)
+    const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
+  }
   const setTab = (key: Tab) =>
     setParams(
       (prev) => {
@@ -90,62 +96,53 @@ export function Uma() {
     { key: 'quiz', label: 'Quiz', icon: CircleHelp },
   ]
 
+  // The day line and the strip of dates. On a phone they sit under the game,
+  // so the puzzle gets the screen; from md up there is room for them above.
+  const dayInfo = (
+    <section aria-label="Choose a day" className="order-last flex flex-col gap-2 md:order-first">
+      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
+        {date === null ? (
+          'A puzzle and a question, every day of the pujo season'
+        ) : (
+          <>
+            <span>
+              Day {n! + 1} of {UMA_SEASON_DAYS} · {dayLabel(date)}
+            </span>
+            {isToday && <Badge variant="genda">Today</Badge>}
+            {!isToday && !isFuture && (
+              <Badge variant="outline">
+                <History className="size-3" /> An earlier day
+              </Badge>
+            )}
+            {isFuture && (
+              <Badge variant="aparajita">
+                <Eye className="size-3" /> Maestro preview
+              </Badge>
+            )}
+            {!isToday && !seasonOver && (
+              <Button size="sm" variant="ghost" className="ml-auto h-7" onClick={() => pick(todayN)}>
+                Back to today
+              </Button>
+            )}
+          </>
+        )}
+      </p>
+      <DayPager count={UMA_SEASON_DAYS} selected={n} today={todayN} lastOpen={lastOpen} onSelect={pick} />
+    </section>
+  )
+
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-4">
+    <div ref={topRef} className="mx-auto flex w-full max-w-xl scroll-mt-4 flex-col gap-4">
       <Seo
         title="Uma · উমা — a daily puzzle and quiz"
         description="A sliding puzzle of Maa Durga's face and a question about Durga Puja — new every day from the Magarpatta pujo samiti."
         path="/uma"
       />
-      <div>
+      {/* the title and the Puzzle / Quiz switch share one line */}
+      <div className="flex items-center justify-between gap-3">
         <h1 className="font-serif text-3xl font-bold">উমা</h1>
-        <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-muted-foreground">
-          {date === null ? (
-            'A puzzle and a question, every day of the pujo season'
-          ) : (
-            <>
-              <span>
-                Day {n! + 1} of {UMA_SEASON_DAYS} · {dayLabel(date)}
-              </span>
-              {isToday && <Badge variant="genda">Today</Badge>}
-              {!isToday && !isFuture && (
-                <Badge variant="outline">
-                  <History className="size-3" /> An earlier day
-                </Badge>
-              )}
-              {isFuture && (
-                <Badge variant="aparajita">
-                  <Eye className="size-3" /> Maestro preview
-                </Badge>
-              )}
-            </>
-          )}
-        </p>
-      </div>
-
-      <DayPager count={UMA_SEASON_DAYS} selected={n} today={todayN} lastOpen={lastOpen} onSelect={select} />
-
-      {date === null || n === null ? (
-        <Card>
-          <CardContent className="flex flex-col items-center gap-3 pt-5 text-center">
-            <img
-              src={UMA_PUZZLES[UMA_SEASON_DAYS - 1]!.src}
-              alt="Maa Durga on Dashami"
-              className="aspect-square w-full max-w-sm rounded-xl border object-cover"
-            />
-            <p lang="bn" className="font-serif text-2xl">
-              আসছে বছর আবার হবে
-            </p>
-            <p className="text-sm text-muted-foreground">(Next year, it will happen again.)</p>
-            <p className="max-w-sm text-sm">
-              This year's puzzles and questions ended on Dashami, 21 October 2026. Thank you for playing — pick any
-              date above to look back, and উমা will be back with the next pujo.
-            </p>
-          </CardContent>
-        </Card>
-      ) : (
-        <>
-          <div className="flex flex-wrap items-center gap-2" role="tablist">
+        {date !== null && (
+          <div className="flex items-center gap-2" role="tablist">
             {tabs.map(({ key, label, icon: Icon }) => (
               <Button
                 key={key}
@@ -158,13 +155,40 @@ export function Uma() {
                 <Icon /> {label}
               </Button>
             ))}
-            {!isToday && !seasonOver && (
-              <Button size="sm" variant="ghost" className="ml-auto" onClick={() => select(todayN)}>
-                Back to today
-              </Button>
-            )}
           </div>
+        )}
+      </div>
 
+      {/* on a phone, a quiet reminder up top when the day on screen is not today */}
+      {date !== null && !isToday && (
+        <p className="-mt-2 text-xs text-muted-foreground md:hidden">
+          {isFuture ? 'Maestro preview' : 'An earlier day'} · {dayLabel(date)} — the dates are below the{' '}
+          {tab === 'quiz' ? 'question' : 'puzzle'}.
+        </p>
+      )}
+
+      <div className="flex flex-col gap-4">
+        {dayInfo}
+
+        {date === null || n === null ? (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-3 pt-5 text-center">
+              <img
+                src={UMA_PUZZLES[UMA_SEASON_DAYS - 1]!.src}
+                alt="Maa Durga on Dashami"
+                className="aspect-square w-full max-w-sm rounded-xl border object-cover"
+              />
+              <p lang="bn" className="font-serif text-2xl">
+                আসছে বছর আবার হবে
+              </p>
+              <p className="text-sm text-muted-foreground">(Next year, it will happen again.)</p>
+              <p className="max-w-sm text-sm">
+                This year's puzzles and questions ended on Dashami, 21 October 2026. Thank you for playing — pick any
+                date to look back, and উমা will be back with the next pujo.
+              </p>
+            </CardContent>
+          </Card>
+        ) : (
           <Card>
             <CardContent className="pt-5">
               {isFuture && (
@@ -182,8 +206,8 @@ export function Uma() {
               )}
             </CardContent>
           </Card>
-        </>
-      )}
+        )}
+      </div>
     </div>
   )
 }

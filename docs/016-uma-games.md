@@ -34,8 +34,14 @@ IST** (`UMA_DAY_STARTS_AT`): the new games are waiting when the house wakes,
 and someone up past midnight is still on the evening's games. Day *n* shows
 question *n* and puzzle photo *n* — each list holds exactly 26.
 
-**Looking back and ahead.** A strip of dates under the title (26 · 27 · … ·
-21, with ‹ ›) pages through the season; the day on screen is in the address
+**Layout.** The title উমা and the Puzzle / Quiz switch share one line. On a
+phone the day line and the strip of dates sit **below** the game, so the
+puzzle gets the screen (a small line under the title says when the day on
+screen is not today, and picking a date scrolls back up to its game); from
+tablet width up they sit above the game.
+
+**Looking back and ahead.** A strip of dates (26 · 27 · … · 21, with ‹ ›)
+pages through the season; the day on screen is in the address
 (`/uma?day=2026-09-28`, shareable; today needs none). **Everyone** may open
 today and every earlier day — to see how they did, or to play a day they
 missed (it is remembered for that date, but only today's game feeds the

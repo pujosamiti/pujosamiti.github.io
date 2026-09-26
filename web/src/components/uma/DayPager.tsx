@@ -37,7 +37,11 @@ export function DayPager({
   useEffect(() => {
     const el = strip.current
     const chip = el?.querySelector<HTMLElement>('[aria-current="date"]')
-    if (el && chip) el.scrollLeft = chip.offsetLeft - el.clientWidth / 2 + chip.clientWidth / 2
+    if (!el || !chip) return
+    // measured against the strip itself, wherever the strip sits on the page
+    const box = el.getBoundingClientRect()
+    const at = chip.getBoundingClientRect()
+    el.scrollLeft += at.left - box.left - (box.width - at.width) / 2
   }, [selected])
 
   const days = Array.from({ length: count }, (_, i) => i)
