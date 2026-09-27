@@ -1,4 +1,4 @@
-import { Check, ChevronRight, ExternalLink, Flame, RotateCcw, Timer, X } from 'lucide-react'
+import { ArrowRight, Check, ChevronRight, ExternalLink, Flame, RotateCcw, Timer, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 
@@ -226,6 +226,16 @@ export function DailyQuiz({
               Read more: {chapterTitle} <ChevronRight className="size-4" />
             </Link>
           ) : null}
+          {/* a wrong answer earns no badge, so the nudge to the day's puzzle sits here instead */}
+          {!correct && cta && (
+            <Button
+              size="sm"
+              className="mt-1 self-start border-genda bg-genda text-secondary-foreground hover:bg-genda/85 hover:text-secondary-foreground"
+              onClick={cta.onClick}
+            >
+              {cta.label} <ArrowRight />
+            </Button>
+          )}
         </div>
       )}
 

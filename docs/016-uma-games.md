@@ -194,7 +194,8 @@ A "Sound on / off" switch on the badge card turns it off; the phone remembers.
 the day's other game in marigold, like the Quiz tab — "Now try today's
 question" under the puzzle's, "Now solve today's puzzle" under the quiz's —
 while that game is still undone on this phone; it switches tab and scrolls
-up.
+up. A wrong answer earns no badge, so its puzzle button sits under the
+explanation instead.
 
 A puzzle solved in over two minutes earns no badge — the card says so and
 shows the five to aim for; "Play again" gives another go. (For one afternoon
