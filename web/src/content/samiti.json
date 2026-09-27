@@ -1,0 +1,59 @@
+{
+  "_note": "The samiti's story, in one place: the footer's collapsed 'About' shows `about`, and scripts/prerender.mjs builds every public page's JSON-LD from the rest. Keep the two saying the same thing — Google wants structured data to match what the page shows. `authors` (founder ids) are the site's and every public page's author and creator in the JSON-LD; `sameAs` links a founder's public profiles.",
+  "name": "Pujo Samiti · Magarpatta City",
+  "nameBn": "পুজো সমিতি",
+  "alternateNames": [
+    "Magarpatta Durga Puja",
+    "Durga Puja in Magarpatta City, Pune",
+    "Durga Pujo Magarpatta",
+    "Magarpatta Pujo Samiti"
+  ],
+  "foundingYear": "2018",
+  "foundingPlace": "Aditi Garden Amphitheatre, Magarpatta City, Pune",
+  "founders": [
+    {
+      "name": "Pradyumna Das Roy",
+      "alternateName": "Prady",
+      "role": "Runs the operation and keeps the accounts",
+      "id": "pradyroy",
+      "sameAs": [
+        "https://www.linkedin.com/in/pradyroy/"
+      ]
+    },
+    {
+      "name": "Koyeli Roy",
+      "id": "koyeliroy",
+      "sameAs": [
+        "https://www.linkedin.com/in/koyeliroy/"
+      ]
+    },
+    {
+      "name": "Asish Barman",
+      "role": "Leads the puja rituals"
+    },
+    {
+      "name": "Maya Chakraborty Barman"
+    },
+    {
+      "name": "Pulakesh Chatterjee",
+      "role": "Senior mentor"
+    },
+    {
+      "name": "Subhra Chatterjee"
+    }
+  ],
+  "volunteers": [
+    "Arabinda Ghosh",
+    "Suvo Gupta",
+    "Sujan Dutta",
+    "Soumitra Ganguly",
+    "Samiran Patra",
+    "Ashok Jhawar",
+    "Mousum Dutta"
+  ],
+  "authors": [
+    "pradyroy",
+    "koyeliroy"
+  ],
+  "about": "Durga Puja in Magarpatta City, Pune began in 2018 at the Aditi Garden Amphitheatre. It was started by Pradyumna Das Roy, Koyeli Roy, Asish Barman, Maya Chakraborty Barman, Pulakesh Chatterjee and Subhra Chatterjee. Pradyumna, known to everyone as Prady, runs the whole operation and keeps the accounts. Asish leads the puja rituals, and Pulakesh guides the samiti as its senior mentor. Among its mainstays are the volunteers Arabinda Ghosh, Suvo Gupta, Sujan Dutta, Soumitra Ganguly, Samiran Patra, Ashok Jhawar and Mousum Dutta, with many others besides."
+}

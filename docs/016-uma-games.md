@@ -207,4 +207,5 @@ preferred the badges and they came back.)
 On a pujo day the day line carries that day's alpona, the same as the Schedule's;
 the win card has a lotus between the blessing and the badges; the farewell
 after Dashami sits under the jora maach. The pujo dates come from
-`web/src/lib/pujoCalendar.ts` (shared with the header's festive border).
+`web/src/content/pujo-calendar.json`, read through `web/src/lib/pujoCalendar.ts`
+(shared with the header's festive border and the Schedule's structured data).

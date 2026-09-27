@@ -97,7 +97,7 @@ something where it stands:
 
 - **The header on the pujo days**: from Panchami to Dashami the header's
   scallops become a kuri mala of lotus buds — Sandhi puja's 108 lotuses
-  (`KuriBorder`; the dates are the static `web/src/lib/pujoCalendar.ts`,
+  (`KuriBorder`; the dates are the static `web/src/content/pujo-calendar.json`,
   updated each year from the finalised nirghanto, so no page waits on the
   API). Add `?festive` to any address to preview it.
 - **Sign in**: a podmo divider above the "Member sign in" title.

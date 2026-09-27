@@ -1,0 +1,17 @@
+{
+  "_note": "The pujo's days, from the finalised nirghanto (Days of the Pujo), with Mahalaya ahead of them. Static on purpose — the header, উমা and the Schedule's JSON-LD read it with no API call. Update it every year.",
+  "year": 2026,
+  "shashthi": "2026-10-16",
+  "from": "2026-10-15",
+  "to": "2026-10-21",
+  "days": {
+    "2026-10-10": "Mahalaya",
+    "2026-10-15": "Panchami",
+    "2026-10-16": "Shashthi",
+    "2026-10-17": "Saptami",
+    "2026-10-18": "Ashtami",
+    "2026-10-19": "Ashtami · Day 2",
+    "2026-10-20": "Nabami",
+    "2026-10-21": "Dashami"
+  }
+}

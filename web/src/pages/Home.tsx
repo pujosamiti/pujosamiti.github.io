@@ -39,7 +39,7 @@ export function Home() {
           <h1 className="text-3xl font-bold text-primary md:text-4xl">দুর্গাপূজা</h1>
           <AlponaDivider name="shatadal" className="mx-auto mt-2 max-w-xs" />
           <p className="mx-auto mt-2 max-w-[60ch] text-muted-foreground">
-            The probasi bengali community of Magarpatta City celebrates the pujo the para way —
+            The probasi bengali community of Magarpatta City, Pune celebrates the pujo the para way —
             from Mahalaya to Bijoya, and through the year with Lakshmi Puja, Saraswati Puja and
             Poila Baishakh.
           </p>

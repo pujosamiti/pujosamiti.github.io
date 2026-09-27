@@ -116,6 +116,31 @@ too). Private content is gated by the app and the API; noindex only keeps
 the empty shells out of search. When adding a route: public → a prerender
 entry with its own title and description; members-only → the noindex list.
 
+**Structured data and the samiti's story (27 Sep 2026).** Every public,
+indexable page — Home, Schedule, উমা and the Durga Puja guide with its
+chapters — carries JSON-LD written by `prerender.mjs`: the samiti as an
+`Organization` (its Bengali name and the names people search by — "Magarpatta
+Durga Puja", "Durga Puja in Magarpatta City, Pune" — its founding in 2018 at
+the Aditi Garden Amphitheatre, founders with their roles, volunteers,
+Magarpatta City as its place) and the `WebSite`; the Schedule adds the
+year's Durga Puja as an `Event` (Panchami → Dashami, from
+`src/content/pujo-calendar.json`). Every page also describes itself — a
+`WebPage`, or an `Article` for each of the guide's chapters (headline, image)
+— as part of the website, with **Pradyumna Das Roy and Koyeli Roy as its
+author and creator** (and the website's). The two are `Person` nodes of their
+own, linked to their LinkedIn profiles through `sameAs` and referred to by
+`@id` as founders, creators and authors, so search engines see one person
+each; `authors` and each founder's `sameAs` live in `samiti.json`. (The
+chapters show no author line on the page, so the markup names the site's
+makers, not a byline it would contradict.) The same pages show the story in their
+footer, folded under "Durga Puja, Magarpatta City, Pune" — Google asks that
+structured data match what a page shows, and collapsed text counts as shown.
+Both come from one file, `src/content/samiti.json`: change the story there
+and the footer and the JSON-LD move together. Members-only routes carry
+neither (`isPublicPath` in `SiteFooter.tsx` and the noindex list in
+`prerender.mjs` must agree). Share previews are untouched: WhatsApp and
+Facebook read `og:description`, which stays each page's own.
+
 ## 3. Other content on the site
 
 - **Nirghanto / events / timetable**: rows in D1, edited through the admin

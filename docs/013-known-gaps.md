@@ -58,9 +58,10 @@ page (and the doc it points at).
    without checking the current docs first.
 8. **CI Node deprecation warnings** may appear as GitHub retires older
    action runtimes — bumping `actions/*` versions is cosmetic until enforced.
-9. **The pujo calendar is static and yearly.** `web/src/lib/pujoCalendar.ts`
-   holds 2026's days (Mahalaya → Dashami) for the header's festive border
-   and উমা's countdown and day marks; উমা's season (`UMA_LAUNCH`,
+9. **The pujo calendar is static and yearly.**
+   `web/src/content/pujo-calendar.json` holds 2026's days (Mahalaya →
+   Dashami) for the header's festive border, উমা's countdown and day marks,
+   and the Schedule's `Event` structured data; উমা's season (`UMA_LAUNCH`,
    `UMA_SEASON_DAYS` in `umaDaily.ts`) likewise. Before next year's pujo,
    copy the dates from the finalised nirghanto (Days of the Pujo) — static
    on purpose, so no page waits on the API.

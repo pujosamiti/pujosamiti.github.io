@@ -23,6 +23,114 @@ const TITLE_SUFFIX = 'Magarpatta City Pune'
  */
 const servedUrl = (path) => `${ORIGIN}${path === '/' ? '/' : path.replace(/\/?$/, '/')}`
 
+// ── Structured data (JSON-LD) for the public pages ─────────────────────────
+// Built from src/content/samiti.json — the same story the footer's collapsed
+// "Durga Puja, Magarpatta City, Pune" shows on these pages, so the markup
+// always matches the page (as Google asks). Members-only routes get none.
+const contentRoot = join(dirname(fileURLToPath(import.meta.url)), '..', 'src', 'content')
+const samiti = JSON.parse(readFileSync(join(contentRoot, 'samiti.json'), 'utf8'))
+const pujo = JSON.parse(readFileSync(join(contentRoot, 'pujo-calendar.json'), 'utf8'))
+const ORG_ID = `${ORIGIN}/#samiti`
+const MAGARPATTA = {
+  '@type': 'Place',
+  name: 'Magarpatta City, Pune',
+  address: {
+    '@type': 'PostalAddress',
+    streetAddress: 'Magarpatta City, Hadapsar',
+    addressLocality: 'Pune',
+    addressRegion: 'Maharashtra',
+    addressCountry: 'IN',
+  },
+}
+const person = (p) => ({
+  '@type': 'Person',
+  ...(p.id ? { '@id': `${ORIGIN}/#${p.id}` } : {}),
+  name: p.name,
+  ...(p.alternateName ? { alternateName: p.alternateName } : {}),
+  ...(p.role ? { jobTitle: p.role } : {}),
+  ...(p.sameAs ? { sameAs: p.sameAs } : {}),
+})
+// the founders with an id (and public profiles) are full nodes of their own,
+// referred to by @id wherever they appear — founder, the site's creator, each
+// page's author — so Google sees one person, not several
+const namedPeople = samiti.founders.filter((f) => f.id).map((f) => ({ ...person(f), worksFor: { '@id': ORG_ID } }))
+const ref = (id) => ({ '@id': `${ORIGIN}/#${id}` })
+const AUTHORS = samiti.authors.map(ref)
+const siteGraph = [
+  {
+    '@type': 'Organization',
+    '@id': ORG_ID,
+    name: samiti.name,
+    alternateName: [samiti.nameBn, ...samiti.alternateNames],
+    url: `${ORIGIN}/`,
+    logo: `${ORIGIN}/icon-512.png`,
+    description: samiti.about,
+    foundingDate: samiti.foundingYear,
+    foundingLocation: { '@type': 'Place', name: samiti.foundingPlace },
+    founder: samiti.founders.map((f) => (f.id ? ref(f.id) : person(f))),
+    member: samiti.volunteers.map((name) => ({ '@type': 'Person', name })),
+    location: MAGARPATTA,
+    areaServed: MAGARPATTA,
+  },
+  {
+    '@type': 'WebSite',
+    '@id': `${ORIGIN}/#website`,
+    url: `${ORIGIN}/`,
+    name: 'Durga Puja Magarpatta City Pune',
+    alternateName: samiti.nameBn,
+    inLanguage: ['en', 'bn'],
+    publisher: { '@id': ORG_ID },
+    creator: AUTHORS,
+    author: AUTHORS,
+  },
+  ...namedPeople,
+]
+/** The year's Durga Pujo as an Event — on the Schedule, which shows its days. */
+const pujoEvent = {
+  '@type': 'Event',
+  '@id': `${ORIGIN}/schedule/#durga-puja-${pujo.year}`,
+  name: `Durga Puja ${pujo.year} — Magarpatta City, Pune`,
+  alternateName: `Durga Pujo ${pujo.year} in Magarpatta`,
+  description: `Durga Pujo at Magarpatta City, Pune, from Panchami to Dashami, ${pujo.year} — the tithi-wise nirghanto, as confirmed by the purohit.`,
+  startDate: pujo.from,
+  endDate: pujo.to,
+  eventStatus: 'https://schema.org/EventScheduled',
+  eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
+  location: MAGARPATTA,
+  organizer: { '@id': ORG_ID },
+  image: `${ORIGIN}/og.webp`,
+  url: servedUrl('/schedule'),
+}
+/**
+ * The page itself: a WebPage (an Article for the Durga Puja book's chapters),
+ * part of the website, authored and created by the samiti's authors. The
+ * Schedule's page is about the year's pujo, its Event.
+ */
+const pageNode = (r) => {
+  const chapter = r.path.startsWith('/durga-puja/')
+  const url = servedUrl(r.path)
+  return {
+    '@type': chapter ? 'Article' : 'WebPage',
+    '@id': `${url}#page`,
+    url,
+    ...(chapter ? { headline: r.title.replace(` ${TITLE_SUFFIX}`, '') } : { name: r.title }),
+    description: r.description,
+    inLanguage: ['en', 'bn'],
+    isPartOf: { '@id': `${ORIGIN}/#website` },
+    ...(chapter ? { mainEntityOfPage: url } : {}),
+    ...(r.image ? { image: r.image } : {}),
+    ...(r.path === '/schedule' ? { about: { '@id': pujoEvent['@id'] }, mainEntity: { '@id': pujoEvent['@id'] } } : {}),
+    author: AUTHORS,
+    creator: AUTHORS,
+    publisher: { '@id': ORG_ID },
+  }
+}
+const jsonLdFor = (r) => ({
+  '@context': 'https://schema.org',
+  '@graph': [...siteGraph, pageNode(r), ...(r.path === '/schedule' ? [pujoEvent] : [])],
+})
+const ldScript = (data) => `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`
+
 /** The pages the sitemap advertises — the site's public front door. */
 const ADVERTISED = ['/', '/schedule', '/uma', '/durga-puja']
 
@@ -68,7 +176,12 @@ const fm = (raw) => {
   if (m)
     for (const line of m[1].split('\n')) {
       const kv = line.match(/^(\w+):\s*(.*)$/)
-      if (kv) meta[kv[1]] = kv[2].trim().replace(/^["']|["']$/g, '')
+      // unquote a value only when it is wrapped in matching quotes — a line that
+      // merely ends in a quotation ("come again next year.") keeps its mark
+      if (kv) {
+        const v = kv[2].trim()
+        meta[kv[1]] = /^(["']).*\1$/.test(v) ? v.slice(1, -1) : v
+      }
     }
   return meta
 }
@@ -150,13 +263,24 @@ for (const r of ROUTES) {
   }
   html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${servedUrl(r.path)}" />`)
   if (r.type === 'article') html = html.replace(/<meta property="og:type" content="[^"]*" \/>/, `<meta property="og:type" content="article" />`)
-  if (r.jsonLd)
-    html = html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(r.jsonLd)}</script></head>`)
+  // the public, indexable pages carry the samiti's structured data
+  if (!r.noindex) html = html.replace('</head>', `${ldScript(jsonLdFor(r))}</head>`)
   const out = join(dist, ...r.path.split('/').filter(Boolean), 'index.html')
   mkdirSync(dirname(out), { recursive: true })
   writeFileSync(out, html)
   console.log('prerendered', r.path, '->', out)
 }
+
+// the home page is the build's own index.html (the template above): give it
+// the structured data too
+const homeRoute = {
+  path: '/',
+  title: template.match(/<title>([^<]*)<\/title>/)[1],
+  description: template.match(/<meta\s+name="description"\s+content="([^"]*)"/s)[1].replace(/\s+/g, ' ').trim(),
+  image: `${ORIGIN}/og.webp`,
+}
+writeFileSync(join(dist, 'index.html'), template.replace('</head>', `${ldScript(jsonLdFor(homeRoute))}</head>`))
+console.log('structured data -> /')
 
 // sitemap: the four advertised pages, at the addresses Pages serves them.
 // (The Durga Puja chapters stay indexable — crawlers reach them through the

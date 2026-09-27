@@ -207,6 +207,21 @@ const MOTIFS = {
       </>
     ),
   },
+  /**
+   * An alpona chevron, pointing down — two curved leaf-strokes meeting in a
+   * point, a second pair inside, bindu dots at the tips: the "open me" mark
+   * of a folded section (turned over when it is open).
+   */
+  chevron: {
+    vb: '-14 -10 28 22',
+    body: (
+      <>
+        <path d="M-11 -5 Q -5 -1 0 7 Q 5 -1 11 -5" />
+        <path d="M-6 -6 Q -2.5 -3 0 1.5 Q 2.5 -3 6 -6" opacity={0.75} />
+        {[dot(-12, -6.5, 1.3), dot(12, -6.5, 1.3), dot(0, 10.5, 1.3)]}
+      </>
+    ),
+  },
 } as const
 
 export type AlponaName = keyof typeof MOTIFS
