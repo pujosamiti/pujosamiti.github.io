@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { BookOpen, ChevronLeft, ChevronRight } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
+import { Alpona, AlponaDivider, type AlponaName } from '@/components/Alpona'
 import { MarkdownArticle } from '@/components/MarkdownArticle'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Seo } from '@/components/Seo'
@@ -30,6 +31,27 @@ const resolveLink = (href: string) => {
   const m = href.match(/^(?:\.\/)?(\d+)-(.+)\.md$/)
   if (!m) return null
   return Number(m[1]) === 0 ? '/durga-puja' : `/durga-puja/${m[2]}`
+}
+
+/**
+ * A chapter's alpona, from what it is about: the conch for Mahalaya and the
+ * Chandi, the welcome pot for Panchami and the fordo, the betel leaf of the
+ * bel boron, the nabapatrika's paddy, Sandhi puja's lotuses, the homa's lamp,
+ * the fish pair of the farewell, Lakshmi's footsteps; the lotus otherwise.
+ */
+function chapterMotif(slug: string): AlponaName {
+  const rules: [RegExp, AlponaName][] = [
+    [/mahalaya|chandi/, 'shankha'],
+    [/panchami|essentials/, 'mangalGhot'],
+    [/shashthi|bodhon/, 'panPata'],
+    [/saptami|nabapatrika|khunti/, 'dhanerShish'],
+    [/ashtami|sandhi/, 'shatadal'],
+    [/nabami|homa|naru/, 'prodip'],
+    [/dashami|visarjan/, 'joraMaach'],
+    [/lakshmi/, 'lakshmirPa'],
+    [/murti/, 'kalka'],
+  ]
+  return rules.find(([re]) => re.test(slug))?.[1] ?? 'podmo'
 }
 
 function useMarkdown(path: string | null) {
@@ -66,6 +88,7 @@ export function DurgaPujaIndex() {
               className="w-full rounded-xl border object-cover shadow-sm"
             />
           )}
+          <AlponaDivider name="shatadal" className="mx-auto w-full max-w-sm" />
           <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
           <div className="flex justify-end">
             <Button size="sm" asChild>
@@ -150,7 +173,7 @@ export function DurgaPujaChapter() {
         <LogoSpinner small />
       ) : (
         <>
-          <header className="flex flex-col gap-1 border-b pb-4">
+          <header className="flex flex-col gap-1">
             <h1 className="font-serif text-3xl font-bold text-primary md:text-4xl">{data.meta.title}</h1>
             {data.meta.bengali && <p className="font-serif text-xl text-shiuli">{data.meta.bengali}</p>}
             {data.meta.when && <p className="text-sm text-muted-foreground">{data.meta.when}</p>}
@@ -162,8 +185,11 @@ export function DurgaPujaChapter() {
                 className="mt-3 w-full rounded-xl border object-cover shadow-sm"
               />
             )}
+            <AlponaDivider name={chapterMotif(slug!)} className="mt-3" />
           </header>
           <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
+          {/* the chapter's end, marked the old way: a small lotus */}
+          <Alpona name="shatadal" className="mx-auto my-2 size-8 text-primary/60" />
           {nav}
         </>
       )}

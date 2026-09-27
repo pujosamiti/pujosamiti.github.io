@@ -4,6 +4,7 @@ import { Phone } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import { SearchSelect } from '@/components/SearchSelect'
+import { Alpona, type AlponaName } from '@/components/Alpona'
 import { PaarEdge } from '@/components/PaarEdge'
 import { Seo } from '@/components/Seo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -43,6 +44,26 @@ function formatTime(t: string | null) {
  * events are one-day gatherings and publish no timetable. The chosen year
  * lives in the URL (?event=…) so schedules can be shared as links.
  */
+/**
+ * Each day of the pujo by the alpona that belongs to it: the conch that opens
+ * Devi Paksha, the welcome pot, the betel leaf of the bel boron, the paddy of
+ * the nabapatrika, Sandhi puja's hundred-and-eight lotuses, the lamp, the fish
+ * pair of the farewell, and Lakshmi's footsteps.
+ */
+function dayMotif(labelEn: string): AlponaName | null {
+  const l = labelEn.toLowerCase()
+  if (l.includes('mahalaya')) return 'shankha'
+  if (l.includes('panchami')) return 'mangalGhot'
+  if (l.includes('shashthi')) return 'panPata'
+  if (l.includes('saptami')) return 'dhanerShish'
+  if (l.includes('ashtami')) return 'shatadal'
+  if (l.includes('nabami')) return 'prodip'
+  if (l.includes('dashami')) return 'joraMaach'
+  if (l.includes('lakshmi')) return 'lakshmirPa'
+  if (l.includes('saraswati')) return 'rajhansh'
+  return null
+}
+
 /**
  * The year's note: its first paragraph in view, the rest (how the timings were
  * worked out) folded — on a phone it would otherwise push the first timing
@@ -177,11 +198,18 @@ export function Schedule() {
           {days.map((day) => (
             <Card key={`${day.date}|${day.labelEn}`}>
               <CardHeader>
-                <CardTitle className="text-base">
-                  <span className="text-shiuli">{day.labelBn}</span>{' '}
-                  <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
-                </CardTitle>
-                <p className="text-sm text-muted-foreground">{formatDay(day.date)}</p>
+                <div className="flex items-center gap-3">
+                  {dayMotif(day.labelEn) && (
+                    <Alpona name={dayMotif(day.labelEn)!} className="h-10 w-10 text-primary/80" />
+                  )}
+                  <div>
+                    <CardTitle className="text-base">
+                      <span className="text-shiuli">{day.labelBn}</span>{' '}
+                      <span className="font-sans text-sm font-normal">· {day.labelEn}</span>
+                    </CardTitle>
+                    <p className="text-sm text-muted-foreground">{formatDay(day.date)}</p>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 {day.rows.map((t) => {

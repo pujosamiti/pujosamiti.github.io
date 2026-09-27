@@ -3,6 +3,7 @@ import { NavLink, Outlet } from 'react-router'
 import logo from '@/assets/logo-sm.png'
 import { AlponaBand } from '@/components/AlponaBand'
 import { BottomNav } from '@/components/BottomNav'
+import { SiteFooter } from '@/components/SiteFooter'
 import { cn } from '@/lib/utils'
 
 const desktopNav = [
@@ -52,11 +53,12 @@ export function AppLayout() {
         <AlponaBand className="mt-2" />
       </header>
 
-      {/* pb clears the fixed bottom nav on phones */}
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-24 pt-4 md:pb-8">
+      {/* the footer below clears the fixed bottom nav on phones */}
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-10 pt-4 md:pb-12">
         <Outlet />
       </main>
 
+      <SiteFooter />
       <BottomNav />
     </div>
   )

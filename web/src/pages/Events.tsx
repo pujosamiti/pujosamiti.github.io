@@ -25,7 +25,6 @@ const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
   'poila-baishakh': { bn: 'পয়লা বৈশাখ', en: 'Poila Baishakh' },
 }
 
-/** Events calendar. Core members view; admins manage. */
 /** A festival's colour on the calendar, the same every year. */
 const KIND_TINT: Record<string, Tint> = {
   'durga-pujo': 'golap',
@@ -35,6 +34,7 @@ const KIND_TINT: Record<string, Tint> = {
   'poila-baishakh': 'ganga',
 }
 
+/** Events calendar. Core members view; admins manage. */
 export function Events() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null

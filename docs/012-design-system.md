@@ -73,6 +73,30 @@ Usage notes:
   tokens in `index.css`, so prose is warm ink in both themes — no
   `prose-invert`, no stone greys.
 
+## Alpona on the public pages
+
+The motifs of `/brandcolours` live in the app as `web/src/components/Alpona.tsx`
+— one line in `currentColor`, bindu dots the only fill, strokes kept even at
+any size: white on the red bands (rice paste on a red floor), crimson on the
+tant (like kantha stitching). Placed, not sprinkled — each one means
+something where it stands:
+
+- **The footer of every page** (`SiteFooter`): a laal-paar band with the lata
+  creeper along its top edge, answering the header's alpona scallops, and the
+  samiti's name under a shatadal.
+- **Home**: a shatadal divider under দুর্গাপূজা, and "বারো মাসে তেরো পার্বণ" —
+  the year's five festivals, each by the alpona drawn for it (shatadal,
+  Lakshmir pa, jora maach, rajhansh, mangal ghot).
+- **Schedule**: each day of the pujo marked by its motif — shankha for
+  Mahalaya, mangal ghot for Panchami, pan pata for Shashthi's boron, dhaner
+  shish for Saptami's nabapatrika, shatadal for Ashtami's 108 lotuses, prodip
+  for Nabami, jora maach for Dashami, Lakshmir pa for Lakshmi Puja.
+- **The book**: the chapter's masthead ends in an `AlponaDivider` with the
+  chapter's motif (same reading, `chapterMotif` in `DurgaPuja.tsx`), and a
+  small shatadal marks the chapter's end.
+
+Never behind reading text, never on the members' working pages.
+
 ## The members area: colour with meaning
 
 Every members-area page wears the pastel five (`web/src/lib/tint.ts`):
