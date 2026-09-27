@@ -12,6 +12,34 @@ export const UMA_LAUNCH = '2026-09-26'
 /** The season runs 26 days, to Dashami (21 Oct 2026); after it the games rest until next year. */
 export const UMA_SEASON_DAYS = 26
 
+/**
+ * The pujo's days in 2026, as the samiti's Days of the Pujo list them
+ * (seeded from the finalised nirghanto), with Mahalaya ahead of them.
+ */
+const SHASHTHI = '2026-10-16'
+const PUJO_DAYS: Record<string, string> = {
+  '2026-10-10': 'Mahalaya',
+  '2026-10-15': 'Panchami',
+  '2026-10-16': 'Shashthi',
+  '2026-10-17': 'Saptami',
+  '2026-10-18': 'Ashtami',
+  '2026-10-19': 'Ashtami · Day 2',
+  '2026-10-20': 'Nabami',
+  '2026-10-21': 'Dashami',
+}
+
+/**
+ * The countdown line for a day: "19 days to Shashthi", "Shashthi is
+ * tomorrow", with Mahalaya and Panchami named in front ("Mahalaya · 6 days
+ * to Shashthi"); from Shashthi on, the pujo day's own name.
+ */
+export function pujoCountdown(date: string): string {
+  const days = Math.round((Date.parse(SHASHTHI) - Date.parse(date)) / 86_400_000)
+  if (days <= 0) return PUJO_DAYS[date] ?? 'After the pujo'
+  const toGo = days === 1 ? 'Shashthi is tomorrow' : `${days} days to Shashthi`
+  return PUJO_DAYS[date] ? `${PUJO_DAYS[date]} · ${toGo}` : toGo
+}
+
 /** The Uma day `n` days after launch, "YYYY-MM-DD". */
 export const dateOfDay = (n: number): string =>
   new Date(Date.parse(UMA_LAUNCH) + n * 86_400_000).toISOString().slice(0, 10)

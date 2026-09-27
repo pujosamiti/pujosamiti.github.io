@@ -42,11 +42,28 @@ IST** (`UMA_DAY_STARTS_AT`): the new games are waiting when the house wakes,
 and someone up past midnight is still on the evening's games. Day *n* shows
 question *n* and puzzle photo *n* — each list holds exactly 26.
 
+**A page left open.** A timer rolls an open page over at 5 am — but phones
+don't keep it: iPhone Safari freezes background tabs and Android Chrome
+delays their timers, so a page left open overnight could wake up still on
+yesterday. The page therefore checks the day again whenever it comes back
+into view (unlocking the phone, returning to the browser or the tab) and once
+a minute while on screen, and moves to the new day at once. A **refresh**
+icon beside the Puzzle / Quiz buttons does a real reload back to today's
+game — which also brings in anything deployed since the page was opened;
+games save as they go, so nothing is lost.
+
 **Layout.** The title উমা and the Puzzle / Quiz switch share one line. On a
 phone the day line and the strip of dates sit **below** the game, so the
 puzzle gets the screen (a small line under the title says when the day on
 screen is not today, and picking a date scrolls back up to its game); from
 tablet width up they sit above the game.
+
+**The countdown.** Above the strip of dates, each day reads as a countdown
+to Shashthi (16 Oct): "19 days to Shashthi · Sun, 27 Sept", "Shashthi is
+tomorrow", with Mahalaya and Panchami named in front; from Shashthi to
+Dashami it names the pujo day instead (Saptami, Ashtami, Ashtami · Day 2 …),
+as the Days of the Pujo list them. The dates live in `pujoCountdown` in
+`umaDaily.ts`.
 
 **Looking back and ahead.** A strip of dates (26 · 27 · … · 21, with ‹ ›)
 pages through the season; the day on screen is in the address

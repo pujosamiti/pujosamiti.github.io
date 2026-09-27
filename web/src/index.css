@@ -53,6 +53,9 @@
   --jarul-foreground: #ffffff;
   --padma: #d34f8d; /* pink lotus — pink accents */
   --padma-foreground: #ffffff;
+  /* neon — off-palette on purpose: only the উমা refresh button, to be found at a glance */
+  --neon: #39ff14;
+  --neon-foreground: #0b3d17;
 }
 
 .dark {
@@ -95,6 +98,8 @@
   --jarul-foreground: #241543;
   --padma: #f08cb8;
   --padma-foreground: #40102a;
+  --neon: #39ff14;
+  --neon-foreground: #0b3d17;
 }
 
 @theme inline {
@@ -126,6 +131,8 @@
   --color-matir: var(--matir);
   --color-sharat: var(--sharat);
   --color-sharat-foreground: var(--sharat-foreground);
+  --color-neon: var(--neon);
+  --color-neon-foreground: var(--neon-foreground);
   --color-band: var(--band);
   --color-band-foreground: var(--band-foreground);
   --color-jaba: var(--jaba);
@@ -162,6 +169,15 @@
   h3 {
     @apply font-serif;
     text-wrap: balance;
+  }
+  /* Tailwind 4 leaves buttons with the plain arrow; anything tappable shows
+     the hand on a computer (phones have no pointer, so nothing changes there) */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  [role='tab'],
+  [role='radio']:not(:disabled),
+  summary {
+    cursor: pointer;
   }
 }
 

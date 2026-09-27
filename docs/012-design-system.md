@@ -47,6 +47,7 @@ live in `web/src/index.css`; roles:
 | `sharat` | Autumn sky | Info states, native control accents, the chosen option of a two-way switch (e.g. the Excel/PDF switch beside the download pills) — text on it uses `sharat-foreground` (`#007CBE` / `#4FA8D8`) |
 | `aparajita` | Butterfly pea | Selection & info chips, small doses (`#3D5A9E` / `#8CA5E6`) |
 | `durba` | Sacred grass | Success: paid, settled, money in (`#3A7D44` / `#7FC08A`) |
+| `neon` | — | **Off-palette on purpose**, one use only: the উমা refresh button, a neon-green fill with a dark-green icon (`#39FF14` / `#0B3D17`, 9 : 1) |
 
 Usage notes:
 

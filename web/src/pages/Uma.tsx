@@ -1,4 +1,4 @@
-import { CircleHelp, Eye, History, Puzzle } from 'lucide-react'
+import { CircleHelp, Eye, History, Puzzle, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
@@ -12,7 +12,7 @@ import { SlidingPuzzle } from '@/components/uma/SlidingPuzzle'
 import { UMA_PUZZLES } from '@/content/uma-puzzles'
 import { UMA_QUIZ } from '@/content/uma-quiz'
 import { useMemberState } from '@/lib/member'
-import { UMA_SEASON_DAYS, canPreviewUma, dateOfDay, dayNumber, msToNextDay, umaToday } from '@/lib/umaDaily'
+import { UMA_SEASON_DAYS, canPreviewUma, dateOfDay, dayNumber, msToNextDay, pujoCountdown, umaToday } from '@/lib/umaDaily'
 
 type Tab = 'quiz' | 'puzzle'
 
@@ -45,6 +45,39 @@ export function Uma() {
     const t = setTimeout(() => setToday(umaToday()), msToNextDay() + 1000)
     return () => clearTimeout(t)
   }, [today])
+
+  // A phone asleep with the page open doesn't keep that timer: iPhone Safari
+  // freezes background tabs and Android Chrome delays their timers. So check
+  // the day again whenever the page comes back into view — unlocking the
+  // phone, switching back to the browser or the tab — and once a minute while
+  // it is on screen. Setting the same day again changes nothing.
+  useEffect(() => {
+    const check = () => {
+      if (document.visibilityState === 'visible') setToday(umaToday())
+    }
+    document.addEventListener('visibilitychange', check)
+    window.addEventListener('focus', check)
+    window.addEventListener('pageshow', check)
+    const minute = setInterval(check, 60_000)
+    return () => {
+      document.removeEventListener('visibilitychange', check)
+      window.removeEventListener('focus', check)
+      window.removeEventListener('pageshow', check)
+      clearInterval(minute)
+    }
+  }, [])
+
+  // The manual refresh: a real reload, back to today's game. It also brings
+  // in anything deployed since the page was opened; games save as they go.
+  const [reloading, setReloading] = useState(false)
+  const reload = () => {
+    setReloading(true)
+    const q = new URLSearchParams(params)
+    q.delete('day')
+    const target = `${window.location.pathname}${q.toString() ? `?${q}` : ''}`
+    if (`${window.location.pathname}${window.location.search}` === target) window.location.reload()
+    else window.location.assign(target)
+  }
 
   const { memberState } = useMemberState()
   const maestro = canPreviewUma(memberState?.status === 'member' ? memberState.me.portfolio : null)
@@ -106,7 +139,7 @@ export function Uma() {
         ) : (
           <>
             <span>
-              Day {n! + 1} of {UMA_SEASON_DAYS} · {dayLabel(date)}
+              {pujoCountdown(date)} · {dayLabel(date)}
             </span>
             {isToday && <Badge variant="genda">Today</Badge>}
             {!isToday && !isFuture && (
@@ -144,7 +177,19 @@ export function Uma() {
       <div className="flex items-center justify-between gap-3">
         <h1 className="font-serif text-3xl font-bold">উমা</h1>
         {date !== null && (
-          <div className="flex items-center gap-2" role="tablist">
+          <div className="flex items-center gap-2">
+            <Button
+              size="icon"
+              variant="ghost"
+              // neon green, off the pujo palette on purpose, so it is found at a glance
+              className="size-8 rounded-full bg-neon text-neon-foreground shadow-sm hover:bg-neon/85 hover:text-neon-foreground"
+              onClick={reload}
+              aria-label="Refresh — today's puzzle and question"
+              title="Refresh — today's puzzle and question"
+            >
+              <RefreshCw className={reloading ? 'animate-spin' : undefined} />
+            </Button>
+            <div className="flex items-center gap-2" role="tablist">
             {tabs.map(({ key, label, icon: Icon }) => (
               <Button
                 key={key}
@@ -165,6 +210,7 @@ export function Uma() {
                 <Icon /> {label}
               </Button>
             ))}
+            </div>
           </div>
         )}
       </div>
