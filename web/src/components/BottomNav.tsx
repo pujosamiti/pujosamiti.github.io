@@ -5,10 +5,10 @@ import { cn } from '@/lib/utils'
 
 const items = [
   { to: '/', label: 'Home', icon: Home, end: true },
-  { to: '/schedule', label: 'Schedule', icon: CalendarDays, end: false },
-  { to: '/uma', label: 'উমা', icon: Puzzle, end: false },
-  { to: '/durga-puja', label: 'Durga Puja', icon: BookOpen, end: false },
-  { to: '/membersonly', label: 'Members', icon: Users, end: false },
+  { to: '/schedule/', label: 'Schedule', icon: CalendarDays, end: false },
+  { to: '/uma/', label: 'উমা', icon: Puzzle, end: false },
+  { to: '/durga-puja/', label: 'Durga Puja', icon: BookOpen, end: false },
+  { to: '/membersonly/', label: 'Members', icon: Users, end: false },
 ]
 
 /** Thumb-reachable primary navigation on phones; hidden on md+ where the top bar takes over. */

@@ -26,7 +26,7 @@ export function Login() {
 
   // ── Signed in, on the allowlist: nothing to do here — go to the member area
   if (session && memberState?.status === 'member') {
-    return <Navigate to="/membersonly" replace />
+    return <Navigate to="/membersonly/" replace />
   }
 
   // ── Signed in, but not (yet) a member: the onboarding funnel ──────────────

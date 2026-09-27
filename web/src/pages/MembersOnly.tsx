@@ -19,17 +19,17 @@ import { PAGE_TINT, tint } from '@/lib/tint'
 // tone = the tile's pastel, from PAGE_TINT (lib/tint.ts) — the same colour underlines the
 // page's own title. Arranged so no two neighbours share one, in two columns or one.
 const memberSections = [
-  { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: PAGE_TINT.ledger },
-  { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets', tone: PAGE_TINT.wallets },
-  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, adminUntilOpen: true, tone: PAGE_TINT.sponsorship },
-  { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: PAGE_TINT.reimbursements },
-  { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: PAGE_TINT.tasks },
-  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: PAGE_TINT.procurement },
-  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', newSignInOk: true, tone: PAGE_TINT.bhog },
-  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: PAGE_TINT.membership },
-  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: PAGE_TINT.nirghanto },
-  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: PAGE_TINT.events },
-  { icon: Palette, title: 'Brand Colours', desc: 'The laal-paar shada identity — palette & rules', gate: 'Members only', to: '/brandcolours', tone: PAGE_TINT.brandcolours },
+  { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger/', coreOnly: true, tone: PAGE_TINT.ledger },
+  { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets/', tone: PAGE_TINT.wallets },
+  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship/', newSignInOk: true, adminUntilOpen: true, tone: PAGE_TINT.sponsorship },
+  { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements/', coreOnly: true, tone: PAGE_TINT.reimbursements },
+  { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks/', tone: PAGE_TINT.tasks },
+  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement/', coreOnly: true, tone: PAGE_TINT.procurement },
+  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog/', newSignInOk: true, tone: PAGE_TINT.bhog },
+  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership/', coreOnly: true, tone: PAGE_TINT.membership },
+  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto/', coreOnly: true, tone: PAGE_TINT.nirghanto },
+  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events/', coreOnly: true, tone: PAGE_TINT.events },
+  { icon: Palette, title: 'Brand Colours', desc: 'The laal-paar shada identity — palette & rules', gate: 'Members only', to: '/brandcolours/', tone: PAGE_TINT.brandcolours },
 ]
 
 export function MembersOnly() {
@@ -87,7 +87,7 @@ export function MembersOnly() {
             </div>
             <div className="flex gap-2">
               <Button size="sm" variant="outline" asChild>
-                <Link to="/profile">Profile</Link>
+                <Link to="/profile/">Profile</Link>
               </Button>
               <Button variant="outline" size="sm" onClick={endSession}>
                 <LogOut /> Sign out
@@ -102,7 +102,7 @@ export function MembersOnly() {
               <CardTitle>One step left</CardTitle>
               <CardDescription>
                 You're signed in as {session.user.email} —{' '}
-                <Link to="/login" className="underline">
+                <Link to="/login/" className="underline">
                   complete your profile
                 </Link>{' '}
                 to register with the samiti.
@@ -126,7 +126,7 @@ export function MembersOnly() {
                   <RefreshCw /> Refresh status
                 </Button>
                 <Button variant="outline" size="sm" asChild>
-                  <Link to="/profile">Edit profile</Link>
+                  <Link to="/profile/">Edit profile</Link>
                 </Button>
                 <Button variant="outline" size="sm" onClick={endSession}>
                   <LogOut /> Sign out
@@ -152,7 +152,7 @@ export function MembersOnly() {
               coming soon. Access is limited to samiti members.
             </CardDescription>
             <Button className="mt-2 self-start" asChild>
-              <Link to="/login">
+              <Link to="/login/">
                 <LogIn /> Member sign in
               </Link>
             </Button>
@@ -164,7 +164,7 @@ export function MembersOnly() {
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
           You're in with limited access while an admin activates your membership — you can already
           give your household's headcount on the{' '}
-          <Link to="/bhog" className="underline">
+          <Link to="/bhog/" className="underline">
             Bhog &amp; Food Menu
           </Link>{' '}
           page
@@ -172,7 +172,7 @@ export function MembersOnly() {
             <>
               {' '}
               and pledge a{' '}
-              <Link to="/sponsorship" className="underline">
+              <Link to="/sponsorship/" className="underline">
                 sponsorship
               </Link>
             </>

@@ -44,7 +44,7 @@ function GoogleMark() {
  * were headed.
  */
 export function SignInCard({
-  next = '/login',
+  next = '/login/',
   title = 'Member sign in',
   description = 'The ledger, wallets, sponsorship and task planning — for samiti families. Signing in only shares your name and email with the samiti.',
 }: {

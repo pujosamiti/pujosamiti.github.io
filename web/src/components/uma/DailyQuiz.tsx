@@ -136,7 +136,7 @@ export function DailyQuiz({
 
   const streak = streakFrom(log, umaToday(now))
   const openSecs = Math.floor((performance.now() - shownAt.current) / 1000)
-  const chapter = question.source ? `/durga-puja/${question.source}` : '/durga-puja'
+  const chapter = question.source ? `/durga-puja/${question.source}/` : '/durga-puja/'
   const chapterTitle = question.source ? titleFromSlug(question.source) : 'Durga Puja'
   const external = question.source === null ? question.readMore : undefined
 

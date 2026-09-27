@@ -79,7 +79,7 @@ createRoot(document.getElementById('root')!).render(
               {/* Uma — the daily quiz and puzzle, public. The magazine that
                   lived here is archived; its old links land on the games. */}
               <Route path="uma" element={<Uma />} />
-              <Route path="uma/*" element={<Navigate to="/uma" replace />} />
+              <Route path="uma/*" element={<Navigate to="/uma/" replace />} />
               <Route path="membersonly" element={<MembersOnly />} />
               <Route path="login" element={<Login />} />
               <Route path="profile" element={<Profile />} />

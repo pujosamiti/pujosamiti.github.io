@@ -28,7 +28,7 @@ export function Profile() {
     )
   }
   // Not signed in, or never registered → the login/registration flow handles it
-  if (!session || !profile) return <Navigate to="/login" replace />
+  if (!session || !profile) return <Navigate to="/login/" replace />
 
   return (
     <div className="mx-auto flex max-w-md flex-col gap-4">
@@ -39,7 +39,7 @@ export function Profile() {
         title="Your profile"
         description="Kept up to date, this is how the samiti reaches you."
         submitLabel="Save changes"
-        onSkip={() => navigate('/membersonly')}
+        onSkip={() => navigate('/membersonly/')}
       />
       {!isAdmin && <LeaveCard />}
     </div>

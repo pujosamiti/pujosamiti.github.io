@@ -130,7 +130,7 @@ export function Procurement() {
         </PageTitle>
         <div className="flex gap-2 print:hidden">
           <Button size="sm" variant="outline" asChild>
-            <Link to="/procurement/master">
+            <Link to="/procurement/master/">
               <ListChecks /> Master list
             </Link>
           </Button>

@@ -99,8 +99,15 @@ folder (`uma/index.html`), so GitHub Pages answers `/uma` with a **301 to
 `/uma/`**. Canonical, `og:url` and the sitemap therefore name the served
 address with its trailing slash (`servedUrl` in both `prerender.mjs` and
 `Seo.tsx`) — naming `/uma` made the canonical point at a redirect, a mixed
-signal search engines skip. `robots.txt` allows all crawlers and names the
-sitemap.
+signal search engines skip. **The app's own links use the slashed address
+too** (27 Sep 2026) — the header and tab bar, Home, the guide's chapter
+links (`resolveLink` in `DurgaPuja.tsx` turns `05-anando-naru.md` into
+`/durga-puja/anando-naru/`), prev/next, উমা's links into the guide, and
+every members-area link — so a crawler following them never takes a 301
+hop. `AppLayout` settles any address that arrives without the slash (a typed
+URL, the dev server) onto the slashed one in place. New links: write the
+slash (`/schedule/`, `` `/durga-puja/${slug}/` ``). `robots.txt` allows all
+crawlers and names the sitemap.
 
 **The sitemap (from 27 Sep 2026).** `sitemap.xml` lists every public page —
 Home, Schedule, উমা, the Durga Puja guide and all 21 chapters (25) — and

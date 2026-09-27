@@ -45,10 +45,10 @@ export function Home() {
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-3">
             <Button asChild>
-              <Link to="/schedule">Schedule</Link>
+              <Link to="/schedule/">Schedule</Link>
             </Button>
             <Button variant="secondary" asChild>
-              <Link to="/membersonly">Members Only</Link>
+              <Link to="/membersonly/">Members Only</Link>
             </Button>
           </div>
         </div>

@@ -1410,7 +1410,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
                 ' They now qualify for Core this season — an admin can promote them on the Membership page.'}
             </span>
             <Button size="sm" variant="outline" asChild>
-              <Link to={`/bhog?count=${savedFor.personId}`}>Take their headcount →</Link>
+              <Link to={`/bhog/?count=${savedFor.personId}`}>Take their headcount →</Link>
             </Button>
           </div>
         )}

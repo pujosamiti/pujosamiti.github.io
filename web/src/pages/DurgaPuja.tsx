@@ -30,7 +30,7 @@ const imageUrl = (image?: string) =>
 const resolveLink = (href: string) => {
   const m = href.match(/^(?:\.\/)?(\d+)-(.+)\.md$/)
   if (!m) return null
-  return Number(m[1]) === 0 ? '/durga-puja' : `/durga-puja/${m[2]}`
+  return Number(m[1]) === 0 ? '/durga-puja/' : `/durga-puja/${m[2]}/`
 }
 
 /**
@@ -92,7 +92,7 @@ export function DurgaPujaIndex() {
           <MarkdownArticle markdown={data.body} resolveLink={resolveLink} />
           <div className="flex justify-end">
             <Button size="sm" asChild>
-              <Link to={`/durga-puja/${chapters[0].slug}`}>
+              <Link to={`/durga-puja/${chapters[0].slug}/`}>
                 {titleFromSlug(chapters[0].slug)} <ChevronRight />
               </Link>
             </Button>
@@ -115,7 +115,7 @@ export function DurgaPujaChapter() {
     return (
       <div className="mx-auto flex max-w-3xl flex-col gap-4">
         <p className="text-sm text-muted-foreground">This chapter does not exist.</p>
-        <Link to="/durga-puja" className="text-sm font-medium text-primary">
+        <Link to="/durga-puja/" className="text-sm font-medium text-primary">
           ← Back to Durga Puja
         </Link>
       </div>
@@ -126,20 +126,20 @@ export function DurgaPujaChapter() {
     <div className="flex items-center justify-between gap-2">
       {prev ? (
         <Button size="sm" asChild>
-          <Link to={`/durga-puja/${prev.slug}`}>
+          <Link to={`/durga-puja/${prev.slug}/`}>
             <ChevronLeft /> {titleFromSlug(prev.slug)}
           </Link>
         </Button>
       ) : (
         <Button size="sm" asChild>
-          <Link to="/durga-puja">
+          <Link to="/durga-puja/">
             <ChevronLeft /> The book
           </Link>
         </Button>
       )}
       {next ? (
         <Button size="sm" asChild>
-          <Link to={`/durga-puja/${next.slug}`}>
+          <Link to={`/durga-puja/${next.slug}/`}>
             {titleFromSlug(next.slug)} <ChevronRight />
           </Link>
         </Button>
@@ -161,7 +161,7 @@ export function DurgaPujaChapter() {
         image={imageUrl(data?.meta.image)}
       />
       <div className="flex items-center justify-between gap-2">
-        <Link to="/durga-puja" className="flex items-center gap-1 text-sm font-medium text-primary">
+        <Link to="/durga-puja/" className="flex items-center gap-1 text-sm font-medium text-primary">
           <ChevronLeft className="size-4" />
           <BookOpen className="size-4" /> Durga Puja · the book
         </Link>

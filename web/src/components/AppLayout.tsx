@@ -1,4 +1,5 @@
-import { NavLink, Outlet, useLocation } from 'react-router'
+import { useEffect } from 'react'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 
 import logo from '@/assets/logo-sm.png'
 import { KuriBorder } from '@/components/Alpona'
@@ -10,16 +11,24 @@ import { cn } from '@/lib/utils'
 
 const desktopNav = [
   { to: '/', label: 'Home', end: true },
-  { to: '/schedule', label: 'Schedule', end: false },
-  { to: '/uma', label: 'উমা', end: false },
-  { to: '/durga-puja', label: 'Durga Puja', end: false },
-  { to: '/membersonly', label: 'Members Only', end: false },
+  { to: '/schedule/', label: 'Schedule', end: false },
+  { to: '/uma/', label: 'উমা', end: false },
+  { to: '/durga-puja/', label: 'Durga Puja', end: false },
+  { to: '/membersonly/', label: 'Members Only', end: false },
 ]
 
 export function AppLayout() {
   // on the pujo days (Panchami → Dashami) the header's scallops become a kuri
   // mala of lotus buds — Sandhi puja's 108 lotuses; `?festive` previews it any day
-  const { search } = useLocation()
+  const { pathname, search, hash } = useLocation()
+  const navigate = useNavigate()
+  // Every page is served at its slashed address (/schedule/ — GitHub Pages
+  // redirects /schedule there), and every link in the app uses it. An address
+  // that arrives without the slash (a typed URL, the dev server, an old link)
+  // is settled onto it in place, so the nav highlight and the canonical agree.
+  useEffect(() => {
+    if (pathname !== '/' && !pathname.endsWith('/')) navigate(`${pathname}/${search}${hash}`, { replace: true })
+  }, [pathname, search, hash, navigate])
   const festive = isPujoDay(istToday()) || new URLSearchParams(search).has('festive')
   return (
     <div className="flex min-h-svh flex-col">
