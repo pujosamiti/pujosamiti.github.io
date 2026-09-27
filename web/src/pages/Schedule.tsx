@@ -4,6 +4,7 @@ import { Phone } from 'lucide-react'
 import { useSearchParams } from 'react-router'
 
 import { SearchSelect } from '@/components/SearchSelect'
+import { PaarEdge } from '@/components/PaarEdge'
 import { Seo } from '@/components/Seo'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
@@ -42,6 +43,34 @@ function formatTime(t: string | null) {
  * events are one-day gatherings and publish no timetable. The chosen year
  * lives in the URL (?event=…) so schedules can be shared as links.
  */
+/**
+ * The year's note: its first paragraph in view, the rest (how the timings were
+ * worked out) folded — on a phone it would otherwise push the first timing
+ * below the fold.
+ */
+function EventNotes({ notes }: { notes: string }) {
+  const [lead, ...rest] = notes.trim().split(/\n\s*\n/)
+  return (
+    <div className="mt-2 text-sm leading-relaxed">
+      <p className="whitespace-pre-line">{lead}</p>
+      {rest.length > 0 && (
+        <details className="group mt-1">
+          <summary className="w-fit text-sm font-medium text-sharat underline-offset-4 hover:underline">
+            How these timings were worked out
+          </summary>
+          <div className="mt-2 flex flex-col gap-2">
+            {rest.map((para) => (
+              <p key={para.slice(0, 40)} className="whitespace-pre-line">
+                {para}
+              </p>
+            ))}
+          </div>
+        </details>
+      )}
+    </div>
+  )
+}
+
 export function Schedule() {
   const [params, setParams] = useSearchParams()
   const eventId = params.get('event')
@@ -117,11 +146,14 @@ export function Schedule() {
 
       {selected && (
         <>
-          <Card className="bg-band text-band-foreground">
+          {/* a kash card edged like the sari itself — a red paar, a white line, a
+              thin red line — so the paragraphs below read as ink, not white on red */}
+          <Card className="overflow-hidden">
+            <PaarEdge />
             <CardHeader>
-              <CardTitle className="font-serif">দূর্গা পুজোর নির্ঘণ্ট · {selected.year}</CardTitle>
+              <CardTitle className="text-lg text-primary">দূর্গা পুজোর নির্ঘণ্ট · {selected.year}</CardTitle>
               {selected.purohitName && (
-                <p className="text-sm opacity-90">
+                <p className="text-sm text-muted-foreground">
                   পুরোহিত: {selected.purohitName}
                   {purohitPhone && (
                     <>
@@ -131,9 +163,7 @@ export function Schedule() {
                   )}
                 </p>
               )}
-              {selected.notes && (
-                <p className="mt-2 whitespace-pre-line text-sm opacity-90">{selected.notes}</p>
-              )}
+              {selected.notes && <EventNotes notes={selected.notes} />}
             </CardHeader>
           </Card>
 
@@ -168,7 +198,9 @@ export function Schedule() {
                           {from ? (to ? `${from} – ${to}` : from) : '—'}
                         </span>
                       </div>
-                      {t.comments && <p className="text-muted-foreground">{t.comments}</p>}
+                      {/* comments are the nirghanto's working notes (the purohit's
+                          version, the panjika reasoning) and stay in the workspace;
+                          what the public must know goes in the alert note */}
                       {t.alertNote && <p className="font-medium text-jaba">{t.alertNote}</p>}
                     </div>
                   )

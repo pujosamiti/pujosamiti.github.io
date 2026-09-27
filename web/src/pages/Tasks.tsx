@@ -11,6 +11,7 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
 import { useMemberState } from '@/lib/member'
 import {
@@ -23,6 +24,8 @@ import {
   useMembersLite,
   useTasks,
 } from '@/lib/tasks'
+import { headingTint, PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
+import { cn } from '@/lib/utils'
 
 const PHASES: TaskPhase[] = ['todo', 'in_progress', 'completed']
 const PHASE_LABEL: Record<TaskPhase, string> = {
@@ -90,7 +93,7 @@ export function Tasks() {
       <Seo title="Puja Planning" description="Durga Pujo task distribution for samiti members." path="/tasks" noindex />
       <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Task Distribution</h1>
+        <PageTitle tint={PAGE_TINT.tasks}>Task Distribution</PageTitle>
         <SearchSelect
           options={years.map((y) => ({
             value: String(y),
@@ -138,15 +141,18 @@ export function Tasks() {
         <LogoSpinner small />
       ) : (
         <>
-          {categories.map((cat) => (
+          {categories.map((cat, i) => (
             <section key={cat} className="flex flex-col gap-3">
-              <h2 className="font-serif text-lg font-bold">{cat}</h2>
+              <h2 className="tint-heading font-serif text-lg font-bold" style={headingTint(pastelAt(i))}>
+                {cat}
+              </h2>
               {active
                 .filter((t) => t.category === cat)
                 .map((t) => (
                   <TaskCard
                     key={t.id}
                     task={t}
+                    pastel={pastelAt(i)}
                     year={year}
                     canEdit={canEdit}
                     myPersonId={me.personId}
@@ -165,6 +171,7 @@ export function Tasks() {
 
 function TaskCard({
   task: t,
+  pastel,
   year,
   canEdit,
   myPersonId,
@@ -172,6 +179,8 @@ function TaskCard({
   categories,
 }: {
   task: TaskView
+  /** Its category's pastel — the same as the sub-heading's bar above it. */
+  pastel: Pastel
   year: number
   canEdit: boolean
   myPersonId: string
@@ -214,7 +223,9 @@ function TaskCard({
     )
 
   return (
-    <Card>
+    // the edge wears the category's colour, like the sub-heading's bar, so each group reads
+    // as one; where the task stands is told by its To Do / In progress / Completed buttons
+    <Card {...tint(pastel, '8%')}>
       <CardContent className="flex flex-col gap-3 pt-4">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="min-w-0">
@@ -225,18 +236,14 @@ function TaskCard({
           </div>
           <div className="flex items-center gap-1">
             {PHASES.map((ph) => (
+              // the quietest state stays quiet: a chosen To Do is an inset, not a red
+              // fill; in progress wears genda, completed durba
               <Button
                 key={ph}
                 size="sm"
-                variant={
-                  t.phase === ph
-                    ? ph === 'completed'
-                      ? 'durba'
-                      : ph === 'in_progress'
-                        ? 'secondary'
-                        : 'default'
-                    : 'outline'
-                }
+                aria-pressed={t.phase === ph}
+                variant={t.phase === ph ? (ph === 'completed' ? 'durba' : ph === 'in_progress' ? 'secondary' : 'outline') : 'outline'}
+                className={cn(t.phase === ph && ph === 'todo' && 'border-foreground/40 bg-muted font-semibold')}
                 onClick={() => canPhase && t.phase !== ph && phaseMut.mutate(ph)}
                 disabled={!canPhase || phaseMut.isPending}
               >

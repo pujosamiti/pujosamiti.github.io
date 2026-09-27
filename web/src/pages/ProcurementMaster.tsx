@@ -10,7 +10,9 @@ import { Field, inputCls } from '@/components/form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
+import { PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
 import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
 import {
@@ -61,7 +63,7 @@ export function ProcurementMaster() {
       <Seo title="Procurement master list" description="Year-independent item catalog with suggested quantities." path="/procurement/master" noindex />
       <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">Master list</h1>
+        <PageTitle tint={PAGE_TINT.procurement}>Master list</PageTitle>
       </div>
       <p className="text-sm text-muted-foreground">
         Year-independent: what the samiti buys and roughly how much, distilled from 2023–2025.
@@ -84,10 +86,10 @@ export function ProcurementMaster() {
       {isPending ? (
         <LogoSpinner small />
       ) : (
-        categories.map((cat) => {
+        categories.map((cat, idx) => {
           const catItems = all.filter((i) => i.category === cat)
           return (
-            <MasterCategory key={cat} title={cat} count={catItems.length}>
+            <MasterCategory key={cat} title={cat} count={catItems.length} pastel={pastelAt(idx)}>
               {catItems.map((i) => (
                 <MasterRow key={i.id} item={i} canEdit={canEdit} categories={categories} />
               ))}
@@ -99,14 +101,26 @@ export function ProcurementMaster() {
   )
 }
 
-function MasterCategory({ title, count, children }: { title: string; count: number; children: React.ReactNode }) {
+/** A category band in its pastel, in turn — as on the year's procurement list. */
+function MasterCategory({
+  title,
+  count,
+  pastel,
+  children,
+}: {
+  title: string
+  count: number
+  pastel: Pastel
+  children: React.ReactNode
+}) {
   const [open, setOpen] = useState(true)
+  const t = tint(pastel, '7%')
   return (
-    <section className="overflow-hidden rounded-md border">
+    <section className={cn('overflow-hidden rounded-md border', t.className)} style={t.style}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 bg-accent/40 px-3 py-2 text-left"
+        className="flex w-full items-center justify-between gap-2 py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]"
         aria-expanded={open}
       >
         <h2 className="font-serif text-lg font-bold">{title}</h2>

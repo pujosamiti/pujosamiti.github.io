@@ -21,7 +21,10 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
+import { PAGE_TINT, tint } from '@/lib/tint'
+import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
 
 const TIERS: FamilyTier[] = ['non_member', 'member', 'core']
@@ -108,7 +111,7 @@ export function Membership() {
     <div className="flex flex-col gap-4">
       <Seo title="Membership" description="Samiti membership register." path="/membership" noindex />
       <BackLink />
-      <h1 className="text-2xl font-bold">Membership</h1>
+      <PageTitle tint={PAGE_TINT.membership}>Membership</PageTitle>
 
       {openMembershipActive() && (
         <p className="rounded-md bg-accent px-3 py-2 text-sm text-muted-foreground">
@@ -224,6 +227,10 @@ function PeopleView({
   )
 }
 
+/** A person's edge by tier: core (rose), member (blue lotus), non-member (sandalwood). */
+const tierTint = (tier: AdminPerson['tier']) =>
+  tint(tier === 'core' ? 'golap' : tier === 'member' ? 'nilkamal' : 'chandan', '6%')
+
 function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; families: AdminFamily[]; canEdit: boolean }) {
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -247,7 +254,11 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
         : [p.workplace, p.workplaceDetail]
 
   return (
-    <Card className={p.isActive ? undefined : 'opacity-60'}>
+    // the edge says the tier: core (rose), member (blue lotus), non-member (sandalwood)
+    <Card
+      style={tierTint(p.tier).style}
+      className={cn(tierTint(p.tier).className, !p.isActive && 'opacity-60')}
+    >
       <CardContent className="flex flex-col gap-2 pt-4">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="min-w-0">
@@ -295,10 +306,17 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
             {canEdit ? (
               <>
                 {TIERS.map((t) => (
+                  // the chosen tier reads as chosen without a crimson fill on every row:
+                  // core a crimson outline on rose, member genda, non-member a quiet inset
                   <Button
                     key={t}
                     size="sm"
-                    variant={p.tier === t ? (t === 'core' ? 'default' : 'secondary') : 'outline'}
+                    aria-pressed={p.tier === t}
+                    variant={p.tier === t && t === 'member' ? 'secondary' : 'outline'}
+                    className={cn(
+                      p.tier === t && t === 'core' && 'border-primary font-semibold text-primary [background:color-mix(in_srgb,var(--golap)_28%,var(--card))]',
+                      p.tier === t && t === 'non_member' && 'border-foreground/40 bg-muted font-semibold',
+                    )}
                     onClick={() => p.tier !== t && setTier.mutate(t)}
                     disabled={setTier.isPending}
                   >
@@ -678,7 +696,12 @@ function FamiliesView({ families, q, canEdit }: { families: AdminFamily[] | unde
         editingId === f.id ? (
           <FamilyForm key={f.id} family={f} onClose={() => setEditingId(null)} />
         ) : (
-          <Card key={f.id} className={f.isActive ? undefined : 'opacity-60'}>
+          // a family binds its members: the woven edge
+          <Card
+            key={f.id}
+            style={tint('woven', '0%').style}
+            className={cn(tint('woven').className, !f.isActive && 'opacity-60')}
+          >
             <CardContent className="flex items-center justify-between gap-2 pt-4">
               <p className="text-sm">
                 <span className="font-medium">{f.name}</span>

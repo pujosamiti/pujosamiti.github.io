@@ -6,56 +6,68 @@
 
 /*
  * লাল-পাড় সাদা — the pujosamiti visual identity.
- * Light: white sari ground with jaba red (sindoor rides hover). Dark: dhunuchi night.
- * Every colour is named for what it is in the pujo world; see docs/design.md.
+ * Light: a tant-cotton ground with the laal-paar crimson border red (the
+ * deeper sindoor rides hover). Dark: dhunuchi night.
+ * Every colour is named for what it is in the pujo world; see docs/012.
+ * Chosen 2026-09-27 against the saris themselves — /brandcolours shows how.
  */
 :root {
   --radius: 0.625rem;
 
   /* shadcn tokens */
-  --background: #ffffff; /* shada — pure white */
+  --background: #e8e4dd; /* tant — the unbleached cotton of the sari's body */
   --foreground: #2b1a10; /* kali — warm ink */
-  --card: #ffffff; /* kash */
+  --card: #faf8f4; /* kash — the white of the buti, lifted off the tant */
   --card-foreground: #2b1a10;
-  --popover: #ffffff;
+  --popover: #faf8f4;
   --popover-foreground: #2b1a10;
-  --primary: #d70000; /* jaba — the primary red */
+  --primary: #c40039; /* jaba — the laal-paar border red */
   --primary-foreground: #ffffff;
   --secondary: #efa51e; /* genda — never used as text colour */
   --secondary-foreground: #3a2504;
-  --muted: #f5eee1;
+  --muted: #e3ddd3; /* a quiet inset, a shade below the tant */
   --muted-foreground: #6b5340;
-  --accent: #f8efdf; /* quiet warm hover surface */
+  --accent: #f0e9de; /* quiet warm hover surface */
   --accent-foreground: #2b1a10;
-  --destructive: #99090c; /* rokto */
+  --destructive: #7a0b24; /* rokto — the cloth's fold in shadow */
   --destructive-foreground: #ffffff;
-  --border: #ece3d4;
-  --input: #ece3d4;
-  --ring: #d70000;
+  --border: #dcd5ca;
+  --input: #998c7a; /* field edges: 3 : 1 against a card, as WCAG asks of controls */
+  --ring: #c40039;
 
   /* pujo-specific tokens */
   --genda: #efa51e;
-  --shiuli: #d96410;
-  --matir: #9a5732;
-  --sharat: #007cbe; /* autumn sky — info states, native control accents, the chosen option of a switch */
+  --shiuli: #a34e0e; /* night-jasmine stem, deep enough to be read as text */
+  --matir: #8a4a30; /* fired Bishnupur terracotta */
+  --matir-foreground: #ffffff;
+  --sharat: #2a6493; /* October sky — info states, native control accents, the chosen option of a switch */
   --sharat-foreground: #ffffff;
-  --band: #d70000; /* jaba header bands carrying white alpona */
+  --band: #c40039; /* the laal paar: header bands carrying white alpona */
   --band-foreground: #ffffff;
-  --jaba: #d70000; /* hibiscus — the primary red, by its pujo name */
-  --sindoor: #e10d11; /* vermillion — hover/pressed primary, ritual red */
-  --palash: #eb0000; /* flame of the forest — vivid highlight, small doses */
-  --aparajita: #3d5a9e; /* butterfly pea — selection & info chips */
+  --jaba: #c40039; /* the primary red, by its pujo name */
+  --sindoor: #a3002f; /* the deeper red — hover/pressed primary */
+  --palash: #b83716; /* flame of the forest — live, overdue, owed: small doses */
+  --aparajita: #33388f; /* butterfly pea — selection & info chips */
   --aparajita-foreground: #ffffff;
-  --durba: #3a7d44; /* sacred grass — success: paid, settled, money in */
+  --durba: #17664f; /* sacred grass, paan-leaf deep — success: paid, settled, money in */
   --durba-foreground: #ffffff;
   --palash-foreground: #ffffff;
   --jarul: #7d5bbe; /* pride of India blossom — lavender/purple accents */
   --jarul-foreground: #ffffff;
   --padma: #d34f8d; /* pink lotus — pink accents */
   --padma-foreground: #ffffff;
-  /* neon — off-palette on purpose: only the উমা refresh button, to be found at a glance */
-  --neon: #39ff14;
-  --neon-foreground: #0b3d17;
+  /* the pastel five — soft colour for tiles and dashboards only (washes,
+     edge strips, icon discs), never text or buttons */
+  --golap: #de7b9c; /* rose */
+  --chandan: #d9bd98; /* sandalwood */
+  --shankha: #f2efda; /* conch-shell cream */
+  --ganga: #8ed1c4; /* river water */
+  --nilkamal: #8d96c9; /* blue lotus */
+  /* panna — emerald neon, off-palette on purpose: only the উমা refresh button,
+     to be found at a glance. Opposite the crimson on the wheel; for red-green
+     colour-blind eyes it stays apart from the genda tab beside it. */
+  --neon: #2bf5a2;
+  --neon-foreground: #0b3d2c;
 }
 
 .dark {
@@ -65,41 +77,49 @@
   --card-foreground: #f2e6d0;
   --popover: #241811;
   --popover-foreground: #f2e6d0;
-  --primary: #e5322c; /* jaba, dhunuchi night */
-  --primary-foreground: #ffffff;
+  /* no one red carries white text AND reads as text on the night ground, so
+     at night the red lightens and the words on it turn dark */
+  --primary: #f65a81; /* jaba, dhunuchi night */
+  --primary-foreground: #1f0509;
   --secondary: #f2b440;
   --secondary-foreground: #3a2504;
   --muted: #2b1d13;
   --muted-foreground: #c4ae92;
   --accent: #2e2013;
   --accent-foreground: #f2e6d0;
-  --destructive: #ff928c;
-  --destructive-foreground: #2a0b06;
+  --destructive: #ff8fa3;
+  --destructive-foreground: #2a0610;
   --border: #3d2c1e;
-  --input: #3d2c1e;
-  --ring: #e5322c;
+  --input: #7a6551;
+  --ring: #f65a81;
 
   --genda: #f2b440;
   --shiuli: #e88a34;
-  --matir: #b97a4c;
-  --sharat: #4fa8d8;
-  --sharat-foreground: #0b2233;
-  --band: #99090c;
+  --matir: #d59a78;
+  --matir-foreground: #2a1406;
+  --sharat: #7fa8d6;
+  --sharat-foreground: #0b1f33;
+  --band: #8c0028; /* the laal paar, deepened for the night */
   --band-foreground: #ffffff;
-  --jaba: #e5322c;
-  --sindoor: #ff5a52;
-  --palash: #ff4c42;
-  --aparajita: #8ca5e6;
-  --aparajita-foreground: #14203d;
-  --durba: #7fc08a;
-  --durba-foreground: #12240e;
-  --palash-foreground: #33100c;
+  --jaba: #f65a81;
+  --sindoor: #ff7a98;
+  --palash: #f2764a;
+  --aparajita: #8fa0ec;
+  --aparajita-foreground: #15123d;
+  --durba: #6cc49a;
+  --durba-foreground: #0b2a1e;
+  --palash-foreground: #2a0e04;
   --jarul: #b39ce8;
   --jarul-foreground: #241543;
   --padma: #f08cb8;
   --padma-foreground: #40102a;
-  --neon: #39ff14;
-  --neon-foreground: #0b3d17;
+  --neon: #2bf5a2;
+  --neon-foreground: #0b3d2c;
+  --golap: #de7b9c;
+  --chandan: #d9bd98;
+  --shankha: #5a5338;
+  --ganga: #8ed1c4;
+  --nilkamal: #8d96c9;
 }
 
 @theme inline {
@@ -129,8 +149,14 @@
   --color-genda: var(--genda);
   --color-shiuli: var(--shiuli);
   --color-matir: var(--matir);
+  --color-matir-foreground: var(--matir-foreground);
   --color-sharat: var(--sharat);
   --color-sharat-foreground: var(--sharat-foreground);
+  --color-golap: var(--golap);
+  --color-chandan: var(--chandan);
+  --color-shankha: var(--shankha);
+  --color-ganga: var(--ganga);
+  --color-nilkamal: var(--nilkamal);
   --color-neon: var(--neon);
   --color-neon-foreground: var(--neon-foreground);
   --color-band: var(--band);
@@ -179,6 +205,95 @@
   summary {
     cursor: pointer;
   }
+}
+
+/* Long-form reading (the Durga Puja book, markdown pages) wears the palette's
+   own ink, earth and borders instead of the typography plugin's stone greys,
+   in both themes — so no prose-invert is needed. */
+.prose {
+  --tw-prose-body: var(--foreground);
+  --tw-prose-headings: var(--foreground);
+  --tw-prose-lead: var(--muted-foreground);
+  --tw-prose-links: var(--primary);
+  --tw-prose-bold: var(--foreground);
+  --tw-prose-counters: var(--muted-foreground);
+  --tw-prose-bullets: var(--matir);
+  --tw-prose-hr: var(--border);
+  --tw-prose-quotes: var(--foreground);
+  --tw-prose-quote-borders: var(--shiuli);
+  --tw-prose-captions: var(--muted-foreground);
+  --tw-prose-kbd: var(--foreground);
+  --tw-prose-code: var(--foreground);
+  --tw-prose-pre-code: var(--card);
+  --tw-prose-pre-bg: var(--foreground);
+  --tw-prose-th-borders: var(--border);
+  --tw-prose-td-borders: var(--border);
+}
+
+/* Tinted tiles (Members Only, Wallets): a wash of the tile's pastel, a thin
+   strip of it down the left edge, and an icon disc in it. Set --tint (and
+   optionally --tint-edge) inline. Unlayered on purpose, so it wins over the
+   card's own bg-card. A woven tile sits on shankha cream with a strip of all
+   four colours, like a sari's woven border, and a rangoli disc. */
+.tint-tile {
+  --tint-amount: 22%;
+  background:
+    var(--tint-edge, linear-gradient(var(--tint), var(--tint))) left top / 5px 100% no-repeat,
+    color-mix(in srgb, var(--tint) var(--tint-amount), var(--card));
+}
+.tint-tile[data-link]:hover {
+  --tint-amount: 34%;
+}
+.tint-woven,
+.tint-woven[data-link]:hover {
+  --tint: var(--shankha);
+  --tint-amount: 100%;
+  --tint-edge: linear-gradient(var(--golap) 0 25%, var(--chandan) 0 50%, var(--ganga) 0 75%, var(--nilkamal) 0);
+}
+.tint-disc {
+  background: color-mix(in srgb, var(--tint) 55%, var(--card));
+  color: color-mix(in srgb, var(--tint) 45%, var(--foreground));
+}
+.tint-woven .tint-disc {
+  background: conic-gradient(var(--golap), var(--chandan), var(--ganga), var(--nilkamal), var(--golap));
+  color: var(--foreground);
+}
+
+/* A members-area page title's underline, in the page's own pastel. */
+.tint-title::after {
+  content: '';
+  display: block;
+  width: 3.5rem;
+  height: 4px;
+  margin-top: 0.4rem;
+  border-radius: 9999px;
+  background: var(--tint);
+}
+.tint-title-woven::after {
+  background: linear-gradient(to right, var(--golap) 0 25%, var(--chandan) 0 50%, var(--ganga) 0 75%, var(--nilkamal) 0);
+}
+
+/* A section heading in the members area, marked by a short pastel bar. */
+.tint-heading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.tint-heading::before {
+  content: '';
+  flex: none;
+  width: 4px;
+  height: 1.1em;
+  border-radius: 9999px;
+  background: var(--tint);
+}
+
+/* panna's glow: a hairline ring in its own dark green and a soft halo, so the
+   neon keeps an edge on the tant (a neon is found by glow, not lightness) */
+@utility neon-glow {
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--neon-foreground) 20%, transparent),
+    0 0 12px color-mix(in srgb, var(--neon) 65%, transparent);
 }
 
 /* The branded loading state: the logo revolving horizontally like a coin

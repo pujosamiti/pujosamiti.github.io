@@ -13,7 +13,7 @@ import type { SponsorshipItemView } from '@pujosamiti/shared'
 import { ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // jaba and kali from docs/012 — the two colours a report is allowed.
-const JABA: [number, number, number] = [0xd7, 0x00, 0x00]
+const JABA: [number, number, number] = [0xc4, 0x00, 0x39]
 const KALI: [number, number, number] = [0x2b, 0x1a, 0x10]
 const GREY: [number, number, number] = [0x80, 0x78, 0x70]
 const WASH: [number, number, number] = [0xf6, 0xf1, 0xea]

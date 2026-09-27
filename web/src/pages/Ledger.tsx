@@ -16,7 +16,21 @@ import type {
 } from '@pujosamiti/shared'
 import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ban, FileDown, HandCoins, Loader2, Pencil, Plus, Undo2 } from 'lucide-react'
+import {
+  ArrowDownLeft,
+  ArrowUpRight,
+  Ban,
+  FileDown,
+  HandCoins,
+  History,
+  Loader2,
+  Pencil,
+  PiggyBank,
+  Plus,
+  Undo2,
+  Wallet,
+  type LucideIcon,
+} from 'lucide-react'
 import type { LedgerReportId } from '@/lib/ledger-reports'
 import { useEffect, useMemo, useState } from 'react'
 import { Link } from 'react-router'
@@ -25,7 +39,9 @@ import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
 import { PersonPicker } from '@/components/PersonPicker'
+import { PAGE_TINT, pastelAt, tint, type Tint } from '@/lib/tint'
 import { cn } from '@/lib/utils'
+import { PageTitle } from '@/components/PageTitle'
 import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
@@ -44,7 +60,20 @@ const rupees = (n: number) => `₹${n.toLocaleString('en-IN')}`
 const canFinance = (me: Me) => me.role === 'admin' || me.role === 'fin_admin'
 /** Entries harden 48 h after creation — edit/void disappear, admin included. */
 const entryLocked = (e: LedgerEntry) => Date.now() - e.createdAt > 48 * 60 * 60 * 1000
+/** "Pradyumna Das Roy" → "PR": first and last initials. */
+const initials = (name: string) => {
+  const parts = name.trim().split(/\s+/)
+  return ((parts[0]?.[0] ?? '') + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? '') : '')).toUpperCase()
+}
 const todayIST = () => new Date(Date.now() + 5.5 * 3600 * 1000).toISOString().slice(0, 10)
+/** An entry's date as people say it — "26 Sep", with the year only when it is not this one. */
+const entryDay = (iso: string) =>
+  new Date(`${iso}T00:00:00Z`).toLocaleDateString('en-IN', {
+    day: 'numeric',
+    month: 'short',
+    ...(iso.slice(0, 4) === todayIST().slice(0, 4) ? {} : { year: 'numeric' }),
+    timeZone: 'UTC',
+  })
 /** "25 September 2026" — the day the sponsorship board opens to the samiti. */
 const fmtOpensOn = () =>
   new Date(`${SPONSORSHIP_OPENS_ON}T00:00:00Z`).toLocaleDateString('en-IN', {
@@ -90,11 +119,14 @@ function useLedgerInvalidate() {
 /** Shared core-members-only gate for the four money pages. */
 function CorePage({
   title,
+  tint: pageTint,
   members = false,
   newSignIn = false,
   children,
 }: {
   title: string
+  /** The page's own pastel — the colour of its tile on Members Only. */
+  tint: Tint
   /** Open to every member, not just core — the page itself hides what they can't do. */
   members?: boolean
   /** Also visible to not-yet-activated new sign-ins (open membership). */
@@ -131,20 +163,20 @@ function CorePage({
         noindex
       />
       <BackLink />
-      <h1 className="text-2xl font-bold">{title}</h1>
+      <PageTitle tint={pageTint}>{title}</PageTitle>
       {children(me)}
     </div>
   )
 }
 
-export const LedgerPage = () => <CorePage title="Ledger">{(me) => <EntriesTab isFinAdmin={canFinance(me)} />}</CorePage>
+export const LedgerPage = () => <CorePage title="Ledger" tint={PAGE_TINT.ledger}>{(me) => <EntriesTab isFinAdmin={canFinance(me)} />}</CorePage>
 export const WalletsPage = () => (
-  <CorePage title="Wallets" members>
+  <CorePage title="Wallets" tint={PAGE_TINT.wallets} members>
     {(me) => <OverviewTab isFinAdmin={canFinance(me)} />}
   </CorePage>
 )
 export const SponsorshipPage = () => (
-  <CorePage title="Sponsorship" members newSignIn>
+  <CorePage title="Sponsorship" tint={PAGE_TINT.sponsorship} members newSignIn>
     {(me) =>
       !sponsorshipOpen() && me.role !== 'admin' ? (
         <Card className="mx-auto max-w-md">
@@ -169,7 +201,7 @@ export const SponsorshipPage = () => (
   </CorePage>
 )
 export const ReimbursementsPage = () => (
-  <CorePage title="Reimbursements">{(me) => <ClaimsTab myPersonId={me.personId!} isFinAdmin={canFinance(me)} />}</CorePage>
+  <CorePage title="Reimbursements" tint={PAGE_TINT.reimbursements}>{(me) => <ClaimsTab myPersonId={me.personId!} isFinAdmin={canFinance(me)} />}</CorePage>
 )
 // ── Season spending (budget vs actuals, shown on the Wallets page) ──────────
 
@@ -193,6 +225,12 @@ const useSpend = () =>
  * one exists. Budgets start from season 2026: past seasons render as a plain
  * expense report (no budget columns), current seasons as budget-vs-actual.
  */
+/** A ledger entry's edge: money in (river water), out (sandalwood), moved (blue lotus). */
+const entryTint = (e: LedgerEntry) =>
+  tint(e.kind === 'contribution' ? 'ganga' : e.kind === 'expense' ? 'chandan' : 'nilkamal', '6%')
+/** A spending card's pastel, in turn — a gentler wash than the tiles, since these hold tables. */
+const catTint = (i: number) => tint(pastelAt(i), '12%')
+
 function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boolean }) {
   const { data: events } = useEvents()
   const activeYear =
@@ -312,8 +350,8 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
       )}
 
       {hasBudget
-        ? budgetCats.map(({ category, lines: ls, budget, actual }) => (
-            <Card key={category}>
+        ? budgetCats.map(({ category, lines: ls, budget, actual }, i) => (
+            <Card key={category} {...catTint(i)}>
               <CardHeader className="pb-2">
                 <div className="flex items-baseline justify-between gap-3">
                   <CardTitle className="text-base text-shiuli">{category}</CardTitle>
@@ -453,8 +491,8 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
               </CardContent>
             </Card>
           ))
-        : reportCats.map(([category, catTotal]) => (
-            <Card key={category}>
+        : reportCats.map(([category, catTotal], i) => (
+            <Card key={category} {...catTint(i)}>
               <CardHeader className="pb-2">
                 <div className="flex items-baseline justify-between gap-3">
                   <CardTitle className="text-base text-shiuli">{category}</CardTitle>
@@ -539,22 +577,45 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
     shares
       .filter((b) => b.bookId !== 'pujo-ledger' && b.amount !== 0)
       .map((b) => `${BOOKS.find((x) => x.id === b.bookId)?.name ?? b.bookId} carry forward ${rupees(b.amount)}`)
-  const stats: [string, string, string, string?, 'warn'?][] = [
-    [isCurrent ? 'Total in hand' : `Closing balance (30 Jun ${s.seasonYear + 1})`, rupees(s.totalBalance), 'genda'],
-    [
-      `Carried forward (before 1 Jul ${s.seasonYear})`,
-      rupees(s.carriedForward),
-      'sharat',
-      otherBooks(s.carriedForwardByBook).map((t) => `incl. ${t}`).join(' · ') || undefined,
-      'warn',
-    ],
-    ['Collected this season', rupees(s.collectedSince), 'durba', `incl. ${rupees(s.collectedSponsorship)} sponsorship`],
-    ['Spent this season', rupees(s.spentSince), 'destructive'],
+  // each figure gets a pastel of its own (golap, chandan, ganga, nilkamal, or the
+  // woven shankha) — a wash, a thin edge strip and an icon disc (.tint-tile)
+  const stats: { label: string; value: string; tint: Tint; icon: LucideIcon; sub?: string }[] = [
+    {
+      label: isCurrent ? 'Total in hand' : `Closing balance (30 Jun ${s.seasonYear + 1})`,
+      value: rupees(s.totalBalance),
+      tint: 'nilkamal',
+      icon: Wallet,
+    },
+    {
+      label: `Carried forward (before 1 Jul ${s.seasonYear})`,
+      value: rupees(s.carriedForward),
+      tint: 'woven',
+      icon: History,
+      // information, not a warning: it says what the figure includes
+      sub: otherBooks(s.carriedForwardByBook).map((t) => `incl. ${t}`).join(' · ') || undefined,
+    },
+    {
+      label: 'Collected this season',
+      value: rupees(s.collectedSince),
+      tint: 'ganga',
+      icon: ArrowDownLeft,
+      sub: `incl. ${rupees(s.collectedSponsorship)} sponsorship`,
+    },
+    // spending is ordinary — sandalwood earth, not the destructive red
+    { label: 'Spent this season', value: rupees(s.spentSince), tint: 'chandan', icon: ArrowUpRight },
     ...(isCurrent
-      ? ([
-          ['Owed to members (pending claims)', rupees(s.outstandingClaims), 'palash'],
-          ['Disposable (in hand − owed)', rupees(s.totalBalance - s.outstandingClaims), 'matir'],
-        ] as [string, string, string][])
+      ? [
+          { label: 'Owed to members (pending claims)', value: rupees(s.outstandingClaims), tint: 'golap' as const, icon: HandCoins },
+          // blue lotus, like Total in hand — the two "in hand" figures share a colour;
+          // and it keeps clear of Collected (river water) above it on desktop and
+          // of Spent and Owed beside it on phones
+          {
+            label: 'Disposable (in hand − owed)',
+            value: rupees(s.totalBalance - s.outstandingClaims),
+            tint: 'nilkamal' as const,
+            icon: PiggyBank,
+          },
+        ]
       : []),
   ]
   return (
@@ -574,16 +635,17 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
         />
       </div>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {stats.map(([label, value, tone, sub, subTone]) => (
-          <Card key={label} style={{ background: `color-mix(in srgb, var(--${tone}) 9%, var(--card))` }}>
-            <CardContent className="p-4">
-              <p className="text-xs text-muted-foreground">{label}</p>
-              <p className="text-lg font-bold">{value}</p>
-              {sub && (
-                <p className={cn('text-xs', subTone === 'warn' ? 'font-medium text-palash' : 'text-muted-foreground')}>
-                  {sub}
-                </p>
-              )}
+        {stats.map(({ label, value, tint: t, icon: Icon, sub }) => (
+          <Card key={label} {...tint(t)}>
+            <CardContent className="flex items-start gap-3 p-4">
+              <span aria-hidden="true" className="tint-disc grid size-9 shrink-0 place-items-center rounded-full">
+                <Icon className="size-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-xs text-muted-foreground">{label}</p>
+                <p className="text-lg font-bold">{value}</p>
+                {sub && <p className="text-xs text-muted-foreground">{sub}</p>}
+              </div>
             </CardContent>
           </Card>
         ))}
@@ -613,12 +675,21 @@ function OverviewTab({ isFinAdmin }: { isFinAdmin: boolean }) {
                 </tr>
               </thead>
               <tbody>
-                {s.wallets.map((w) => (
+                {s.wallets.map((w, i) => (
                   <tr key={w.personId} className="border-b last:border-0">
                     <td className="py-1.5 pr-2">
-                      {w.personName}
+                      <span className="flex items-center gap-2">
+                        <span
+                          aria-hidden="true"
+                          className="tint-disc grid size-7 shrink-0 place-items-center rounded-full text-xs font-semibold"
+                          style={{ '--tint': `var(--${pastelAt(i)})` } as React.CSSProperties}
+                        >
+                          {initials(w.personName)}
+                        </span>
+                        <span>{w.personName}</span>
+                      </span>
                       {otherBooks(w.carriedForwardByBook).map((t) => (
-                        <span key={t} className="block text-xs font-medium text-palash">
+                        <span key={t} className="block pl-9 text-xs text-muted-foreground">
                           incl. {t}
                         </span>
                       ))}
@@ -687,33 +758,33 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
             <Plus /> Add entry
           </Button>
         )}
-        <select className={`${inputCls} w-auto`} value={book} onChange={(e) => setBook(e.target.value)} aria-label="Book">
-          <option value="all">All books</option>
-          {BOOKS.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name}
-            </option>
-          ))}
-        </select>
-        <select
-          className={`${inputCls} w-auto`}
+        {/* the app's own select, as everywhere else — not three bare native ones */}
+        <SearchSelect
+          ariaLabel="Book"
+          align="left"
+          value={book}
+          options={[{ value: 'all', label: 'All books' }, ...BOOKS.map((b) => ({ value: b.id, label: b.name }))]}
+          onChange={setBook}
+        />
+        <SearchSelect
+          ariaLabel="Season"
+          align="left"
           value={season === null ? 'all' : String(season)}
-          onChange={(e) => setSeason(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-          aria-label="Season"
-        >
-          <option value="all">All seasons</option>
-          {seasons.map((y) => (
-            <option key={y} value={y}>
-              {seasonRange(y)}
-            </option>
-          ))}
-        </select>
-        <select className={`${inputCls} w-auto`} value={kind} onChange={(e) => setKind(e.target.value)} aria-label="Kind">
-          <option value="all">All kinds</option>
-          <option value="contribution">Contributions</option>
-          <option value="expense">Expenses</option>
-          <option value="transfer">Transfers</option>
-        </select>
+          options={[{ value: 'all', label: 'All seasons' }, ...seasons.map((y) => ({ value: String(y), label: seasonRange(y) }))]}
+          onChange={(v) => setSeason(v === 'all' ? 'all' : Number(v))}
+        />
+        <SearchSelect
+          ariaLabel="Kind"
+          align="left"
+          value={kind}
+          options={[
+            { value: 'all', label: 'All kinds' },
+            { value: 'contribution', label: 'Contributions' },
+            { value: 'expense', label: 'Expenses' },
+            { value: 'transfer', label: 'Transfers' },
+          ]}
+          onChange={setKind}
+        />
         {book !== 'all' && typeof season === 'number' && season >= LEDGER_PDF_FROM_SEASON && (
           <ReportDownload bookId={book as BookId} season={season} entries={entries ?? []} />
         )}
@@ -731,13 +802,22 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
             editingId === e.id ? (
               <EntryForm key={e.id} initial={e} onClose={() => setEditingId(null)} />
             ) : (
-            <Card key={e.id} className={e.isActive ? '' : 'opacity-50'}>
+            // the edge says what the money did: in (river water), out (sandalwood), moved (blue lotus)
+            <Card
+              key={e.id}
+              style={entryTint(e).style}
+              className={cn(entryTint(e).className, !e.isActive && 'opacity-50')}
+            >
               <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 text-sm">
-                <span className="w-24 shrink-0 text-xs text-muted-foreground">{e.entryDate}</span>
-                <Badge variant={e.kind === 'contribution' ? 'durba' : e.kind === 'expense' ? 'default' : 'outline'}>
+                {/* phones: date · kind · amount · actions on one line, the description
+                    full width beneath; from sm up, one row as before */}
+                <time dateTime={e.entryDate} className="shrink-0 text-xs text-muted-foreground sm:w-20">
+                  {entryDay(e.entryDate)}
+                </time>
+                <Badge variant={e.kind === 'contribution' ? 'durba' : e.kind === 'expense' ? 'matir' : 'outline'}>
                   {e.kind}
                 </Badge>
-                <span className="min-w-0 flex-1">
+                <span className="order-last min-w-0 basis-full sm:order-none sm:basis-0 sm:flex-1">
                   {e.kind === 'transfer' ? (
                     <>
                       {e.walletName} → {e.toWalletName}
@@ -752,7 +832,7 @@ function EntriesTab({ isFinAdmin }: { isFinAdmin: boolean }) {
                   {e.notes && <span className="block text-xs text-muted-foreground">{e.notes}</span>}
                   {!e.isActive && <Badge variant="outline">voided</Badge>}
                 </span>
-                <span className="font-semibold">{rupees(e.amount)}</span>
+                <span className="ml-auto font-semibold sm:ml-0">{rupees(e.amount)}</span>
                 {isFinAdmin && e.isActive && !entryLocked(e) && (
                   <span className="flex shrink-0">
                     <Button size="icon" variant="ghost" aria-label="Edit entry" onClick={() => setEditingId(e.id)}>
@@ -837,7 +917,7 @@ const FORMAT_LABEL: Record<ReportFormat, string> = { xlsx: 'Excel', pdf: 'PDF' }
 /**
  * Which file the pills beside it download: a two-way switch, as small as the
  * pills. The chosen format is filled in sharat blue — the choice — so it reads
- * apart from the red download pills, the action.
+ * apart from the crimson download pills, the action.
  */
 function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onChange: (f: ReportFormat) => void; disabled: boolean }) {
   return (
@@ -862,7 +942,11 @@ function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onCh
   )
 }
 
-/** A red pill with the download mark: one tap, one file. */
+/**
+ * A pill with the download mark: one tap, one file. Drawn in crimson outline,
+ * not filled — several sit in a row, and the page's one filled red belongs to
+ * its main action (Add entry, Pledge).
+ */
 function DownloadPill({
   label,
   format = 'PDF',
@@ -882,7 +966,7 @@ function DownloadPill({
       type="button"
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-full bg-primary px-3 py-1 text-xs font-medium text-primary-foreground transition-colors hover:bg-sindoor disabled:opacity-60"
+      className="inline-flex items-center gap-1 rounded-full border border-primary/60 bg-card px-3 py-1 text-xs font-medium text-primary transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
       aria-label={`Download ${label} ${format}`}
     >
       {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
@@ -1002,7 +1086,7 @@ function VoidEntryButton({ entry, onVoid }: { entry: LedgerEntry; onVoid: () => 
         title="Are you sure to delete?"
         description={
           <>
-            {entry.entryDate} · {entry.kind} · {rupees(entry.amount)} — the entry will be voided (struck off, kept
+            {entryDay(entry.entryDate)} · {entry.kind} · {rupees(entry.amount)} — the entry will be voided (struck off, kept
             in the book), and any linked pledge or claim will reopen.
           </>
         }
@@ -1234,7 +1318,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">{editing ? `Edit ledger entry · ${initial.entryDate}` : 'New ledger entry'}</CardTitle>
+        <CardTitle className="text-base">{editing ? `Edit ledger entry · ${entryDay(initial.entryDate)}` : 'New ledger entry'}</CardTitle>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {/* Saved means saved: the fields lock, so the filled-in form cannot be sent a second time. */}
@@ -1361,7 +1445,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
             title="Are you sure to update?"
             description={
               <>
-                {initial.entryDate} · {initial.kind} · {rupees(initial.amount)} — the entry will be rewritten in
+                {entryDay(initial.entryDate)} · {initial.kind} · {rupees(initial.amount)} — the entry will be rewritten in
                 place. The book keeps no trace of the old values.
               </>
             }
@@ -1491,11 +1575,13 @@ function SponsorshipTab({
       {isPending ? (
         <LogoSpinner small />
       ) : (
-        categories.map((cat) => {
+        categories
+          .filter((cat) => shown.some((i) => i.category === cat && onBoard(i)))
+          .map((cat, idx) => {
           const rows = shown.filter((i) => i.category === cat && onBoard(i))
-          if (!rows.length) return null
           return (
-            <Card key={cat}>
+            // each category of the board in its own pastel, in turn
+            <Card key={cat} {...tint(pastelAt(idx), '10%')}>
               <CardHeader className="pb-2">
                 <CardTitle className="text-base text-shiuli">{cat}</CardTitle>
               </CardHeader>
@@ -1593,6 +1679,7 @@ function SponsorshipTab({
                         ) : (
                           <Button
                             size="sm"
+                            variant="soft"
                             onClick={() =>
                               pledgeForOthers
                                 ? setPledgingId(i.id)
@@ -1901,9 +1988,15 @@ function ClaimsTab({ myPersonId, isFinAdmin }: { myPersonId: string; isFinAdmin:
           const canSettle =
             isFinAdmin && cl.status === 'requested' && !mine && (!cl.assignedTo || cl.assignedTo === myPersonId)
           return (
-            <Card key={cl.id}>
+            // the edge says where the claim stands: waiting (rose), settled (river water), closed (sandalwood)
+            <Card
+              key={cl.id}
+              {...tint(cl.status === 'requested' ? 'golap' : cl.status === 'settled' ? 'ganga' : 'chandan', '6%')}
+            >
               <CardContent className="flex flex-wrap items-center gap-x-3 gap-y-1 p-3 text-sm">
-                <span className="w-24 shrink-0 text-xs text-muted-foreground">{cl.expenseDate}</span>
+                <time dateTime={cl.expenseDate} className="shrink-0 text-xs text-muted-foreground sm:w-20">
+                  {entryDay(cl.expenseDate)}
+                </time>
                 <span className="min-w-0 flex-1">
                   <strong>{cl.personName}</strong> · {cl.category}
                   {cl.subCategory ? ` · ${cl.subCategory}` : ''} — {cl.counterparty}
@@ -1922,7 +2015,8 @@ function ClaimsTab({ myPersonId, isFinAdmin }: { myPersonId: string; isFinAdmin:
                     {cl.assignedTo === myPersonId ? 'you pay' : `${cl.assignedToName} pays`}
                   </Badge>
                 )}
-                <Badge variant={cl.status === 'settled' ? 'durba' : cl.status === 'requested' ? 'default' : 'outline'}>
+                {/* a waiting claim is money owed to a member — palash, not the primary red */}
+                <Badge variant={cl.status === 'settled' ? 'durba' : cl.status === 'requested' ? 'palash' : 'outline'}>
                   {cl.status}
                 </Badge>
                 {cl.status === 'requested' && (

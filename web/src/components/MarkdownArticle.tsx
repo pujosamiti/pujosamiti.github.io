@@ -19,7 +19,7 @@ export function MarkdownArticle({
   resolveImage?: (src: string) => string | null
 }) {
   return (
-    <article className="prose prose-stone max-w-none dark:prose-invert prose-headings:font-serif prose-h1:text-primary prose-a:text-primary prose-blockquote:border-l-shiuli prose-blockquote:not-italic prose-th:whitespace-nowrap">
+    <article className="prose max-w-none prose-headings:font-serif prose-h1:text-primary prose-a:text-primary prose-blockquote:border-l-shiuli prose-blockquote:not-italic prose-th:whitespace-nowrap">
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

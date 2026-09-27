@@ -12,6 +12,7 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
 import {
   createBhogDay,
@@ -25,6 +26,7 @@ import {
   useBhogCounts,
 } from '@/lib/bhog'
 import { useMemberState } from '@/lib/member'
+import { headingTint, PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
 import { PersonPicker } from '@/components/PersonPicker'
 import { usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
@@ -94,9 +96,9 @@ export function Bhog() {
       <Seo title="Bhog & Food Menu" description="Menus and per-plate cost for the samiti's occasions." path="/bhog" noindex />
       <BackLink />
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">
+        <PageTitle tint={PAGE_TINT.bhog}>
           Bhog &amp; Food Menu{season != null && <span className="text-muted-foreground"> · {seasonLabel(season)}</span>}
-        </h1>
+        </PageTitle>
         <SearchSelect
           options={seasons.map((s) => ({
             value: String(s),
@@ -133,6 +135,7 @@ export function Bhog() {
           <EventSection
             key={e.id}
             event={e}
+            pastel={pastelAt(i)}
             season={season!}
             days={byEvent.get(e.id) ?? []}
             me={me}
@@ -153,6 +156,7 @@ export function Bhog() {
 
 function EventSection({
   event,
+  pastel,
   season,
   days,
   me,
@@ -163,6 +167,8 @@ function EventSection({
   initialCountFor = null,
 }: {
   event: PujoEvent
+  /** The occasion's pastel, in turn: its heading's bar and its day cards. */
+  pastel: Pastel
   season: number
   days: BhogMenuView[]
   me: Me
@@ -190,7 +196,9 @@ function EventSection({
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-wrap items-baseline gap-2 border-b pb-1">
-        <h2 className="text-lg font-semibold">{event.nameEn}</h2>
+        <h2 className="tint-heading text-lg font-semibold" style={headingTint(pastel)}>
+          {event.nameEn}
+        </h2>
         <span className="text-sm text-muted-foreground">{event.nameBn}</span>
         <Badge variant="outline">{kindLabel}</Badge>
         <span className="ml-auto flex flex-wrap gap-2">
@@ -251,7 +259,7 @@ function EventSection({
       )}
       <div className="grid gap-4 sm:grid-cols-2">
         {days.map((d) => (
-          <DayCard key={d.id} season={season} day={d} canEdit={canEdit} showMoney={showMoney} />
+          <DayCard key={d.id} season={season} day={d} pastel={pastel} canEdit={canEdit} showMoney={showMoney} />
         ))}
       </div>
     </section>
@@ -261,11 +269,13 @@ function EventSection({
 function DayCard({
   season,
   day,
+  pastel,
   canEdit,
   showMoney,
 }: {
   season: number
   day: BhogMenuView
+  pastel: Pastel
   canEdit: boolean
   showMoney: boolean
 }) {
@@ -290,11 +300,13 @@ function DayCard({
     )
 
   return (
-    <Card>
+    <Card {...tint(pastel, '12%')}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <CardTitle className="flex items-center gap-2">
-            <UtensilsCrossed className="size-4 shrink-0 text-durba" aria-hidden="true" />
+            <span aria-hidden="true" className="tint-disc grid size-8 shrink-0 place-items-center rounded-full">
+              <UtensilsCrossed className="size-4" />
+            </span>
             {day.label}
             {day.labelBn && <span className="font-normal text-muted-foreground">{day.labelBn}</span>}
           </CardTitle>
@@ -533,10 +545,10 @@ function ResponsesTable({
     if (!w) return
     const cell = (v: string | number, right = true) => `<td style="${right ? 'text-align:right;' : ''}">${v}</td>`
     w.document.write(`<!doctype html><html><head><title>${title}</title><style>
-      body{font-family:Georgia,serif;margin:24px;color:#222}
+      body{font-family:Georgia,serif;margin:24px;color:#2b1a10}
       h1{font-size:18px;margin:0 0 12px}
       table{border-collapse:collapse;width:100%;font-size:13px}
-      th,td{border:1px solid #999;padding:4px 8px}
+      th,td{border:1px solid #b8ab98;padding:4px 8px}
       th{background:#f3ede2;text-align:right} th:first-child{text-align:left}
       tr.total td{background:#f3ede2;font-weight:bold}
     </style></head><body><h1>${title}</h1><table>

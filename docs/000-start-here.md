@@ -33,11 +33,12 @@ trust for everything.
 | 009 | [Auth & membership](009-auth-and-membership.md) | Sign-in flow (and the iOS cookie story), roles, the person/tier model |
 | 010 | [API reference](010-api-reference.md) | Every route, what gates it, and which frontend page calls it |
 | 011 | [Content & SEO](011-content-and-seo.md) | Publishing book chapters/articles, frontmatter, share previews |
-| 012 | [Design system](012-design-system.md) | The লাল-পাড় সাদা palette, typography, mobile-first rules |
+| 012 | [Design system](012-design-system.md) | The লাল-পাড় সাদা palette (tant ground, laal-paar crimson), typography, mobile-first rules |
 | 013 | [Known gaps & roadmap](013-known-gaps.md) | Everything currently broken, dormant, or deliberately deferred |
 | 014 | [Roles & access](014-roles-and-access.md) | Who sees and changes what, surface by surface — and where each rule is actually enforced |
 | 015 | [উমা — the magazine (archived)](015-uma-magazine.md) | The retired magazine, kept as a record: sections, sankhyas, the masthead |
 | 016 | [উমা — daily quiz and puzzle](016-uma-games.md) | What /uma is now: the question of the day and the face puzzle |
+| 017 | [Aesthetic audit & plan](017-aesthetic-audit.md) | The laal-paar palette change of 27 Sep 2026, what the audit found, and what is still to do |
 
 New engineer fast path: **001 → 002 → 003** gets you running locally.
 Read 004 and 009 before touching any feature code; 006–008 before touching

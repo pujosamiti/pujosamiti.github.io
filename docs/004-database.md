@@ -39,10 +39,12 @@ tag one. Id pattern `"durga-pujo-2026"`; `kind` is one of the five fixed
 `EVENT_KINDS` (shared); carries bilingual names, ISO date range, optional
 purohit name/phone (nirghanto header — **the phone is served only to signed-in
 members**, never on the public feed) and a free `notes` field shown above the
-nirghanto. `timetable_entry` is the nirghanto: rows grouped by day (bilingual
-tithi labels), bilingual ritual titles, `time_from`/`time_to` ("HH:MM", NULL
-until the purohit confirms), panchang `comments`, and `alert_note` — a second
-note rendered in red for departures from the printed nirghanto.
+nirghanto (its first paragraph in view, the rest folded). `timetable_entry` is
+the nirghanto: rows grouped by day (bilingual tithi labels), bilingual ritual
+titles, `time_from`/`time_to` ("HH:MM", NULL until the purohit confirms),
+panchang `comments` — the working note, shown only in the nirghanto workspace
+since 27 Sep 2026 — and `alert_note`, the public note, rendered in red under
+the timing.
 
 ### Membership: `person`, `family`
 

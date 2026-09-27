@@ -17,6 +17,8 @@ const badgeVariants = cva(
         aparajita: 'border-transparent bg-aparajita text-aparajita-foreground',
         // palash: live/now — the vivid festive flash, smallest doses
         palash: 'border-transparent bg-palash text-palash-foreground',
+        // matir: money going out in the ordinary way — an expense, not an alarm
+        matir: 'border-transparent bg-matir text-matir-foreground',
         outline: 'text-matir',
       },
     },

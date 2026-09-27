@@ -210,8 +210,8 @@ export function Uma() {
             <Button
               size="icon"
               variant="ghost"
-              // neon green, off the pujo palette on purpose, so it is found at a glance
-              className="size-8 rounded-full bg-neon text-neon-foreground shadow-sm hover:bg-neon/85 hover:text-neon-foreground"
+              // panna, the emerald neon — off the pujo palette on purpose, so it is found at a glance
+              className="neon-glow size-8 rounded-full bg-neon text-neon-foreground hover:bg-neon/85 hover:text-neon-foreground"
               onClick={reload}
               aria-label="Refresh — today's puzzle and question"
               title="Refresh — today's puzzle and question"

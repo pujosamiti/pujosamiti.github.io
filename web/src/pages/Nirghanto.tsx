@@ -12,9 +12,12 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
+import { headingTint, PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
+import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
 import { resyncPujaDays, seedPujaDays, setNirghantoFinalized, usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
 
 /** Nirghanto editor (Durga Pujo only). Core members view; admins manage. */
@@ -49,7 +52,7 @@ export function Nirghanto() {
     <div className="flex flex-col gap-4">
       <Seo title="Nirghanto workspace" description="Durga Pujo nirghanto workspace." path="/nirghanto" noindex />
       <BackLink />
-      <h1 className="text-2xl font-bold">Nirghanto</h1>
+      <PageTitle tint={PAGE_TINT.nirghanto}>Nirghanto</PageTitle>
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
         <input
@@ -127,9 +130,10 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
       {isPending ? (
         <LogoSpinner small />
       ) : (
-        groups.map(({ key, rows }) => (
+        groups.map(({ key, rows }, gi) => (
           <div key={key} className="flex flex-col gap-2">
-            <h2 className="font-serif text-base font-bold">
+            {/* each day in its own pastel, in turn: the heading's bar and its rows' edges */}
+            <h2 className="tint-heading font-serif text-base font-bold" style={headingTint(pastelAt(gi))}>
               {rows[0].dayLabelBn} · {rows[0].dayLabelEn}{' '}
               <span className="font-sans text-sm font-normal text-muted-foreground">{rows[0].dayDate}</span>
             </h2>
@@ -143,7 +147,13 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
                   onClose={() => setEditingId(null)}
                 />
               ) : (
-                <TimetableRow key={t.id} entry={t} canEdit={canEdit} onEdit={() => setEditingId(t.id)} />
+                <TimetableRow
+                  key={t.id}
+                  entry={t}
+                  pastel={pastelAt(gi)}
+                  canEdit={canEdit}
+                  onEdit={() => setEditingId(t.id)}
+                />
               ),
             )}
           </div>
@@ -156,14 +166,27 @@ function NirghantoView({ events, q, canEdit }: { events: PujoEvent[] | undefined
   )
 }
 
-function TimetableRow({ entry: t, canEdit, onEdit }: { entry: TimeTableEntry; canEdit: boolean; onEdit: () => void }) {
+function TimetableRow({
+  entry: t,
+  pastel,
+  canEdit,
+  onEdit,
+}: {
+  entry: TimeTableEntry
+  pastel: Pastel
+  canEdit: boolean
+  onEdit: () => void
+}) {
   const queryClient = useQueryClient()
   const remove = useMutation({
     mutationFn: () => api(`/api/admin/timetable/${t.id}`, { method: 'DELETE' }),
     onSuccess: () => queryClient.invalidateQueries(),
   })
   return (
-    <div className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm">
+    <div
+      className={cn('flex items-center justify-between gap-2 rounded-md border py-2 pl-4 pr-3 text-sm', tint(pastel, '8%').className)}
+      style={tint(pastel, '8%').style}
+    >
       <span className="min-w-0">
         <span className="font-medium">{t.titleBn}</span>{' '}
         <span className="text-muted-foreground">{t.titleEn}</span>
@@ -330,7 +353,7 @@ function TimetableForm({
               />
             </Field>
           </div>
-          <Field label="Comments (panchang notes)">
+          <Field label="Working note — panchang reasoning, seen only here">
             <input
               className={inputCls}
               value={form.comments ?? ''}
@@ -338,7 +361,7 @@ function TimetableForm({
               placeholder="e.g. Shashthi ends at 10:43 AM"
             />
           </Field>
-          <Field label="Note in red (a departure from the printed nirghanto)">
+          <Field label="Public note, in red — what the schedule page shows under the timing">
             <input
               className={inputCls}
               value={form.alertNote ?? ''}
@@ -379,7 +402,8 @@ function PujaDaysPanel({ event, isAdmin }: { event: PujoEvent; isAdmin: boolean 
   const err = finalizeMut.error ?? seedMut.error ?? resyncMut.error
 
   return (
-    <Card>
+    // the calendar everything else builds on: the woven edge
+    <Card {...tint('woven', '0%')}>
       <CardHeader>
         <CardTitle className="flex flex-wrap items-center gap-2">
           <CalendarDays className="size-5 text-primary" aria-hidden="true" /> Days of the Pujo

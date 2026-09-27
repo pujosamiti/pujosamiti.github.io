@@ -4,8 +4,8 @@
   "description": "Durga Puja and year-round Bengali festivals with the probasi community of Magarpatta City, Pune",
   "start_url": ".",
   "display": "standalone",
-  "background_color": "#FFFFFF",
-  "theme_color": "#E10D11",
+  "background_color": "#E8E4DD",
+  "theme_color": "#C40039",
   "icons": [
     {
       "src": "icon-192.png",

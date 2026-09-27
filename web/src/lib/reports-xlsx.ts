@@ -14,7 +14,7 @@ import writeXlsxFile, { type Cell, type CellObject, type SheetData, type SheetOp
 import { ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // The PDF's palette (docs/012): jaba for the title only, kali ink, the wash behind header and total.
-const JABA = '#D70000'
+const JABA = '#C40039'
 const GREY = '#807870'
 const WASH = '#F6F1EA'
 const RULE = '#E6DDD2'

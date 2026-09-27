@@ -11,21 +11,25 @@ import { cn } from '@/lib/utils'
 import { signOut } from '@/lib/auth'
 import { useMemberState } from '@/lib/member'
 import { useOnboardingState } from '@/lib/onboarding'
+import { PaarEdge } from '@/components/PaarEdge'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
+import { PAGE_TINT, tint } from '@/lib/tint'
 
-// tone = palette token washing the card background (icon wears it at full hue)
+// tone = the tile's pastel, from PAGE_TINT (lib/tint.ts) — the same colour underlines the
+// page's own title. Arranged so no two neighbours share one, in two columns or one.
 const memberSections = [
-  { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: 'durba' },
-  { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets', tone: 'genda' },
-  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, adminUntilOpen: true, tone: 'palash' },
-  { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: 'sharat' },
-  { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: 'shiuli' },
-  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: 'durba' },
-  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', newSignInOk: true, tone: 'genda' },
-  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: 'aparajita' },
-  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: 'matir' },
-  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: 'sindoor' },
-  { icon: Palette, title: 'Brand Colours', desc: 'The laal-paar shada identity — palette & rules', gate: 'Members only', to: '/brandcolours', tone: 'jaba' },
+  { icon: NotebookText, title: 'Ledger', desc: 'Contributions, expenses and transfers', gate: 'Core members only', to: '/ledger', coreOnly: true, tone: PAGE_TINT.ledger },
+  { icon: Wallet, title: 'Wallets', desc: 'Season snapshot, budget and spend by category', gate: 'Members only', to: '/wallets', tone: PAGE_TINT.wallets },
+  { icon: Gift, title: 'Sponsorship', desc: 'The pledge board, item catalog', gate: 'Members only', to: '/sponsorship', newSignInOk: true, adminUntilOpen: true, tone: PAGE_TINT.sponsorship },
+  { icon: ReceiptText, title: 'Reimbursements', desc: 'Out-of-pocket claims and settlement', gate: 'Core members only', to: '/reimbursements', coreOnly: true, tone: PAGE_TINT.reimbursements },
+  { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks', tone: PAGE_TINT.tasks },
+  { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement', coreOnly: true, tone: PAGE_TINT.procurement },
+  { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog', newSignInOk: true, tone: PAGE_TINT.bhog },
+  { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership', coreOnly: true, tone: PAGE_TINT.membership },
+  { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto', coreOnly: true, tone: PAGE_TINT.nirghanto },
+  { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events', coreOnly: true, tone: PAGE_TINT.events },
+  { icon: Palette, title: 'Brand Colours', desc: 'The laal-paar shada identity — palette & rules', gate: 'Members only', to: '/brandcolours', tone: PAGE_TINT.brandcolours },
 ]
 
 export function MembersOnly() {
@@ -67,10 +71,11 @@ export function MembersOnly() {
   return (
     <div className="flex flex-col gap-4">
       <Seo title="Members Only" description="The samiti members area — ledger, wallets, sponsorship, planning." path="/membersonly" noindex />
-      <h1 className="text-2xl font-bold">Members Only</h1>
+      <PageTitle tint="woven">Members Only</PageTitle>
 
       {me ? (
-        <Card>
+        <Card className="overflow-hidden">
+          <PaarEdge />
           <CardHeader>
             <CardTitle>স্বাগতম, {me.name}</CardTitle>
             <CardDescription>{me.email}</CardDescription>
@@ -181,17 +186,18 @@ export function MembersOnly() {
           const unlocked = !!me && !!to && (!coreOnly || isCoreRole(me.role))
           const suffix = !me ? ` — ${gate}` : unlocked ? '' : coreOnly ? ' — Core members only' : ' — coming soon'
           const card = (
+            // a wash of the tile's pastel, a thin strip of it down the left edge and
+            // an icon disc in it (.tint-tile in index.css) — lively, but every text
+            // stays above 5 : 1
             <Card
-              style={{ '--tone': `var(--${tone})` } as React.CSSProperties}
-              className={cn(
-                '[background:color-mix(in_srgb,var(--tone)_9%,var(--card))]',
-                unlocked
-                  ? 'h-full transition-colors hover:[background:color-mix(in_srgb,var(--tone)_16%,var(--card))]'
-                  : 'opacity-70',
-              )}
+              data-link={unlocked || undefined}
+              style={tint(tone).style}
+              className={cn(tint(tone).className, unlocked ? 'h-full transition-colors hover:border-foreground/25' : 'opacity-70')}
             >
               <CardHeader>
-                <Icon className="size-5" style={{ color: `var(--${tone})` }} aria-hidden="true" />
+                <span aria-hidden="true" className="tint-disc mb-1 grid size-10 place-items-center rounded-full">
+                  <Icon className="size-5" />
+                </span>
                 <CardTitle>{title}</CardTitle>
                 <CardDescription>{`${desc}${suffix}`}</CardDescription>
               </CardHeader>

@@ -3,7 +3,7 @@ import { useId } from 'react'
 import { cn } from '@/lib/utils'
 
 /**
- * White alpona line-work on a sindoor ground — the identity's signature edge.
+ * White alpona line-work on the laal-paar band — the identity's signature edge.
  * Used at the bottom of header bands and event mastheads, never as wallpaper.
  *
  * Drawn as a fixed-size repeating SVG pattern (not a scaled viewBox) so the

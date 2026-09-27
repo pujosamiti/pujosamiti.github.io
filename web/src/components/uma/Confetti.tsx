@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 
-/** The pujo's own colours: jaba, genda, shiuli, aparajita, durba, padma, jarul. */
-const COLOURS = ['#d70000', '#efa51e', '#d96410', '#3d5a9e', '#3a7d44', '#d34f8d', '#7d5bbe']
+/** The pujo's own colours, bright enough to fly: jaba, genda, shiuli's bloom, aparajita, durba, padma, jarul. */
+const COLOURS = ['#c40039', '#efa51e', '#e8731a', '#33388f', '#17664f', '#d34f8d', '#7d5bbe']
 const PIECES = 170
 const LIFE_MS = 2800
 

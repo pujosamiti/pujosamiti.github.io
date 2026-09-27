@@ -8,61 +8,53 @@
 <title>Pujosamiti — Bengali Visual Identity</title>
 <style>
   :root {
-    --sindoor: #E10D11;
-    --rokto: #99090C;
-    --shada: #FFFFFF;
-    --kash: #FFFFFF;
+    --sindoor: #A3002F;
+    --rokto: #7A0B24;
+    --shada: #E8E4DD;
+    --kash: #FAF8F4;
     --genda: #EFA51E;
-    --shiuli: #D96410;
-    --matir: #9A5732;
+    --shiuli: #A34E0E;
+    --matir: #8A4A30;
     --ink: #2B1A10;
     --ink-soft: #6B5340;
-    --sharat: #007CBE;
-    --line: #ECE3D4;
+    --sharat: #2A6493;
+    --line: #DCD5CA;
     --band-fg: #FFFFFF;
-    --band-bg: #D70000;
-    --red-text: #D70000;
-    --jaba: #D70000;
-    --palash: #EB0000;
-    --aparajita: #3D5A9E;
-    --durba: #3A7D44;
+    --band-bg: #C40039;
+    --red-text: #C40039;
+    --jaba-fg: #FFFFFF;
+    --jaba: #C40039;
+    --palash: #B83716;
+    --aparajita: #33388F;
+    --durba: #17664F;
+    --neon: #2BF5A2;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --sindoor: #FF5A52;
-      --rokto: #FF928C;
+    :root:not([data-theme="light"]) {
+      --sindoor: #FF7A98;
+      --rokto: #FF8FA3;
       --shada: #191008;
       --kash: #241811;
       --genda: #F2B440;
       --shiuli: #E88A34;
-      --matir: #B97A4C;
+      --matir: #D59A78;
       --ink: #F2E6D0;
       --ink-soft: #C4AE92;
-      --sharat: #4FA8D8;
+      --sharat: #7FA8D6;
       --line: #3D2C1E;
       --band-fg: #FFFFFF;
-      --band-bg: #99090C;
-      --red-text: #FF928C;
-      --jaba: #E5322C;
-      --palash: #FF4C42;
-      --aparajita: #8CA5E6;
-      --durba: #7FC08A;
+      --band-bg: #8C0028;
+      --red-text: #F65A81;
+      --jaba-fg: #1F0509;
+      --jaba: #F65A81;
+      --palash: #F2764A;
+      --aparajita: #8FA0EC;
+      --durba: #6CC49A;
+      --neon: #2BF5A2;
     }
   }
-  :root[data-theme="dark"] {
-    --sindoor: #FF5A52; --rokto: #FF928C; --shada: #191008; --kash: #241811;
-    --genda: #F2B440; --shiuli: #E88A34; --matir: #B97A4C; --ink: #F2E6D0;
-    --ink-soft: #C4AE92; --sharat: #4FA8D8; --line: #3D2C1E; --band-fg: #FFFFFF;
-    --band-bg: #99090C; --red-text: #FF928C; --jaba: #E5322C; --palash: #FF4C42;
-    --aparajita: #8CA5E6; --durba: #7FC08A;
-  }
-  :root[data-theme="light"] {
-    --sindoor: #E10D11; --rokto: #99090C; --shada: #FFFFFF; --kash: #FFFFFF;
-    --genda: #EFA51E; --shiuli: #D96410; --matir: #9A5732; --ink: #2B1A10;
-    --ink-soft: #6B5340; --sharat: #007CBE; --line: #ECE3D4; --band-fg: #FFFFFF;
-    --band-bg: #D70000; --red-text: #D70000; --jaba: #D70000; --palash: #EB0000;
-    --aparajita: #3D5A9E; --durba: #3A7D44;
-  }
+  :root[data-theme="dark"] { --sindoor: #FF7A98; --rokto: #FF8FA3; --shada: #191008; --kash: #241811; --genda: #F2B440; --shiuli: #E88A34; --matir: #D59A78; --ink: #F2E6D0; --ink-soft: #C4AE92; --sharat: #7FA8D6; --line: #3D2C1E; --band-fg: #FFFFFF; --band-bg: #8C0028; --red-text: #F65A81; --jaba-fg: #1F0509; --jaba: #F65A81; --palash: #F2764A; --aparajita: #8FA0EC; --durba: #6CC49A; --neon: #2BF5A2; }
+  :root[data-theme="light"] { --sindoor: #A3002F; --rokto: #7A0B24; --shada: #E8E4DD; --kash: #FAF8F4; --genda: #EFA51E; --shiuli: #A34E0E; --matir: #8A4A30; --ink: #2B1A10; --ink-soft: #6B5340; --sharat: #2A6493; --line: #DCD5CA; --band-fg: #FFFFFF; --band-bg: #C40039; --red-text: #C40039; --jaba-fg: #FFFFFF; --jaba: #C40039; --palash: #B83716; --aparajita: #33388F; --durba: #17664F; --neon: #2BF5A2; }
 
   body {
     background: var(--shada);
@@ -149,7 +141,7 @@
   .card p { margin: 0; font-size: 13px; color: var(--ink-soft); }
   .card .when { font-size: 12.5px; color: var(--matir); margin-top: 6px; }
   .btn {
-    display: inline-block; background: var(--jaba); color: #fff;
+    display: inline-block; background: var(--jaba); color: var(--jaba-fg);
     border-radius: 10px; padding: 11px 16px; font-weight: 600; font-size: 14px; text-align: center;
   }
   .navbar {
@@ -182,6 +174,90 @@
     border: 1px solid var(--line); border-radius: 8px; padding: 6px 14px;
   }
   .logo-card a.dl:hover { border-color: var(--red-text); }
+
+  /* ── Laal-paar review (2026): choosing the red and the white ── */
+  .lp-note { background: var(--kash); border: 1px solid var(--line); border-left: 4px solid #C40039; border-radius: 10px; padding: 14px 16px; font-size: 14.5px; }
+  .lp-note b { color: #C40039; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lp-note b { color: #F65A81; } }
+  :root[data-theme="dark"] .lp-note b { color: #F65A81; }
+  .lp-cloth { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 8px; }
+  .lp-cloth span { display: inline-flex; align-items: center; gap: 6px; font: 12px ui-monospace, Menlo, monospace; color: var(--ink-soft); }
+  .lp-cloth i { width: 26px; height: 26px; border-radius: 6px; border: 1px solid rgba(0,0,0,.12); display: inline-block; }
+  .lp-cands { display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 14px; }
+  .lp-cand { position: relative; background: var(--kash); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; cursor: pointer; text-align: left; padding: 0; font: inherit; color: inherit; }
+  .lp-cand[aria-pressed="true"] { outline: 3px solid var(--ink); outline-offset: 2px; }
+  .lp-cand .body { height: 64px; background-color: var(--c); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='22'%3E%3Cpath d='M14 6l3 5-3 5-3-5z' fill='%23fff' opacity='.85'/%3E%3C/svg%3E"); }
+  .lp-cand .paar { height: 10px; background: var(--c); border-top: 2px solid #fff; box-shadow: inset 0 -2px 0 rgba(255,255,255,.55); }
+  .lp-cand .ground { background: #E8E4DD; padding: 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; }
+  .lp-cand .b { background: var(--c); color: #fff; border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; }
+  .lp-cand .t { color: var(--c); font-weight: 600; font-size: 13.5px; }
+  .lp-cand .meta { padding: 10px 12px 12px; font-size: 12.5px; }
+  .lp-cand .hx { font: 600 14px ui-monospace, Menlo, monospace; }
+  .lp-cand .src { color: var(--ink-soft); }
+  .lp-cand .cr { margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .lp-ok { color: #3A7D44; font-weight: 600; }
+  .lp-no { color: #99090C; font-weight: 600; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .lp-ok { color: #7FC08A; } :root:not([data-theme="light"]) .lp-no { color: #FF928C; } }
+  :root[data-theme="dark"] .lp-ok { color: #7FC08A; } :root[data-theme="dark"] .lp-no { color: #FF928C; }
+  .lp-pick { position: absolute; top: 8px; right: 8px; background: #fff; color: #2B1A10; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; border-radius: 999px; padding: 3px 9px; }
+  .lp-grounds { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 18px; }
+  .lp-grounds button { font: inherit; font-size: 13px; cursor: pointer; border: 1px solid var(--line); background: var(--kash); color: var(--ink); border-radius: 999px; padding: 6px 12px 6px 8px; display: inline-flex; align-items: center; gap: 8px; }
+  .lp-grounds button i { width: 18px; height: 18px; border-radius: 50%; border: 1px solid rgba(0,0,0,.2); display: inline-block; }
+  .lp-grounds button[aria-pressed="true"] { border-color: var(--ink); font-weight: 600; }
+  .lp-compare { display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start; }
+  .lp-compare figure { flex: 0 0 auto; }
+  .lp-compare figcaption { font-size: 13px; color: var(--ink-soft); margin-top: 8px; text-align: center; }
+  .lp-phone { --band-fg: #FFFFFF; --ink: #2B1A10; --ink-soft: #6B5340; --genda: #EFA51E; --shiuli: #A34E0E; --matir: #8A4A30; color: var(--ink); }
+  .lp-phone .phone { box-shadow: 0 12px 32px rgba(43, 26, 16, .16); }
+  .lp-readout { flex: 1; min-width: 240px; font-size: 14px; }
+  .lp-readout table { min-width: 0; }
+  .lp-swatches .chip { height: 72px; }
+  @media (max-width: 420px) { .lp-phone .phone { width: 100%; max-width: 320px; } }
+  .lp-acc { display: flex; flex-direction: column; gap: 14px; margin-bottom: 18px; }
+  .lp-acc h3 { font-size: 14px; margin: 0 0 6px; }
+  .lp-acc h3 span { font-weight: 400; color: var(--ink-soft); }
+  .lp-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+  .lp-opt { font: inherit; text-align: left; cursor: pointer; background: var(--kash); color: var(--ink); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; display: grid; grid-template-columns: 30px 1fr; gap: 2px 10px; align-items: start; }
+  .lp-opt i { grid-row: span 3; width: 30px; height: 30px; border-radius: 8px; }
+  .lp-opt b { font-size: 13.5px; }
+  .lp-opt .x { font: 12px ui-monospace, Menlo, monospace; color: var(--ink-soft); }
+  .lp-opt .n { font-size: 12px; color: var(--ink-soft); line-height: 1.35; }
+  .lp-opt .c { grid-column: 1 / -1; font-size: 12px; font-variant-numeric: tabular-nums; margin-top: 4px; }
+  .lp-opt[aria-pressed="true"] { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .lp-opt .rec { font-size: 10.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-soft); }
+  .lp-use { background: var(--g); border-radius: 14px; padding: 16px; color: #2B1A10; max-width: 460px; }
+  .lp-use .info { margin: 0 0 10px; font-size: 13.5px; color: var(--sh); }
+  .lp-use .info a { color: var(--sh); font-weight: 600; }
+  .lp-use .card2 { background: var(--cd); border: 1px solid var(--ln); border-radius: 12px; overflow: hidden; }
+  .lp-use .row { display: flex; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--ln); }
+  .lp-use .row:first-child { border-top: 0; }
+  .lp-use .who { flex: 1; min-width: 0; }
+  .lp-use .who b { display: block; font-size: 14.5px; }
+  .lp-use .meta2 { font-size: 12.5px; color: var(--mt); }
+  .lp-use .amt { font-weight: 700; font-variant-numeric: tabular-nums; }
+  .lp-use .pill { font-size: 11.5px; font-weight: 700; color: #fff; border-radius: 999px; padding: 2px 9px; }
+  .lp-use .foot { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 11px 14px; border-top: 1px solid var(--ln); font-size: 13px; }
+  .lp-use .ok { color: var(--du); font-weight: 600; }
+  .lp-use .lnk { color: var(--sh); font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
+  .lp-use .seg { display: inline-flex; border: 1px solid var(--ln); border-radius: 8px; overflow: hidden; margin-left: auto; }
+  .lp-use .seg span { padding: 4px 10px; font-size: 12.5px; }
+  .lp-use .seg .on { background: var(--sh); color: #fff; font-weight: 600; }
+  .lp-use .go { background: var(--rd); color: #fff; border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 13px; }
+  .lp-use .edge { margin: 10px 0 0; font-size: 12.5px; color: var(--mt); }
+  .lp-cbx { display: inline-flex; align-items: center; gap: 8px; font-size: 13.5px; margin: 10px 0 0; cursor: pointer; }
+  .lp-deut { filter: url(#lp-deut); }
+  .lp-neon { display: flex; flex-direction: column; gap: 10px; max-width: 560px; }
+  .lp-bar { display: flex; align-items: center; gap: 10px; background: #E8E4DD; border-radius: 12px; padding: 10px 14px; color: #2B1A10; }
+  .lp-bar .t { font-family: "Noto Serif Bengali", Georgia, serif; font-size: 24px; font-weight: 700; margin-right: auto; }
+  .lp-bar .rf { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: 0 0 auto; }
+  .lp-bar .tab { border-radius: 8px; padding: 6px 12px; font-weight: 600; font-size: 13.5px; }
+  .lp-bar .pz { background: #C40039; color: #fff; }
+  .lp-bar .qz { background: #EFA51E; color: #3A2504; }
+  .lp-bar .lbl { flex: 0 0 150px; font-size: 12.5px; line-height: 1.35; }
+  .lp-bar .lbl b { display: block; font-size: 13.5px; }
+  .lp-bar .lbl code { font: 12px ui-monospace, Menlo, monospace; color: #6B5340; }
+  .lp-bar.rec { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (max-width: 520px) { .lp-bar { flex-wrap: wrap; } .lp-bar .lbl { flex-basis: 100%; order: 9; } }
 </style>
 </head>
 <body>
@@ -189,9 +265,9 @@
   <div class="band-inner">
     <p class="eyebrow">Pujosamiti · Visual Identity</p>
     <h1 class="serif">লাল-পাড় সাদা — the palette of home</h1>
-    <p class="sub">A probasi bangali identity for Magarpatta City: pure-white grounds, a four-step red ramp anchored on jaba
-    #D70000, genda and shiuli accents, terracotta earth — with alpona drawn the authentic way,
-    white line-work on red.</p>
+    <p class="sub">A probasi bangali identity for Magarpatta City, taken from the laal-paar shada sari itself:
+    a tant-cotton ground, the crimson border red #C40039 with its deeper sindoor and rokto, genda and
+    shiuli accents, terracotta earth — with alpona drawn the authentic way, white line-work on red.</p>
   </div>
   <svg class="alpona-strip" aria-hidden="true">
     <defs>
@@ -238,70 +314,95 @@
   usage honest. One bold red, warm grounds, festive accents in small doses.</p>
 
   <div class="swatches">
-    <div class="swatch"><div class="chip" style="background:#D70000"></div>
-      <div class="meta"><div class="name">Jaba</div><div class="bn">জবা · hibiscus</div>
-      <div class="hex">#D70000 · dark #E5322C</div>
-      <div class="use">Primary. Buttons, active states, header bands, links.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#C40039"></div>
+      <div class="meta"><div class="name">Jaba</div><div class="bn">জবা · the laal-paar red</div>
+      <div class="hex">#C40039 · dark #F65A81</div>
+      <div class="use">Primary. Header bands, buttons, links, the active tab. White on it 6.2; 4.9 as text on tant.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#99090C"></div>
-      <div class="meta"><div class="name">Rokto</div><div class="bn">রক্ত · deep red</div>
-      <div class="hex">#99090C</div>
-      <div class="use">Deep red: destructive actions, darkest step of the ramp.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#A3002F"></div>
+      <div class="meta"><div class="name">Sindoor</div><div class="bn">সিঁদুর · the deeper red</div>
+      <div class="hex">#A3002F · dark #FF7A98</div>
+      <div class="use">Hover and pressed primary. Same hue, one step down.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#E10D11"></div>
-      <div class="meta"><div class="name">Sindoor</div><div class="bn">সিঁদুর · vermillion</div>
-      <div class="hex">#E10D11 · dark #FF5A52</div>
-      <div class="use">Independent ritual red: hover/pressed primary, strong red emphasis.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#7A0B24"></div>
+      <div class="meta"><div class="name">Rokto</div><div class="bn">রক্ত · the fold in shadow</div>
+      <div class="hex">#7A0B24 · dark #FF8FA3</div>
+      <div class="use">Destructive actions and error text. The darkest step.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#EB0000"></div>
+    <div class="swatch"><div class="chip" style="background:#B83716"></div>
       <div class="meta"><div class="name">Palash</div><div class="bn">পলাশ · flame of the forest</div>
-      <div class="hex">#EB0000</div>
-      <div class="use">Vivid highlight: live badges, festive moments. Small doses.</div></div></div>
+      <div class="hex">#B83716 · dark #F2764A</div>
+      <div class="use">Live, overdue, owed: attention in small doses. Flame, not a second crimson.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#FFFFFF; border-bottom:1px solid var(--line)"></div>
-      <div class="meta"><div class="name">Shada</div><div class="bn">সাদা · pure white</div>
-      <div class="hex">#FFFFFF</div>
-      <div class="use">Page background — pure white.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#E8E4DD; border-bottom:1px solid var(--line)"></div>
+      <div class="meta"><div class="name">Tant</div><div class="bn">তাঁত · the sari's body</div>
+      <div class="hex">#E8E4DD · dark #191008</div>
+      <div class="use">Page ground. Ink 13.2, muted 5.6, jaba 4.9 on it.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#FFFFFF; border-bottom:1px solid var(--line)"></div>
+    <div class="swatch"><div class="chip" style="background:#FAF8F4; border-bottom:1px solid var(--line)"></div>
       <div class="meta"><div class="name">Kash</div><div class="bn">কাশ · card white</div>
-      <div class="hex">#FFFFFF</div>
-      <div class="use">Cards, sheets, surfaces raised off the ground.</div></div></div>
+      <div class="hex">#FAF8F4 · dark #241811</div>
+      <div class="use">Cards, sheets, dialogs — lifted off the tant like the buti off the weave.</div></div></div>
 
     <div class="swatch"><div class="chip" style="background:#EFA51E"></div>
       <div class="meta"><div class="name">Genda</div><div class="bn">গেঁদা · marigold</div>
-      <div class="hex">#EFA51E</div>
-      <div class="use">Festive accent: active event chip, highlights, garland motifs. Never text.</div></div></div>
+      <div class="hex">#EFA51E · dark #F2B440</div>
+      <div class="use">Festive accent: the active chip, highlights, garland motifs. Never text.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#D96410"></div>
-      <div class="meta"><div class="name">Shiuli</div><div class="bn">শিউলি · saffron</div>
-      <div class="hex">#D96410</div>
-      <div class="use">Secondary accent: badges, small emphasis, icon fills.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#A34E0E"></div>
+      <div class="meta"><div class="name">Shiuli</div><div class="bn">শিউলি · the flower's stem</div>
+      <div class="hex">#A34E0E · dark #E88A34</div>
+      <div class="use">Warm accent that can be read: Bengali day names, category titles, notes.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#9A5732"></div>
-      <div class="meta"><div class="name">Matir</div><div class="bn">মাটির · terracotta</div>
-      <div class="hex">#9A5732</div>
-      <div class="use">Earth support: borders, metadata text, dividers, illustration.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#8A4A30"></div>
+      <div class="meta"><div class="name">Matir</div><div class="bn">মাটির · fired terracotta</div>
+      <div class="hex">#8A4A30 · dark #D59A78</div>
+      <div class="use">Earth: dates, metadata, dividers, illustration.</div></div></div>
 
     <div class="swatch"><div class="chip" style="background:#2B1A10"></div>
       <div class="meta"><div class="name">Kali</div><div class="bn">কালি · warm ink</div>
-      <div class="hex">#2B1A10</div>
+      <div class="hex">#2B1A10 · dark #F2E6D0</div>
       <div class="use">Body text. Warm near-black, never pure #000.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#007CBE"></div>
-      <div class="meta"><div class="name">Sharat</div><div class="bn">শরৎ · autumn sky</div>
-      <div class="hex">#007CBE · dark #4FA8D8</div>
-      <div class="use">Info states and links inside dense admin tables only. Small doses.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#2A6493"></div>
+      <div class="meta"><div class="name">Sharat</div><div class="bn">শরৎ · October sky</div>
+      <div class="hex">#2A6493 · dark #7FA8D6</div>
+      <div class="use">Information, table links, native controls, the chosen option of a switch.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#3D5A9E"></div>
+    <div class="swatch"><div class="chip" style="background:#33388F"></div>
       <div class="meta"><div class="name">Aparajita</div><div class="bn">অপরাজিতা · butterfly pea</div>
-      <div class="hex">#3D5A9E · dark #8CA5E6</div>
-      <div class="use">Festive blue: selected states, info chips, shubho moments. Small doses.</div></div></div>
+      <div class="hex">#33388F · dark #8FA0EC</div>
+      <div class="use">Selection and membership chips. The deep blue of the flower, kept apart from both the sky and jarul lavender.</div></div></div>
 
-    <div class="swatch"><div class="chip" style="background:#3A7D44"></div>
-      <div class="meta"><div class="name">Durba</div><div class="bn">দূর্বা · sacred grass</div>
-      <div class="hex">#3A7D44 · dark #7FC08A</div>
-      <div class="use">Success green: paid, settled, money-in. The only green voice.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#17664F"></div>
+      <div class="meta"><div class="name">Durba</div><div class="bn">দূর্বা · paan-leaf deep</div>
+      <div class="hex">#17664F · dark #6CC49A</div>
+      <div class="use">Success, one meaning: paid, settled, money in. Stays apart from the red for colour-blind eyes.</div></div></div>
+
+    <div class="swatch"><div class="chip" style="background:#DE7B9C"></div>
+      <div class="meta"><div class="name">Golap</div><div class="bn">গোলাপ · rose</div>
+      <div class="hex">#DE7B9C</div>
+      <div class="use">Pastel five: tile washes, edge strips and icon discs. Never text.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#D9BD98"></div>
+      <div class="meta"><div class="name">Chandan</div><div class="bn">চন্দন · sandalwood</div>
+      <div class="hex">#D9BD98</div>
+      <div class="use">Pastel five: spending and food tiles, earthy and warm.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#F2EFDA"></div>
+      <div class="meta"><div class="name">Shankha</div><div class="bn">শাঁখ · conch cream</div>
+      <div class="hex">#F2EFDA</div>
+      <div class="use">Pastel five: the woven tile's ground, with all four in its edge.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#8ED1C4"></div>
+      <div class="meta"><div class="name">Ganga</div><div class="bn">গঙ্গা · river water</div>
+      <div class="hex">#8ED1C4</div>
+      <div class="use">Pastel five: ledger and money-in tiles.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#8D96C9"></div>
+      <div class="meta"><div class="name">Nilkamal</div><div class="bn">নীলকমল · blue lotus</div>
+      <div class="hex">#8D96C9</div>
+      <div class="use">Pastel five: people and totals.</div></div></div>
+    <div class="swatch"><div class="chip" style="background:#2BF5A2"></div>
+      <div class="meta"><div class="name">Panna</div><div class="bn">পান্না · emerald neon</div>
+      <div class="hex">#2BF5A2 · icon #0B3D2C</div>
+      <div class="use">Off-palette on purpose, one use: the উমা refresh button, with a faint glow.</div></div></div>
   </div>
 
   <h2 class="serif">Alpona, drawn the right way</h2>
@@ -349,8 +450,8 @@
   </figure>
 
   <h2 class="serif">On a phone, where it will live</h2>
-  <p class="lede">Jaba header with an alpona edge, genda for the active event, cards on kash
-  white, bottom tab bar. Toggle your theme to see the dhunuchi-night dark mode.</p>
+  <p class="lede">Jaba header with an alpona edge, genda for the active event, kash cards on the
+  tant ground, bottom tab bar. Toggle your theme to see the dhunuchi-night dark mode.</p>
 
   <div class="mockrow">
     <div class="phone">
@@ -413,19 +514,24 @@
         <table>
           <thead><tr><th>shadcn token</th><th>Light</th><th>Dark</th></tr></thead>
           <tbody>
-            <tr><td><code>--background</code></td><td><span class="dot" style="background:#FFFFFF"></span>Shada #FFFFFF</td><td><span class="dot" style="background:#191008"></span>#191008</td></tr>
-            <tr><td><code>--card</code></td><td><span class="dot" style="background:#FFFFFF"></span>Kash #FFFFFF</td><td><span class="dot" style="background:#241811"></span>#241811</td></tr>
-            <tr><td><code>--primary</code></td><td><span class="dot" style="background:#D70000"></span>Jaba #D70000</td><td><span class="dot" style="background:#E5322C"></span>#E5322C</td></tr>
+            <tr><td><code>--background</code></td><td><span class="dot" style="background:#E8E4DD"></span>Tant #E8E4DD</td><td><span class="dot" style="background:#191008"></span>#191008</td></tr>
+            <tr><td><code>--card</code></td><td><span class="dot" style="background:#FAF8F4"></span>Kash #FAF8F4</td><td><span class="dot" style="background:#241811"></span>#241811</td></tr>
+            <tr><td><code>--primary</code></td><td><span class="dot" style="background:#C40039"></span>Jaba #C40039</td><td><span class="dot" style="background:#F65A81"></span>#F65A81</td></tr>
+            <tr><td><code>--sindoor</code></td><td><span class="dot" style="background:#A3002F"></span>Sindoor #A3002F</td><td><span class="dot" style="background:#FF7A98"></span>#FF7A98</td></tr>
+            <tr><td><code>--destructive</code></td><td><span class="dot" style="background:#7A0B24"></span>Rokto #7A0B24</td><td><span class="dot" style="background:#FF8FA3"></span>#FF8FA3</td></tr>
             <tr><td><code>--secondary</code></td><td><span class="dot" style="background:#EFA51E"></span>Genda #EFA51E</td><td><span class="dot" style="background:#F2B440"></span>#F2B440</td></tr>
-            <tr><td><code>--sindoor</code></td><td><span class="dot" style="background:#E10D11"></span>Sindoor #E10D11</td><td><span class="dot" style="background:#FF5A52"></span>#FF5A52</td></tr>
-            <tr><td><code>--palash</code></td><td><span class="dot" style="background:#EB0000"></span>Palash #EB0000</td><td><span class="dot" style="background:#FF4C42"></span>#FF4C42</td></tr>
-            <tr><td><code>--accent</code></td><td><span class="dot" style="background:#D96410"></span>Shiuli #D96410</td><td><span class="dot" style="background:#E88A34"></span>#E88A34</td></tr>
-            <tr><td><code>--sharat</code></td><td><span class="dot" style="background:#007CBE"></span>Sharat #007CBE</td><td><span class="dot" style="background:#4FA8D8"></span>#4FA8D8</td></tr>
-            <tr><td><code>--aparajita</code></td><td><span class="dot" style="background:#3D5A9E"></span>Aparajita #3D5A9E</td><td><span class="dot" style="background:#8CA5E6"></span>#8CA5E6</td></tr>
-            <tr><td><code>--durba</code></td><td><span class="dot" style="background:#3A7D44"></span>Durba #3A7D44</td><td><span class="dot" style="background:#7FC08A"></span>#7FC08A</td></tr>
+            <tr><td><code>--palash</code></td><td><span class="dot" style="background:#B83716"></span>Palash #B83716</td><td><span class="dot" style="background:#F2764A"></span>#F2764A</td></tr>
+            <tr><td><code>--shiuli</code></td><td><span class="dot" style="background:#A34E0E"></span>Shiuli #A34E0E</td><td><span class="dot" style="background:#E88A34"></span>#E88A34</td></tr>
+            <tr><td><code>--matir</code></td><td><span class="dot" style="background:#8A4A30"></span>Matir #8A4A30</td><td><span class="dot" style="background:#D59A78"></span>#D59A78</td></tr>
+            <tr><td><code>--sharat</code></td><td><span class="dot" style="background:#2A6493"></span>Sharat #2A6493</td><td><span class="dot" style="background:#7FA8D6"></span>#7FA8D6</td></tr>
+            <tr><td><code>--aparajita</code></td><td><span class="dot" style="background:#33388F"></span>Aparajita #33388F</td><td><span class="dot" style="background:#8FA0EC"></span>#8FA0EC</td></tr>
+            <tr><td><code>--durba</code></td><td><span class="dot" style="background:#17664F"></span>Durba #17664F</td><td><span class="dot" style="background:#6CC49A"></span>#6CC49A</td></tr>
+            <tr><td><code>--accent</code></td><td><span class="dot" style="background:#F0E9DE"></span>Hover surface #F0E9DE</td><td><span class="dot" style="background:#2E2013"></span>#2E2013</td></tr>
+            <tr><td><code>--muted</code></td><td><span class="dot" style="background:#E3DDD3"></span>Inset #E3DDD3</td><td><span class="dot" style="background:#2B1D13"></span>#2B1D13</td></tr>
             <tr><td><code>--muted-foreground</code></td><td><span class="dot" style="background:#6B5340"></span>#6B5340</td><td><span class="dot" style="background:#C4AE92"></span>#C4AE92</td></tr>
-            <tr><td><code>--border</code></td><td><span class="dot" style="background:#ECE3D4"></span>#ECE3D4</td><td><span class="dot" style="background:#3D2C1E"></span>#3D2C1E</td></tr>
+            <tr><td><code>--border</code></td><td><span class="dot" style="background:#DCD5CA"></span>#DCD5CA</td><td><span class="dot" style="background:#3D2C1E"></span>#3D2C1E</td></tr>
             <tr><td><code>--foreground</code></td><td><span class="dot" style="background:#2B1A10"></span>Kali #2B1A10</td><td><span class="dot" style="background:#F2E6D0"></span>#F2E6D0</td></tr>
+            <tr><td><code>--neon</code></td><td><span class="dot" style="background:#2BF5A2"></span>Panna #2BF5A2</td><td><span class="dot" style="background:#2BF5A2"></span>#2BF5A2</td></tr>
           </tbody>
         </table>
       </div>
@@ -434,25 +540,266 @@
 
   <h2 class="serif">Rules that keep it tasteful</h2>
   <div class="notes">
-    <div class="note"><b>Red leads, alone.</b> Jaba is the only bold voice on a screen. Sindoor,
-    genda and shiuli appear in small doses — a hover, a chip, a garland motif — never as large
-    fills next to the primary red.</div>
+    <div class="note"><b>Red leads, alone.</b> Jaba is the only bold voice on a screen. Its deeper
+    sindoor is only ever a hover; palash, genda and shiuli appear in small doses — a live badge, a
+    chip, a garland motif — never as large fills next to the primary red.</div>
+    <div class="note"><b>One filled red per view.</b> The page's main action wears the solid
+    jaba. Repeated actions — the download pills — are crimson outlines, and a quiet state (a task
+    still to do) is an inset, never a red fill. Spending is matir earth, not rokto.</div>
     <div class="note"><b>Yellow is never text.</b> Genda fails contrast on cream. It carries meaning
     as a fill behind dark ink (like the active event chip), never as lettering.</div>
     <div class="note"><b>Blue and green are workers, not decoration.</b> Durba green means one
     thing everywhere: success — a paid pledge, a settled claim, money in. Aparajita blue marks
-    selection and information. Neither ever fills a hero or fights jaba for attention.</div>
+    selection and sharat sky marks information. None of them ever fills a hero or fights jaba for
+    attention.</div>
     <div class="note"><b>Alpona is placed, not sprinkled.</b> Header band, section dividers, event
     mastheads, festive empty-states. Body screens stay quiet so the accounting tables stay readable.</div>
     <div class="note"><b>Warm everywhere.</b> No pure black, no cool greys. Text is kali ink, borders
-    lean cream — the whole app sits in the laal-paar shada world.</div>
+    lean cream, the ground is tant cotton and cards are its whiter buti — the whole app sits in
+    the laal-paar shada world.</div>
     <div class="note"><b>Type carries both scripts.</b> Noto Serif Bengali for display headings
     (আমাদের পূজা and “Time Table” alike), Hind Siliguri for UI and body. Both free on Google Fonts.
     This preview approximates them with system faces.</div>
     <div class="note"><b>Dark mode is dhunuchi night.</b> Smoky deep brown, brightened jaba and
-    genda, cream ink — festive at night, not a generic grey inversion.</div>
+    genda, cream ink — festive at night, not a generic grey inversion. At night jaba lightens and
+    the words on its buttons turn dark.</div>
   </div>
+
+  <h2 class="serif">How the red and the white were chosen</h2>
+  <p class="lede">Adopted on 27 September 2026, replacing jaba #D70000 on pure white. The reds
+  below were measured against the saris themselves and against a tant-cotton ground of #E8E4DD. It
+  still works as a workbench: tap any red, and any ground, to dress the phone on the right; the one
+  on the left is the palette as it was before.</p>
+
+  <div class="lp-note">
+    <b>Chosen: #C40039 on a #E8E4DD ground, with cards in #FAF8F4.</b>
+    Sharat #2A6493, durba #17664F, matir #8A4A30, and panna #2BF5A2 for the one neon.
+    #C40039 is the deepest of the five reds and the closest to the woven cloth (hue 343°; the saris
+    photograph at 345–350°). One red serves everywhere: white on it measures 6.17, and as text it
+    passes on the tant (4.87) and on cards (5.81), so no second shade is needed for small type.
+  </div>
+
+  <p class="lede" style="margin:18px 0 8px">Sampled from the three saris — the cloth, a fold in shadow, and the rani-pink aanchal:</p>
+  <div class="lp-cloth" aria-label="Colours sampled from the sari photographs">
+    <span><i style="background:#BF283F"></i>#BF283F</span>
+    <span><i style="background:#BC2749"></i>#BC2749</span>
+    <span><i style="background:#B6263D"></i>#B6263D</span>
+    <span><i style="background:#A22032"></i>#A22032 fold</span>
+    <span><i style="background:#DA2F71"></i>#DA2F71 rani</span>
+    <span><i style="background:#EFE4E8"></i>#EFE4E8 buti</span>
+  </div>
+
+  <h2 class="serif" style="font-size:18px;margin-top:28px">The reds</h2>
+  <div class="lp-cands" id="lp-cands"></div>
+
+  <h2 class="serif" style="font-size:18px;margin-top:28px">The white</h2>
+  <p class="lede">#E8E4DD is unbleached tant — the colour of the sari's body. Pure white cards on it
+  look pasted; a warm #FAF8F4 lifts them gently, like the white of the buti against the weave.</p>
+  <div class="lp-grounds" id="lp-grounds"></div>
+
+  <div class="lp-compare">
+    <figure class="lp-phone" id="lp-now"><figcaption>Before · jaba #D70000 on #FFFFFF</figcaption></figure>
+    <figure class="lp-phone" id="lp-new"><figcaption id="lp-new-cap"></figcaption></figure>
+    <div class="lp-readout">
+      <div class="tablewrap">
+        <table>
+          <thead><tr><th>Pairing</th><th>Contrast</th><th>AA</th></tr></thead>
+          <tbody id="lp-readout"></tbody>
+        </table>
+      </div>
+      <p style="font-size:13px;color:var(--ink-soft);margin:8px 2px 0">AA wants 4.5 for body text and 3 for
+      large text and control edges. The sky, grass and earth rows follow the picks further down.</p>
+    </div>
+  </div>
+
+  <h2 class="serif" style="font-size:18px;margin-top:28px">Sky, grass and earth</h2>
+  <p class="lede">Sharat, durba and matir are the workers: sky for information and the chosen option
+  of a switch, grass for paid and settled, earth for dates and metadata. The earlier shades were picked
+  for pure white; on tant all three drop below AA as text. Every option below passes on the tant and
+  on cards. Tap to dress the ledger card, which also wears the red chosen above.</p>
+
+  <div class="lp-acc" id="lp-acc"></div>
+
+  <div class="lp-use" id="lp-use">
+    <p class="info">ⓘ Two pledges are still to collect for Durga Puja 2026 · <a>See them</a></p>
+    <div class="card2">
+      <div class="row">
+        <div class="who"><b>Rina Ghosh</b><span class="meta2">26 Sep 2026 · Puja subscription · UPI</span></div>
+        <span class="amt">₹10,001</span><span class="pill" data-k="du">Paid</span>
+      </div>
+      <div class="row">
+        <div class="who"><b>Amit Sen</b><span class="meta2">Pledged 14 Sep · Pratima sponsorship</span></div>
+        <span class="amt">₹5,000</span><span class="pill" data-k="rd">Due</span>
+      </div>
+      <div class="foot">
+        <span class="ok">✓ 11 of 13 settled</span>
+        <span class="lnk">Receipt ↗</span>
+        <span class="seg"><span class="on">Excel</span><span>PDF</span></span>
+      </div>
+      <div class="foot"><span class="go">Record payment</span></div>
+    </div>
+    <p class="edge">Sun 2 Aug · 9:00 AM · Lawn 3 — matir on the bare tant</p>
+  </div>
+  <label class="lp-cbx"><input type="checkbox" id="lp-cb" /> See the card, the phone and the neon row below as a red-green colour-blind reader would</label>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <filter id="lp-deut" color-interpolation-filters="linearRGB">
+      <feColorMatrix type="matrix" values="0.367322 0.860646 -0.227968 0 0  0.280085 0.672501 0.047413 0 0  -0.011820 0.042940 0.968881 0 0  0 0 0 1 0"/>
+    </filter>
+  </svg>
+
+  <h2 class="serif" style="font-size:18px;margin-top:28px">The one neon</h2>
+  <p class="lede">The উমা refresh button is the only colour allowed off the pujo palette, so it is found
+  at a glance. A neon is found by its glow, not its lightness, so every option sits near 1:1 against
+  tant; the dark icon inside carries the contrast. The test that separates them: tick the colour-blind
+  box above. Yellow-greens turn the same yellow as the genda Quiz tab beside them. Emerald does not —
+  and it sits opposite #C40039 on the colour wheel, the glowing sibling of paan.</p>
+  <div class="lp-neon" id="lp-neon"></div>
+
+
+
+
 </div>
+
+<script>
+(() => {
+  const REDS = [
+    { hex: '#C40039', src: 'Your pick · new', badge: 'Chosen' },
+    { hex: '#C50040', src: 'Image 2' },
+    { hex: '#C90052', src: 'Image 3' },
+    { hex: '#D10039', src: 'Image 1' },
+    { hex: '#D50048', src: 'Your pick · new' },
+    { hex: '#C20A35', src: 'Tuned to the cloth' },
+    { hex: '#B80A32', src: 'Tuned · deeper' },
+    { hex: '#D70000', src: 'Before · jaba' },
+  ];
+  const GROUNDS = [
+    { hex: '#E8E4DD', card: '#FAF8F4', line: '#DCD5CA', name: 'Tant #E8E4DD', rec: true },
+    { hex: '#EFEBE4', card: '#FFFFFF', line: '#E2DCD2', name: 'Softer #EFEBE4' },
+    { hex: '#F5F2ED', card: '#FFFFFF', line: '#E8E2D8', name: 'Kora #F5F2ED' },
+    { hex: '#FFFFFF', card: '#FFFFFF', line: '#ECE3D4', name: 'Pure white (before)' },
+  ];
+  const lum = (h) => {
+    const c = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255)
+      .map((x) => (x <= 0.04045 ? x / 12.92 : ((x + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  };
+  const cr = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((p, q) => q - p); return (x + 0.05) / (y + 0.05); };
+  const hue = (h) => {
+    const [r, g, b] = [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), d = mx - mn;
+    if (!d) return 0;
+    let v = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    return Math.round((v * 60 + 360) % 360);
+  };
+  const pass = (v, need = 4.5) => `<span class="${v >= need ? 'lp-ok' : 'lp-no'}">${v.toFixed(2)} ${v >= need ? '✓' : '✗'}</span>`;
+
+  let red = REDS[0], ground = GROUNDS[0];
+
+  const ACCENTS = {
+    sh: { name: 'Sharat', bn: 'শরৎ', role: 'information, table links, the chosen option of a switch', opts: [
+      { hex: '#007CBE', name: 'Before', note: 'bright sky, made for pure white' },
+      { hex: '#006AA3', name: 'Sharat, deeper', note: 'the same sky, one step down' },
+      { hex: '#2A6493', name: 'Sharat, dusky', note: 'an October sky with a little cloud; softest on tant', rec: true },
+      { hex: '#2B5A8C', name: 'Neel', note: "indigo from the weaver's vat" },
+      { hex: '#0E6B78', name: 'Mayurkanthi', note: 'peacock-neck teal, a sari colour; too near paan green' },
+    ] },
+    du: { name: 'Durba', bn: 'দূর্বা', role: 'paid, settled, money in', opts: [
+      { hex: '#3A7D44', name: 'Before', note: 'fresh grass, made for pure white' },
+      { hex: '#2F6B39', name: 'Durba, deeper', note: 'the same grass, one step down' },
+      { hex: '#3D6B25', name: 'Grass-olive', note: 'the warm yellow-green of durba itself' },
+      { hex: '#17664F', name: 'Paan', note: 'betel-leaf green, leaning teal; clearest apart from the red for colour-blind eyes', rec: true },
+    ] },
+    mt: { name: 'Matir', bn: 'মাটির', role: 'dates, metadata, dividers', opts: [
+      { hex: '#9A5732', name: 'Before', note: 'light clay, made for pure white' },
+      { hex: '#884B2B', name: 'Matir, deeper', note: 'the same clay, one step down' },
+      { hex: '#8A4A30', name: 'Terracotta', note: 'fired Bishnupur brick, a touch rosier to sit with the crimson', rec: true },
+      { hex: '#8F4A14', name: 'Gerua', note: "ochre of a sannyasi's cloth; furthest from the red" },
+    ] },
+  };
+  const pick = { sh: ACCENTS.sh.opts[2], du: ACCENTS.du.opts[3], mt: ACCENTS.mt.opts[2] };
+  const acc = document.getElementById('lp-acc');
+  acc.innerHTML = Object.entries(ACCENTS).map(([k, a]) => `
+    <div><h3>${a.name} <span>${a.bn} · ${a.role}</span></h3><div class="lp-opts">${a.opts.map((o, i) => `
+      <button type="button" class="lp-opt" data-k="${k}" data-i="${i}" aria-pressed="false">
+        <i style="background:${o.hex}"></i><b>${o.name}</b><span class="x">${o.hex}${o.rec ? ' · <span class="rec">chosen</span>' : ''}</span><span class="n">${o.note}</span>
+        <span class="c">tant ${pass(cr(o.hex, '#E8E4DD'))} · card ${pass(cr(o.hex, '#FAF8F4'))}</span>
+      </button>`).join('')}</div></div>`).join('');
+  const use = document.getElementById('lp-use');
+  const NEONS = [
+    { hex: '#39FF14', fg: '#0B3D17', name: 'Before · electric', note: 'yellow-green; merges with genda for colour-blind eyes' },
+    { hex: '#C6FF3A', fg: '#2C3A05', name: 'Jonaki', note: 'firefly glow; warm, but close to genda' },
+    { hex: '#7CFC3A', fg: '#0B3D17', name: 'Tiya', note: 'parrot green; softer than before, same trouble' },
+    { hex: '#2BF5A2', fg: '#0B3D2C', name: 'Panna', note: 'emerald neon, opposite the crimson; chosen', rec: true, glow: true },
+    { hex: '#1EEB8C', fg: '#0B3D2C', name: 'Jade', note: 'a deeper emerald; a little less glow' },
+  ];
+  const ICON = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>';
+  const neon = document.getElementById('lp-neon');
+  neon.innerHTML = NEONS.map((n) => `
+    <div class="lp-bar${n.rec ? ' rec' : ''}">
+      <span class="lbl"><b>${n.name}</b><code>${n.hex}</code> · icon ${cr(n.fg, n.hex).toFixed(1)}<br>${n.note}</span>
+      <span class="t">উমা</span>
+      <span class="rf" style="background:${n.hex};color:${n.fg};${n.glow ? `box-shadow:0 0 0 1px ${n.fg}33, 0 0 12px ${n.hex}AA;` : 'box-shadow:0 1px 2px rgba(0,0,0,.15);'}">${ICON}</span>
+      <span class="tab pz">Puzzle</span><span class="tab qz">Quiz</span>
+    </div>`).join('');
+
+
+
+  const cands = document.getElementById('lp-cands');
+  cands.innerHTML = REDS.map((r, i) => `
+    <button type="button" class="lp-cand" data-i="${i}" style="--c:${r.hex}" aria-pressed="false">
+      ${r.badge ? `<span class="lp-pick">${r.badge}</span>` : ''}
+      <div class="body"></div><div class="paar"></div>
+      <div class="ground"><span class="b">অঞ্জলি দিন</span><span class="t">View full schedule →</span></div>
+      <div class="meta"><div class="hx">${r.hex}</div><div class="src">${r.src} · hue ${hue(r.hex)}°</div>
+      <div class="cr">White on it ${pass(cr('#FFFFFF', r.hex))}<br>As text on tant ${pass(cr(r.hex, '#E8E4DD'))}</div></div>
+    </button>`).join('');
+
+  const grounds = document.getElementById('lp-grounds');
+  grounds.innerHTML = GROUNDS.map((g, i) => `
+    <button type="button" data-i="${i}" aria-pressed="false"><i style="background:${g.hex}"></i>${g.name}${g.rec ? ' · chosen' : ''}</button>`).join('');
+
+  // the phone mock above, twice: the palette before and the one on trial
+  const phone = document.querySelector('.mockrow .phone');
+  const now = document.getElementById('lp-now'), nu = document.getElementById('lp-new');
+  now.prepend(phone.cloneNode(true));
+  nu.prepend(phone.cloneNode(true));
+  Object.entries({ '--band-bg': '#D70000', '--jaba': '#D70000', '--jaba-fg': '#FFFFFF', '--red-text': '#D70000', '--shada': '#FFFFFF', '--kash': '#FFFFFF', '--line': '#ECE3D4', '--shiuli': '#D96410', '--matir': '#9A5732' })
+    .forEach(([k, v]) => now.style.setProperty(k, v));
+
+  const paint = () => {
+    const vars = { '--band-bg': red.hex, '--jaba': red.hex, '--jaba-fg': '#FFFFFF', '--red-text': red.hex, '--shada': ground.hex, '--kash': ground.card, '--line': ground.line };
+    Object.entries(vars).forEach(([k, v]) => nu.style.setProperty(k, v));
+    nu.style.setProperty('--matir', pick.mt.hex);
+    Object.entries({ '--g': ground.hex, '--cd': ground.card, '--ln': ground.line, '--rd': red.hex, '--sh': pick.sh.hex, '--du': pick.du.hex, '--mt': pick.mt.hex })
+      .forEach(([k, v]) => use.style.setProperty(k, v));
+    use.querySelectorAll('.pill').forEach((p) => { p.style.background = p.dataset.k === 'du' ? pick.du.hex : red.hex; });
+    acc.querySelectorAll('.lp-opt').forEach((b) => b.setAttribute('aria-pressed', String(ACCENTS[b.dataset.k].opts[b.dataset.i] === pick[b.dataset.k])));
+    document.getElementById('lp-new-cap').textContent = `On trial · ${red.hex} on ${ground.hex}, cards ${ground.card}`;
+    cands.querySelectorAll('.lp-cand').forEach((b) => b.setAttribute('aria-pressed', String(REDS[b.dataset.i] === red)));
+    grounds.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(GROUNDS[b.dataset.i] === ground)));
+    const rows = [
+      ['White on the red', cr('#FFFFFF', red.hex)],
+      ['Red text on the ground', cr(red.hex, ground.hex)],
+      ['Red text on a card', cr(red.hex, ground.card)],
+      ['Ink on the ground', cr('#2B1A10', ground.hex)],
+      ['Muted text on the ground', cr('#6B5340', ground.hex)],
+      [`Sharat ${pick.sh.hex} on the ground`, cr(pick.sh.hex, ground.hex)],
+      [`Durba ${pick.du.hex} on the ground`, cr(pick.du.hex, ground.hex)],
+      [`Matir ${pick.mt.hex} on the ground`, cr(pick.mt.hex, ground.hex)],
+      ['White on durba', cr('#FFFFFF', pick.du.hex)],
+    ];
+    document.getElementById('lp-readout').innerHTML = rows.map(([n, v]) =>
+      `<tr><td>${n}</td><td style="font-variant-numeric:tabular-nums">${v.toFixed(2)}</td><td>${v >= 4.5 ? '<span class="lp-ok">✓</span>' : '<span class="lp-no">✗</span>'}</td></tr>`).join('');
+  };
+  cands.addEventListener('click', (e) => { const b = e.target.closest('.lp-cand'); if (b) { red = REDS[b.dataset.i]; paint(); } });
+  grounds.addEventListener('click', (e) => { const b = e.target.closest('button'); if (b) { ground = GROUNDS[b.dataset.i]; paint(); } });
+  acc.addEventListener('click', (e) => { const b = e.target.closest('.lp-opt'); if (b) { pick[b.dataset.k] = ACCENTS[b.dataset.k].opts[b.dataset.i]; paint(); } });
+  document.getElementById('lp-cb').addEventListener('change', (e) => {
+    [use, nu, neon].forEach((el) => el.classList.toggle('lp-deut', e.target.checked));
+  });
+  paint();
+})();
+</script>
 
 </body>
 </html>

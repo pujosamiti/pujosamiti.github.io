@@ -13,6 +13,9 @@ const buttonVariants = cva(
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/85',
         durba: 'bg-durba text-durba-foreground hover:bg-durba/85',
         destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/85',
+        // crimson outline that fills on hover — for an action repeated down a list
+        // (Pledge on every open slot): one filled red per view stays the rule
+        soft: 'border border-primary/60 bg-card text-primary hover:bg-primary hover:text-primary-foreground',
         outline: 'border bg-card hover:bg-accent hover:text-accent-foreground',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-primary underline-offset-4 hover:underline',

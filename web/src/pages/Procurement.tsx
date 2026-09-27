@@ -18,7 +18,9 @@ import { SearchSelect } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
+import { PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
 import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
 import {
@@ -122,10 +124,10 @@ export function Procurement() {
         <BackLink />
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h1 className="text-2xl font-bold">
+        <PageTitle tint={PAGE_TINT.procurement}>
           Procurement{selectedDay && <span className="text-muted-foreground"> · {selectedDay.label}</span>}
           {year && <span className="text-muted-foreground"> · {year}</span>}
-        </h1>
+        </PageTitle>
         <div className="flex gap-2 print:hidden">
           <Button size="sm" variant="outline" asChild>
             <Link to="/procurement/master">
@@ -201,10 +203,16 @@ export function Procurement() {
             : 'Nothing on the list yet — core members can add days and items.'}
         </p>
       ) : (
-        categories.map((cat) => {
+        categories.map((cat, idx) => {
           const catItems = visible.filter((i) => i.category === cat)
           return (
-            <CategorySection key={cat} title={cat} count={catItems.length} forceOpen={printAll || !!selectedDay}>
+            <CategorySection
+              key={cat}
+              title={cat}
+              count={catItems.length}
+              pastel={pastelAt(idx)}
+              forceOpen={printAll || !!selectedDay}
+            >
               {catItems.map((i) => (
                 <ItemRow
                   key={i.id}
@@ -398,22 +406,26 @@ function DayEditRow({ year, day, onClose }: { year: number; day: ProcurementDay;
 function CategorySection({
   title,
   count,
+  pastel,
   forceOpen,
   children,
 }: {
   title: string
   count: number
+  /** The band's pastel, in turn: a light wash and edge for the band, a deeper one for its header. */
+  pastel: Pastel
   forceOpen: boolean
   children: React.ReactNode
 }) {
   const [open, setOpen] = useState(true)
   const shown = open || forceOpen
+  const t = tint(pastel, '7%')
   return (
-    <section className="overflow-hidden rounded-md border">
+    <section className={cn('overflow-hidden rounded-md border', t.className)} style={t.style}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 bg-accent/40 px-3 py-2 text-left"
+        className="flex w-full items-center justify-between gap-2 py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]"
         aria-expanded={shown}
       >
         <h2 className="font-serif text-lg font-bold">{title}</h2>
@@ -510,7 +522,7 @@ function ItemRow({
             aria-label={allBought ? `Mark ${item.title} not purchased` : `Mark ${item.title} purchased`}
             className={
               allBought
-                ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-white'
+                ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-durba-foreground'
                 : 'flex size-5 shrink-0 items-center justify-center rounded border border-input'
             }
           >
@@ -526,7 +538,7 @@ function ItemRow({
             title={`${STATUS_LABEL[item.status]} — tap to change`}
             className={cn(
               'flex size-5 shrink-0 items-center justify-center rounded border',
-              item.status === 'done' && 'border-durba bg-durba text-white',
+              item.status === 'done' && 'border-durba bg-durba text-durba-foreground',
               item.status === 'partial' && 'border-genda bg-genda text-secondary-foreground',
               item.status === 'pending' && 'border-input',
             )}
@@ -603,7 +615,7 @@ function ItemRow({
                         aria-label={cell.purchased ? 'Mark not purchased' : 'Mark purchased'}
                         className={
                           cell.purchased
-                            ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-white'
+                            ? 'flex size-5 shrink-0 items-center justify-center rounded border border-durba bg-durba text-durba-foreground'
                             : 'flex size-5 shrink-0 items-center justify-center rounded border border-input'
                         }
                       >

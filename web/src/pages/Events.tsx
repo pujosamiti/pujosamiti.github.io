@@ -11,7 +11,9 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
+import { PAGE_TINT, tint, type Tint } from '@/lib/tint'
 import { useMemberState } from '@/lib/member'
+import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
 
 const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
@@ -23,6 +25,15 @@ const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
 }
 
 /** Events calendar. Core members view; admins manage. */
+/** A festival's colour on the calendar, the same every year. */
+const KIND_TINT: Record<string, Tint> = {
+  'durga-pujo': 'golap',
+  'kojagari-lakshmi-pujo': 'chandan',
+  'bijoya-sammelani': 'woven',
+  'saraswati-pujo': 'nilkamal',
+  'poila-baishakh': 'ganga',
+}
+
 export function Events() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
@@ -59,7 +70,7 @@ export function Events() {
     <div className="flex flex-col gap-4">
       <Seo title="Events" description="The samiti events calendar." path="/events" noindex />
       <BackLink />
-      <h1 className="text-2xl font-bold">Events</h1>
+      <PageTitle tint={PAGE_TINT.events}>Events</PageTitle>
       <div className="relative max-w-md">
         <Search className="absolute left-2.5 top-2.5 size-4 text-muted-foreground" aria-hidden="true" />
         <input
@@ -104,7 +115,8 @@ function EventsView({ events, q, canEdit }: { events: PujoEvent[] | undefined; q
         editingId === e.id ? (
           <EventForm key={e.id} event={e} onClose={() => setEditingId(null)} />
         ) : (
-          <Card key={e.id}>
+          // each festival keeps one colour across the years
+          <Card key={e.id} {...tint(KIND_TINT[e.kind] ?? 'chandan', KIND_TINT[e.kind] === 'woven' ? '0%' : '8%')}>
             <CardContent className="flex flex-wrap items-center justify-between gap-2 pt-4">
               <div className="min-w-0">
                 <p className="text-sm font-medium">
