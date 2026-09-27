@@ -4,12 +4,14 @@ import { Link } from 'react-router'
 
 import { Button } from '@/components/ui/button'
 import { Confetti } from '@/components/uma/Confetti'
+import type { BadgeCta } from '@/components/uma/BadgeCard'
 import { BadgeCard } from '@/components/uma/BadgeCard'
 import { BadgeOverlay } from '@/components/uma/BadgeOverlay'
 import { QUIZ_BADGES, badgeFor } from '@/content/uma-badges'
 import type { UmaQuizQuestion } from '@/content/uma-quiz'
 import { titleFromSlug } from '@/lib/markdown'
 import { formatCountdown, msToNextDay, readLocal, umaToday, writeLocal } from '@/lib/umaDaily'
+import { playWinChime } from '@/lib/umaSound'
 import { cn } from '@/lib/utils'
 
 /** Bengali question papers letter their options ক খ গ ঘ. */
@@ -63,9 +65,12 @@ export function DailyQuiz({
   question,
   live = true,
   persist = true,
+  cta,
 }: {
   date: string
   question: UmaQuizQuestion
+  /** A next step under the settled badge — the day's puzzle, while it is unsolved. */
+  cta?: BadgeCta
   /** Today's question — counts toward the streak and shows the countdown. */
   live?: boolean
   /** Remember the answer on this phone (off for an admin's preview of a future day). */
@@ -106,6 +111,7 @@ export function DailyQuiz({
     if (i === question.answer) {
       setBurst(Date.now())
       setOverlayOpen(Date.now())
+      playWinChime() // inside the tap, so the browser allows the sound
     }
   }
 
@@ -191,7 +197,7 @@ export function DailyQuiz({
       </div>
 
       {earned && answer?.secs != null && (
-        <BadgeCard ref={badgeRef} badges={QUIZ_BADGES} earned={earned} secs={answer.secs} verb="answered" />
+        <BadgeCard ref={badgeRef} badges={QUIZ_BADGES} earned={earned} secs={answer.secs} verb="answered" cta={cta} />
       )}
 
       {answered && (

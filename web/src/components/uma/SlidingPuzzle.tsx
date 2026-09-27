@@ -2,12 +2,14 @@ import { Eye, Hash, RotateCcw, Shuffle } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
+import type { BadgeCta } from '@/components/uma/BadgeCard'
 import { BadgeCard } from '@/components/uma/BadgeCard'
 import { BadgeOverlay } from '@/components/uma/BadgeOverlay'
 import { Confetti } from '@/components/uma/Confetti'
 import { PUZZLE_BADGES, badgeFor } from '@/content/uma-badges'
 import type { UmaPuzzleImage } from '@/content/uma-puzzles'
 import { formatCountdown, msToNextDay, readLocal, seededRandom, writeLocal } from '@/lib/umaDaily'
+import { playWinChime } from '@/lib/umaSound'
 import { cn } from '@/lib/utils'
 
 /**
@@ -149,9 +151,12 @@ export function SlidingPuzzle({
   image,
   live = true,
   persist = true,
+  cta,
 }: {
   date: string
   image: UmaPuzzleImage
+  /** A next step under the settled badge — the day's question, while it is unanswered. */
+  cta?: BadgeCta
   /** Today's puzzle — shows the countdown to the next one. */
   live?: boolean
   /** Remember progress and the result on this phone (off for an admin's preview of a future day). */
@@ -212,6 +217,7 @@ export function SlidingPuzzle({
     if (isSolved(board)) {
       setBurst(Date.now())
       setOverlayOpen(Date.now())
+      playWinChime() // inside the tap, so the browser allows the sound
       const done = { moves: next.moves, secs: Math.max(1, Math.round((Date.now() - startedAt) / 1000)) }
       if (practice) setPracticeResult(done)
       else if (!result) {
@@ -405,7 +411,14 @@ export function SlidingPuzzle({
             {practice ? 'Solved again' : 'Solved'} in <span className="font-medium">{shown.moves} moves</span> ·{' '}
             {clock(shown.secs)}
           </p>
-          <BadgeCard ref={badgeRef} badges={PUZZLE_BADGES} earned={badgeFor(PUZZLE_BADGES, shown.secs)} secs={shown.secs} verb="solved" />
+          <BadgeCard
+            ref={badgeRef}
+            badges={PUZZLE_BADGES}
+            earned={badgeFor(PUZZLE_BADGES, shown.secs)}
+            secs={shown.secs}
+            verb="solved"
+            cta={cta}
+          />
           {!practice && result && live && (
             <p className="text-sm text-muted-foreground">A new puzzle in {formatCountdown(msToNextDay(now))}.</p>
           )}

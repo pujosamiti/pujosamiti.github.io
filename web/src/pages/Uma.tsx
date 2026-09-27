@@ -12,7 +12,7 @@ import { SlidingPuzzle } from '@/components/uma/SlidingPuzzle'
 import { UMA_PUZZLES } from '@/content/uma-puzzles'
 import { UMA_QUIZ } from '@/content/uma-quiz'
 import { useMemberState } from '@/lib/member'
-import { UMA_SEASON_DAYS, canPreviewUma, dateOfDay, dayNumber, msToNextDay, pujoCountdown, umaToday } from '@/lib/umaDaily'
+import { UMA_SEASON_DAYS, canPreviewUma, dateOfDay, dayNumber, msToNextDay, pujoCountdown, readLocal, umaToday } from '@/lib/umaDaily'
 
 type Tab = 'quiz' | 'puzzle'
 
@@ -123,6 +123,35 @@ export function Uma() {
 
   const question = n === null ? undefined : UMA_QUIZ[n]
   const image = n === null ? undefined : UMA_PUZZLES[n]
+
+  // Under each settled badge, a nudge to the day's other game — only while that
+  // game is still undone on this phone (a saved answer names its question; a
+  // solved puzzle leaves its result).
+  const quizAnswered =
+    date !== null && question !== undefined && readLocal<{ q?: string }>(`uma-quiz-${date}`)?.q === question.q
+  const toQuiz =
+    question && !quizAnswered
+      ? {
+          label: isToday ? "Now try today's question" : "Now try this day's question",
+          onClick: () => {
+            setTab('quiz')
+            const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+            requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
+          },
+        }
+      : undefined
+  const puzzleSolved = date !== null && readLocal(`uma-puzzle-result-${date}`) !== null
+  const toPuzzle =
+    image && !puzzleSolved
+      ? {
+          label: isToday ? "Now solve today's puzzle" : "Now solve this day's puzzle",
+          onClick: () => {
+            setTab('puzzle')
+            const reduce = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+            requestAnimationFrame(() => topRef.current?.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'start' }))
+          },
+        }
+      : undefined
 
   const tabs: { key: Tab; label: string; icon: typeof Puzzle }[] = [
     { key: 'puzzle', label: 'Puzzle', icon: Puzzle },
@@ -254,9 +283,9 @@ export function Uma() {
                 </p>
               )}
               {tab === 'puzzle' && image ? (
-                <SlidingPuzzle key={date} date={date} image={image} live={isToday} persist={!isFuture} />
+                <SlidingPuzzle key={date} date={date} image={image} live={isToday} persist={!isFuture} cta={toQuiz} />
               ) : question ? (
-                <DailyQuiz key={date} date={date} question={question} live={isToday} persist={!isFuture} />
+                <DailyQuiz key={date} date={date} question={question} live={isToday} persist={!isFuture} cta={toPuzzle} />
               ) : (
                 <p className="text-sm text-muted-foreground">This day's game is on its way.</p>
               )}

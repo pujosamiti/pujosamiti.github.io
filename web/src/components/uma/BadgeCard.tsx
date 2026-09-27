@@ -1,7 +1,11 @@
-import { forwardRef } from 'react'
+import { ArrowRight, Volume2, VolumeX } from 'lucide-react'
+import { forwardRef, useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 
 import type { UmaBadge } from '@/content/uma-badges'
 import { limitLabel } from '@/content/uma-badges'
+import { setSoundOn, soundOn } from '@/lib/umaSound'
 import { cn } from '@/lib/utils'
 
 /** Maa's face inside a ring in the badge's colour. */
@@ -40,6 +44,31 @@ export function DurgaBadge({
   )
 }
 
+/** The win chime's switch — on unless this phone turned it off. */
+function SoundSwitch() {
+  const [on, setOn] = useState(soundOn)
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation()
+        setOn(!on)
+        setSoundOn(!on)
+      }}
+      aria-pressed={on}
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] text-muted-foreground hover:bg-accent hover:text-foreground"
+    >
+      {on ? <Volume2 className="size-3.5" /> : <VolumeX className="size-3.5" />} Sound {on ? 'on' : 'off'}
+    </button>
+  )
+}
+
+/** A next step offered under the settled card — e.g. from the puzzle to the day's question. */
+export interface BadgeCta {
+  label: string
+  onClick: () => void
+}
+
 const secsLabel = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s % 60}s`)
 
 /**
@@ -51,8 +80,16 @@ const secsLabel = (s: number) => (s < 60 ? `${s}s` : `${Math.floor(s / 60)}m ${s
  */
 export const BadgeCard = forwardRef<
   HTMLDivElement,
-  { badges: UmaBadge[]; earned: UmaBadge | null; secs: number; verb: 'answered' | 'solved'; className?: string }
->(function BadgeCard({ badges, earned, secs, verb, className }, ref) {
+  {
+    badges: UmaBadge[]
+    earned: UmaBadge | null
+    secs: number
+    verb: 'answered' | 'solved'
+    className?: string
+    /** Shown only on the settled card, not in the overlay. */
+    cta?: BadgeCta
+  }
+>(function BadgeCard({ badges, earned, secs, verb, className, cta }, ref) {
   const last = badges[badges.length - 1]!
   return (
     <div
@@ -99,6 +136,16 @@ export const BadgeCard = forwardRef<
           </li>
         ))}
       </ol>
+      {cta && (
+        <Button
+          size="sm"
+          className="mt-2 border-genda bg-genda text-secondary-foreground hover:bg-genda/85 hover:text-secondary-foreground"
+          onClick={cta.onClick}
+        >
+          {cta.label} <ArrowRight />
+        </Button>
+      )}
+      <SoundSwitch />
     </div>
   )
 })

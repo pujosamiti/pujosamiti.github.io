@@ -184,6 +184,18 @@ live in `web/public/uma-badges/`; everything else is `web/src/content/uma-badges
 | 4 (aparajita) | 1 min 45 s · সর্বস্বরূপে সর্বেশে… | 90 s · লক্ষ্মি লজ্জে মহাবিদ্যে… |
 | 5 (lotus) | 2 min · নমঃ শরণাগতদীনার্ত… | any time · হর পাপং হর ক্লেশং… |
 
+**Sound.** A win rings a temple bell (ghanta) — three soft strikes rising,
+then a high shimmer, about two seconds — made in the browser with the Web
+Audio API (`web/src/lib/umaSound.ts`), so there is no recording to license.
+It plays from the winning tap itself, the only moment browsers allow sound.
+A "Sound on / off" switch on the badge card turns it off; the phone remembers.
+
+**From one game to the other.** Each settled badge (not the overlay) offers
+the day's other game in marigold, like the Quiz tab — "Now try today's
+question" under the puzzle's, "Now solve today's puzzle" under the quiz's —
+while that game is still undone on this phone; it switches tab and scrolls
+up.
+
 A puzzle solved in over two minutes earns no badge — the card says so and
 shows the five to aim for; "Play again" gives another go. (For one afternoon
 on 26 Sep 2026 a 20-second "blessing" overlay replaced the badges; the user
