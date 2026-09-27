@@ -22,6 +22,8 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
 import { PAGE_TINT, tint } from '@/lib/tint'
+import { GENDER_OPTIONS_ADMIN } from '@/lib/genderOptions'
+import { locationOptions } from '@/lib/locationOptions'
 import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
 import { PageTitle } from '@/components/PageTitle'
@@ -541,15 +543,17 @@ function PersonForm({
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label="Eligibility">
-              <select
-                className={inputCls}
+              <SearchSelect
+                ariaLabel="Eligibility"
+                fullWidth
                 value={form.eligibility}
-                onChange={(e) => set({ eligibility: e.target.value as AdminPersonInput['eligibility'] })}
-              >
-                <option value="resident">Resident</option>
-                <option value="works_in_mgp">Works in Magarpatta</option>
-                <option value="by_invitation">By invitation</option>
-              </select>
+                options={[
+                  { value: 'resident', label: 'Resident' },
+                  { value: 'works_in_mgp', label: 'Works in Magarpatta' },
+                  { value: 'by_invitation', label: 'By invitation' },
+                ]}
+                onChange={(v) => set({ eligibility: v as AdminPersonInput['eligibility'] })}
+              />
             </Field>
             <Field label="Family (optional group)">
               {/* "No family" is a row, not a clear button: SearchSelect only picks. */}
@@ -570,32 +574,16 @@ function PersonForm({
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label={resident ? 'Society' : 'Tower / building'}>
-                  <select
-                    className={inputCls}
+                  <SearchSelect
+                    ariaLabel={resident ? 'Society' : 'Tower / building'}
+                    fullWidth
                     value={knownLocation ? (location ?? '') : LOCATION_OTHER}
-                    onChange={(e) => {
-                      const v = e.target.value === LOCATION_OTHER ? '' : e.target.value || null
-                      set(resident ? { society: v } : { workplace: v })
+                    options={locationOptions(resident, '—')}
+                    onChange={(v) => {
+                      const next = v === LOCATION_OTHER ? '' : v || null
+                      set(resident ? { society: next } : { workplace: next })
                     }}
-                  >
-                    <option value="">—</option>
-                    {resident
-                      ? MAGARPATTA_SOCIETIES.map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))
-                      : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
-                          <optgroup key={g.group} label={g.group}>
-                            {g.options.map((o) => (
-                              <option key={o} value={o}>
-                                {o}
-                              </option>
-                            ))}
-                          </optgroup>
-                        ))}
-                    <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
-                  </select>
+                  />
                 </Field>
                 <Field label={resident ? 'Flat number' : 'Office / company'}>
                   <input
@@ -624,12 +612,13 @@ function PersonForm({
               <input className={inputCls} value={form.phone ?? ''} onChange={(e) => set({ phone: e.target.value || null })} inputMode="tel" />
             </Field>
             <Field label="Gender">
-              <select className={inputCls} value={form.gender ?? ''} onChange={(e) => set({ gender: e.target.value || null })}>
-                <option value="">—</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
-              </select>
+              <SearchSelect
+                ariaLabel="Gender"
+                fullWidth
+                value={form.gender ?? ''}
+                options={GENDER_OPTIONS_ADMIN}
+                onChange={(v) => set({ gender: v || null })}
+              />
             </Field>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">

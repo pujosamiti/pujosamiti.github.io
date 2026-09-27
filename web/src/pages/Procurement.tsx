@@ -14,7 +14,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
-import { SearchSelect } from '@/components/SearchSelect'
+import { SearchSelect, TextPicker } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -335,12 +335,14 @@ function DayManager({ year, days, isAdmin }: { year: number; days: ProcurementDa
         )}
         <div className="flex flex-wrap items-end gap-2 border-t pt-3">
           <Field label="Day">
-            <input className={inputCls} list="procurement-day-suggestions" value={label} onChange={(e) => setLabel(e.target.value)} placeholder="Saptami · Day 2" />
-            <datalist id="procurement-day-suggestions">
-              {PUJA_TITHIS.map((t) => (
-                <option key={t} value={t} />
-              ))}
-            </datalist>
+            <TextPicker
+              ariaLabel="Day"
+              fullWidth={false}
+              value={label}
+              onChange={setLabel}
+              suggestions={PUJA_TITHIS}
+              placeholder="Saptami · Day 2"
+            />
           </Field>
           <Field label="Date (optional)">
             <input className={inputCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
@@ -421,11 +423,16 @@ function CategorySection({
   const shown = open || forceOpen
   const t = tint(pastel, '7%')
   return (
-    <section className={cn('overflow-hidden rounded-md border', t.className)} style={t.style}>
+    // no overflow-hidden: a picker opened inside a row must not be cut off — the
+    // header rounds its own corners instead
+    <section className={cn('rounded-md border', t.className)} style={t.style}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]"
+        className={cn(
+          'flex w-full items-center justify-between gap-2 rounded-t-md py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]',
+          !shown && 'rounded-b-md',
+        )}
         aria-expanded={shown}
       >
         <h2 className="font-serif text-lg font-bold">{title}</h2>
@@ -761,18 +768,13 @@ function ItemForm({
       <CardContent className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Category">
-            <input
-              className={inputCls}
-              list="procurement-categories"
+            <TextPicker
+              ariaLabel="Category"
               value={category}
-              onChange={(e) => setCategory(e.target.value)}
+              onChange={setCategory}
+              suggestions={categories}
               placeholder="Pottery, Grocery, Flowers / Garlands…"
             />
-            <datalist id="procurement-categories">
-              {categories.map((c) => (
-                <option key={c} value={c} />
-              ))}
-            </datalist>
           </Field>
           <Field label="Item">
             <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Jaba Phool (Red Hibiscus)" />
@@ -799,13 +801,13 @@ function ItemForm({
             <input className={inputCls} value={totalQuantity} onChange={(e) => setTotalQuantity(e.target.value)} placeholder="10 kg / 1 + 7" />
           </Field>
           <Field label="Status">
-            <select className={inputCls} value={status} onChange={(e) => setStatus(e.target.value as ProcurementStatus)}>
-              {(['pending', 'partial', 'done'] as const).map((s) => (
-                <option key={s} value={s}>
-                  {STATUS_LABEL[s]}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              ariaLabel="Status"
+              fullWidth
+              value={status}
+              options={(['pending', 'partial', 'done'] as const).map((st) => ({ value: st, label: STATUS_LABEL[st] }))}
+              onChange={(v) => setStatus(v as ProcurementStatus)}
+            />
           </Field>
           <Field label="Sort order">
             <input className={inputCls} inputMode="numeric" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)} />
@@ -915,22 +917,24 @@ function CellForm({
     <div className="flex flex-col gap-2 rounded-md border p-3">
       <div className="grid gap-2 sm:grid-cols-4">
         <Field label="Day">
-          <select className={inputCls} value={dayId} onChange={(e) => setDayId(e.target.value)}>
-            {days.map((d) => (
-              <option key={d.id} value={d.id}>
-                {d.label}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            ariaLabel="Day"
+            align="left"
+            fullWidth
+            value={dayId}
+            options={days.map((d) => ({ value: d.id, label: d.label }))}
+            onChange={setDayId}
+          />
         </Field>
         <Field label="Slot">
-          <select className={inputCls} value={slot} onChange={(e) => setSlot(e.target.value as ProcurementSlot)}>
-            {PROCUREMENT_SLOTS.map((s) => (
-              <option key={s} value={s}>
-                {SLOT_LABEL[s]}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            ariaLabel="Slot"
+            align="left"
+            fullWidth
+            value={slot}
+            options={PROCUREMENT_SLOTS.map((sl) => ({ value: sl, label: SLOT_LABEL[sl] }))}
+            onChange={(v) => setSlot(v as ProcurementSlot)}
+          />
         </Field>
         <Field label="Quantity">
           <input className={inputCls} value={quantity} onChange={(e) => setQuantity(e.target.value)} placeholder="250/500 gm" />

@@ -11,9 +11,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import { Field, inputCls } from '@/components/form'
+import { SearchSelect } from '@/components/SearchSelect'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { useSession } from '@/lib/auth'
+import { GENDER_OPTIONS_SELF } from '@/lib/genderOptions'
+import { locationOptions } from '@/lib/locationOptions'
 import { saveProfile } from '@/lib/onboarding'
 
 const KNOWN_SOCIETIES = MAGARPATTA_SOCIETIES as readonly string[]
@@ -150,25 +153,13 @@ export function ProfileForm({
           {!invited && (
             <>
               <Field label={resident ? 'Society' : 'Tower / building'}>
-                <select className={inputCls} value={location} onChange={(e) => setLocation(e.target.value)}>
-                  <option value="">Select…</option>
-                  {resident
-                    ? MAGARPATTA_SOCIETIES.map((s) => (
-                        <option key={s} value={s}>
-                          {s}
-                        </option>
-                      ))
-                    : MAGARPATTA_WORKPLACE_GROUPS.map((g) => (
-                        <optgroup key={g.group} label={g.group}>
-                          {g.options.map((o) => (
-                            <option key={o} value={o}>
-                              {o}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                  <option value={LOCATION_OTHER}>{LOCATION_OTHER}</option>
-                </select>
+                <SearchSelect
+                  ariaLabel={resident ? 'Society' : 'Tower / building'}
+                  fullWidth
+                  value={location || null}
+                  options={locationOptions(resident)}
+                  onChange={setLocation}
+                />
               </Field>
               {location === LOCATION_OTHER && (
                 <Field label={resident ? 'Society name' : 'Building name'}>
@@ -195,12 +186,13 @@ export function ProfileForm({
             />
           </Field>
           <Field label="Gender (optional — helps schedule some rituals)">
-            <select className={inputCls} value={gender} onChange={(e) => setGender(e.target.value)}>
-              <option value="">Prefer not to say</option>
-              <option value="female">Female</option>
-              <option value="male">Male</option>
-              <option value="other">Other</option>
-            </select>
+            <SearchSelect
+              ariaLabel="Gender"
+              fullWidth
+              value={gender}
+              options={GENDER_OPTIONS_SELF}
+              onChange={setGender}
+            />
           </Field>
           {error && <p className="text-sm text-destructive">{error}</p>}
           <div className="flex gap-2">

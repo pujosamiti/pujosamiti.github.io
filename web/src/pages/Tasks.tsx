@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { BackLink } from '@/components/BackLink'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { Field, inputCls } from '@/components/form'
-import { SearchSelect } from '@/components/SearchSelect'
+import { SearchSelect, TextPicker } from '@/components/SearchSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -441,6 +441,11 @@ function TaskForm({
           className="flex flex-col gap-3"
           onSubmit={(e) => {
             e.preventDefault()
+            // the category picker has no native `required`; the same rule, said plainly
+            if (masterEditable && !category.trim()) {
+              setError('Choose or type a category')
+              return
+            }
             save.mutate()
           }}
         >
@@ -448,18 +453,13 @@ function TaskForm({
             <>
               <div className="grid gap-3 sm:grid-cols-2">
                 <Field label="Category *">
-                  <input
-                    className={inputCls}
+                  <TextPicker
+                    ariaLabel="Category"
                     value={category}
-                    onChange={(e) => setCategory(e.target.value)}
-                    list="task-categories"
-                    required
+                    onChange={setCategory}
+                    suggestions={categories}
+                    invalid={!!error && !category.trim()}
                   />
-                  <datalist id="task-categories">
-                    {categories.map((c) => (
-                      <option key={c} value={c} />
-                    ))}
-                  </datalist>
                 </Field>
                 <Field label="Task title *">
                   <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -494,13 +494,13 @@ function TaskForm({
 
           <p className="text-sm font-medium">Durga Pujo {year}</p>
           <Field label="Phase">
-            <select className={inputCls} value={phase} onChange={(e) => setPhase(e.target.value as TaskPhase)}>
-              {PHASES.map((ph) => (
-                <option key={ph} value={ph}>
-                  {PHASE_LABEL[ph]}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              ariaLabel="Phase"
+              fullWidth
+              value={phase}
+              options={PHASES.map((ph) => ({ value: ph, label: PHASE_LABEL[ph] }))}
+              onChange={(v) => setPhase(v as TaskPhase)}
+            />
           </Field>
           <Field label={`Notes for ${year} (free form)`}>
             <textarea

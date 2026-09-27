@@ -160,6 +160,10 @@ The page furniture is fixed so every report reads as ours:
 
 shadcn-style components (copied in, not a dependency) under
 `web/src/components/`, styled with Tailwind v4 utilities against the tokens.
-Match the existing idiom when adding UI: token colours only (no hex in
+Every choice is made with the searchable picker (`SearchSelect`, and
+`TextPicker` for a text value with suggestions, where a new one can be typed
+and taken with "Use “…”") — there are no native `<select>`s or
+`<datalist>`s, which phones (iOS Safari above all) render poorly and cannot
+search. Match the existing idiom when adding UI: token colours only (no hex in
 components), Bengali-first labels where the samiti speaks Bengali, cards on
 phones, and the `/brandcolours` page updated when a token is added.

@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageTitle } from '@/components/PageTitle'
+import { TextPicker } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
 import { cn } from '@/lib/utils'
@@ -116,11 +117,15 @@ function MasterCategory({
   const [open, setOpen] = useState(true)
   const t = tint(pastel, '7%')
   return (
-    <section className={cn('overflow-hidden rounded-md border', t.className)} style={t.style}>
+    // no overflow-hidden: the edit form's pickers open inside — the header rounds its own corners
+    <section className={cn('rounded-md border', t.className)} style={t.style}>
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]"
+        className={cn(
+          'flex w-full items-center justify-between gap-2 rounded-t-md py-2 pl-4 pr-3 text-left [background:color-mix(in_srgb,var(--tint)_26%,transparent)]',
+          !open && 'rounded-b-md',
+        )}
         aria-expanded={open}
       >
         <h2 className="font-serif text-lg font-bold">{title}</h2>
@@ -276,12 +281,7 @@ function MasterForm({
     <div className="flex flex-col gap-3 rounded-md border p-3">
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Category">
-          <input className={inputCls} list="master-categories" value={category} onChange={(e) => setCategory(e.target.value)} />
-          <datalist id="master-categories">
-            {categories.map((c) => (
-              <option key={c} value={c} />
-            ))}
-          </datalist>
+          <TextPicker ariaLabel="Category" value={category} onChange={setCategory} suggestions={categories} />
         </Field>
         <Field label="Item">
           <input className={inputCls} value={title} onChange={(e) => setTitle(e.target.value)} />

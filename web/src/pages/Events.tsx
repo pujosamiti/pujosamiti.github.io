@@ -14,6 +14,7 @@ import { api } from '@/lib/api'
 import { PAGE_TINT, tint, type Tint } from '@/lib/tint'
 import { useMemberState } from '@/lib/member'
 import { PageTitle } from '@/components/PageTitle'
+import { SearchSelect } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 
 const KIND_NAMES: Record<EventKind, { bn: string; en: string }> = {
@@ -199,21 +200,17 @@ function EventForm({ event, onClose }: { event?: PujoEvent; onClose: () => void 
         >
           <div className="grid gap-3 sm:grid-cols-2">
             <Field label={event ? 'Kind (fixed)' : 'Kind'}>
-              <select
-                className={inputCls}
-                value={form.kind}
+              <SearchSelect
+                ariaLabel="Kind"
+                fullWidth
                 disabled={!!event}
-                onChange={(e) => {
-                  const kind = e.target.value as EventKind
+                value={form.kind}
+                options={EVENT_KINDS.map((k) => ({ value: k, label: KIND_NAMES[k].en }))}
+                onChange={(v) => {
+                  const kind = v as EventKind
                   set({ kind, nameBn: KIND_NAMES[kind].bn, nameEn: KIND_NAMES[kind].en })
                 }}
-              >
-                {EVENT_KINDS.map((k) => (
-                  <option key={k} value={k}>
-                    {KIND_NAMES[k].en}
-                  </option>
-                ))}
-              </select>
+              />
             </Field>
             <Field label={event ? 'Year (fixed)' : 'Year'}>
               <input

@@ -42,7 +42,7 @@ import { PersonPicker } from '@/components/PersonPicker'
 import { PAGE_TINT, pastelAt, tint, type Tint } from '@/lib/tint'
 import { cn } from '@/lib/utils'
 import { PageTitle } from '@/components/PageTitle'
-import { SearchSelect } from '@/components/SearchSelect'
+import { SearchSelect, TextPicker } from '@/components/SearchSelect'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -452,18 +452,15 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
                 {isFinAdmin && !readOnly &&
                   (addingCat === category ? (
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      <input
-                        className={`${inputCls} h-9 w-44`}
-                        list={`budget-subs-${category}`}
-                        placeholder="Sub-category (blank = General)"
+                      <TextPicker
+                        ariaLabel="Sub-category"
+                        fullWidth={false}
                         value={newSub}
-                        onChange={(e) => setNewSub(e.target.value)}
+                        onChange={setNewSub}
+                        empty="General"
+                        suggestions={[...(EXPENSE_TAXONOMY[category] ?? []), 'Misc']}
+                        placeholder="Sub-category (blank = General)"
                       />
-                      <datalist id={`budget-subs-${category}`}>
-                        {[...new Set([...(EXPENSE_TAXONOMY[category] ?? []), 'Misc'])].map((s) => (
-                          <option key={s} value={s} />
-                        ))}
-                      </datalist>
                       <input
                         type="number"
                         min="0"
@@ -1172,42 +1169,34 @@ function CategoryFields({
     <>
       <Field label="Category">
         {kind === 'contribution' ? (
-          <select className={inputCls} value={category} onChange={(e) => setCategory(e.target.value)}>
-            {cats.map((x) => (
-              <option key={x} value={x}>
-                {x}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            ariaLabel="Category"
+            align="left"
+            fullWidth
+            value={category}
+            options={cats.map((x) => ({ value: x, label: x }))}
+            onChange={setCategory}
+          />
         ) : (
           <>
-            <input className={inputCls} list="expense-cats" value={category} onChange={(e) => setCategory(e.target.value)} />
-            <datalist id="expense-cats">
-              {cats.map((x) => (
-                <option key={x} value={x} />
-              ))}
-            </datalist>
+<TextPicker ariaLabel="Category" value={category} onChange={setCategory} suggestions={cats} />
           </>
         )}
       </Field>
       <Field label="Sub-category">
         {kind === 'contribution' && category === 'subscription' ? (
           // Fixed choice: the API rejects any other value for a subscription.
-          <select className={inputCls} value={subCategory} onChange={(e) => setSubCategory(e.target.value)}>
-            {SUBSCRIPTION_SUBCATS.map((x) => (
-              <option key={x} value={x}>
-                {x}
-              </option>
-            ))}
-          </select>
+          <SearchSelect
+            ariaLabel="Sub-category"
+            align="left"
+            fullWidth
+            value={subCategory}
+            options={SUBSCRIPTION_SUBCATS.map((x) => ({ value: x, label: x }))}
+            onChange={setSubCategory}
+          />
         ) : (
           <>
-            <input className={inputCls} list="sub-cats" value={subCategory} onChange={(e) => setSubCategory(e.target.value)} />
-            <datalist id="sub-cats">
-              {subs.map((x) => (
-                <option key={x} value={x} />
-              ))}
-            </datalist>
+<TextPicker ariaLabel="Sub-category" value={subCategory} onChange={setSubCategory} suggestions={subs} empty="—" />
           </>
         )}
       </Field>
@@ -1324,25 +1313,29 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
         {/* Saved means saved: the fields lock, so the filled-in form cannot be sent a second time. */}
         <fieldset disabled={!!savedFor} className="grid min-w-0 gap-3 disabled:opacity-60 sm:grid-cols-2">
           <Field label="Kind">
-            <select
-              className={inputCls}
-              value={kind}
+            <SearchSelect
+              ariaLabel="Kind"
+              align="left"
+              fullWidth
               disabled={editing}
-              onChange={(e) => switchKind(e.target.value as LedgerKind)}
-            >
-              <option value="contribution">Contribution (money in)</option>
-              <option value="expense">Expense (money out)</option>
-              <option value="transfer">Transfer between wallets</option>
-            </select>
+              value={kind}
+              options={[
+                { value: 'contribution', label: 'Contribution (money in)' },
+                { value: 'expense', label: 'Expense (money out)' },
+                { value: 'transfer', label: 'Transfer between wallets' },
+              ]}
+              onChange={(v) => switchKind(v as LedgerKind)}
+            />
           </Field>
           <Field label="Book">
-            <select className={inputCls} value={bookId} onChange={(e) => setBookId(e.target.value as BookId)}>
-              {BOOKS.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              ariaLabel="Book"
+              align="left"
+              fullWidth
+              value={bookId}
+              options={BOOKS.map((b) => ({ value: b.id, label: b.name }))}
+              onChange={(v) => setBookId(v as BookId)}
+            />
           </Field>
           <Field label="Date (IST)">
             <input type="date" className={inputCls} value={entryDate} onChange={(e) => setEntryDate(e.target.value)} />
@@ -2122,13 +2115,14 @@ function ClaimForm({ onClose }: { onClose: () => void }) {
       <CardContent className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
           <Field label="Book">
-            <select className={inputCls} value={bookId} onChange={(e) => setBookId(e.target.value as BookId)}>
-              {BOOKS.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.name}
-                </option>
-              ))}
-            </select>
+            <SearchSelect
+              ariaLabel="Book"
+              align="left"
+              fullWidth
+              value={bookId}
+              options={BOOKS.map((b) => ({ value: b.id, label: b.name }))}
+              onChange={(v) => setBookId(v as BookId)}
+            />
           </Field>
           <Field label="Expense date (IST)">
             <input type="date" className={inputCls} value={expenseDate} onChange={(e) => setExpenseDate(e.target.value)} />
