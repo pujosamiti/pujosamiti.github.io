@@ -177,6 +177,7 @@ const ROUTES = [
     ['/bhog', 'Bhog & Food Menu', 'Bhog and food menus, and headcounts, for samiti members.'],
     ['/procurement', 'Procurement', 'Day-wise shopping lists and order sheets, for core members.'],
     ['/procurement/master', 'Procurement master list', 'The procurement item catalog, for core members.'],
+    ['/cultural', 'Cultural Function', "The pujo's evening programmes, for samiti members."],
     // members-only behind the sign-in, so kept out of search like the rest
     ['/brandcolours', 'Brand Colours', 'The laal-paar shada visual identity of the Magarpatta pujo samiti — palette, logo variants, alpona rules and usage.'],
   ].map(([path, title, description]) => ({ path, title: `${title} ${TITLE_SUFFIX}`, description, noindex: true })),

@@ -26,3 +26,6 @@ export const resyncPujaDays = (eventId: string) =>
     created: number
     orphaned: string[]
   }>
+/** Admin: mark (or unmark) a Puja Day's evening as carrying a cultural programme. */
+export const setCulturalEvening = (pujaDayId: string, on: boolean) =>
+  post(`/api/admin/puja-days/${pujaDayId}/cultural-evening`, { on })

@@ -55,6 +55,7 @@ export const PAGE_TINT = {
   tasks: 'woven',
   procurement: 'ganga',
   bhog: 'chandan',
+  cultural: 'golap',
   membership: 'nilkamal',
   nirghanto: 'ganga',
   events: 'golap',

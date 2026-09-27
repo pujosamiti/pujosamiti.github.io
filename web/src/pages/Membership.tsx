@@ -275,6 +275,11 @@ function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; fam
                   finance
                 </Badge>
               )}
+              {!p.isAdmin && p.isCulturalAdmin && (
+                <Badge variant="outline" className="ml-1 align-middle">
+                  cultural
+                </Badge>
+              )}
               {p.portfolio && (
                 <Badge variant="genda" className="ml-1 align-middle">
                   {p.portfolio}
@@ -487,6 +492,7 @@ function PersonForm({
     gender: person?.gender ?? null,
     isAdmin: person?.isAdmin ?? false,
     isFinAdmin: person?.isFinAdmin ?? false,
+    isCulturalAdmin: person?.isCulturalAdmin ?? false,
     isActive: person?.isActive ?? true,
     portfolio: person?.portfolio ?? null,
     notes: person?.notes ?? null,
@@ -628,7 +634,7 @@ function PersonForm({
               <input className={inputCls} value={form.notes ?? ''} onChange={(e) => set({ notes: e.target.value || null })} />
             </Field>
           </div>
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-x-4 gap-y-2">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isAdmin} onChange={(e) => set({ isAdmin: e.target.checked })} />
               Admin (can manage membership)
@@ -641,6 +647,15 @@ function PersonForm({
                 disabled={form.isAdmin}
               />
               Finance admin (ledger, budget, sponsorship pricing)
+            </label>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={form.isCulturalAdmin}
+                onChange={(e) => set({ isCulturalAdmin: e.target.checked })}
+                disabled={form.isAdmin}
+              />
+              Cultural admin (the cultural programme; core members)
             </label>
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" checked={form.isActive} onChange={(e) => set({ isActive: e.target.checked })} />

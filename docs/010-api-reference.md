@@ -94,6 +94,7 @@ call is capped per IP (`HEADCOUNT_LIMITER`, 60 a minute — see
 | `POST /api/admin/events/:id/nirghanto-finalize` | Admin: declare the nirghanto published & final (or reopen) |
 | `POST /api/admin/events/:id/seed-puja-days` | Admin: create Puja Days from the finalised nirghanto |
 | `POST /api/admin/events/:id/resync-puja-days` | Admin: re-align days after nirghanto edits (orphans reported, never auto-deleted) |
+| `POST /api/admin/puja-days/:id/cultural-evening` | Admin: `{on}` marks or unmarks the day's evening for a cultural programme; unmarking is refused while items are planned on it |
 
 ### Procurement (`/api/members/procurement` — CORE-ONLY, reads included; seeding/prefill admin-only, active pujo year only)
 
@@ -133,6 +134,20 @@ One menu per calendar date per event — five occasions a season
 | `POST /guests/receive` | **admin/fin_admin**: record a guest bhog payment — writes the ledger entry `misc_income · Guest Bhog`, event-tagged, payer = the household's contact, wallet = the receiver. Optional `{menuId, guests}` adds guests paid for at the counter to that day's count first (20-a-day cap, cut-off waived), so due and money agree; the ledger form's "Core Member Guest Bhog" toggle posts here for any eligible core household |
 | `GET /link?eventId=` · `POST /link` | **admin/fin_admin**: the event's one headcount link (`{code, createdAt}` or null); `POST {eventId, replace?}` issues it — Durga Pujo, current season — and with `replace` revokes the live one first |
 
+### Cultural function (`/api/members/cultural` — members read; cultural admins add, edit, delete and arrange; new sign-ins refused)
+
+The pujo's evening programmes ([004](004-database.md) §2 "Cultural function"). An evening is a marked Puja Day of the active Durga Pujo; writes go only to those.
+
+| Route | Purpose |
+| --- | --- |
+| `GET /evenings` | The active pujo's marked evenings, in the order of the pujo (`CulturalEvening[]`: puja day id, date, labels) |
+| `GET /?day=<pujaDayId>` | The evening's items in running order (`CulturalItem[]`), each with its creator's name |
+| `GET /:id` | One item, for its edit form |
+| `POST /` | **Cultural admin**: add an item (`CulturalItemInput`) to a marked evening |
+| `POST /:id` | **Cultural admin**: edit; the evening stays as created |
+| `POST /:id/delete` | **Cultural admin**: delete |
+| `POST /:id/move` | **Cultural admin**: `{direction: 'up' \| 'down'}` moves the item one place, against the order as it is in the database (so two people arranging at once each move one step); a no-op at either end |
+
 ## Admin (`/api/admin` — core/admin read, admin write)
 
 | Route | Purpose |
@@ -157,7 +172,8 @@ Routes from `web/src/main.tsx`:
 | `/procurement` | `/api/members/procurement/*`, `/api/members/puja-days` |
 | `/procurement/master` | `/api/members/procurement/master` + item/suggestion writes |
 | `/bhog` | `/api/members/bhog/*`, `/api/members/puja-days` |
-| `/nirghanto` | timetable routes + `/api/members/puja-days` + admin finalise/seed/resync |
+| `/cultural`, `/cultural/new/:day`, `/cultural/:id/edit` | `/api/members/cultural/*` |
+| `/nirghanto` | timetable routes + `/api/members/puja-days` + admin finalise/seed/resync/cultural-evening |
 | `/membership` | `/api/admin/people`, `/api/admin/families` |
 | `/ledger`, `/wallets`, `/sponsorship`, `/reimbursements` | `/api/members/ledger/*` |
 | `/brandcolours` | nothing — the design-system reference page ([012](012-design-system.md)) |

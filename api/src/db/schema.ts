@@ -127,6 +127,8 @@ export const pujaDay = sqliteTable('puja_day', {
   sourceLabel: text('source_label'), // "Maha Ashtami (Adhik Diba)"
   sortOrder: integer('sort_order').notNull().default(1000),
   notes: text('notes'),
+  /** The evening carries a cultural programme (Saptami and Ashtami in 2026) — an admin's switch. */
+  hasCulturalEvening: integer('has_cultural_evening', { mode: 'boolean' }).notNull().default(false),
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -173,6 +175,12 @@ export const person = sqliteTable('person', {
    * membership roll. Admins hold this implicitly.
    */
   isFinAdmin: integer('is_fin_admin', { mode: 'boolean' }).notNull().default(false),
+  /**
+   * cultural_admin: runs the cultural programme — adds, edits and deletes its
+   * items and arranges their order. Counts only for core members; admins hold
+   * it implicitly (canRunCulture in shared).
+   */
+  isCulturalAdmin: integer('is_cultural_admin', { mode: 'boolean' }).notNull().default(false),
   isActive: integer('is_active', { mode: 'boolean' }).notNull().default(true), // false = left the portal
   portfolio: text('portfolio'), // free text, e.g. "Treasurer"
   /**
@@ -671,4 +679,37 @@ export const umaArticle = sqliteTable('uma_article', {
   createdBy: text('created_by').references(() => person.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
   updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
+})
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 12 · Cultural function — the Saptami and Ashtami evening programmes
+// One row per item on an evening's programme, in its running order
+// (`sort_order` — new items join at the end, core members move them up/down).
+// An evening is a Puja Day an admin has marked (puja_day.has_cultural_evening),
+// so its name and date come from the Days of the Pujo and follow any
+// nirghanto re-sync — nothing about the evening is stored or typed here.
+// Core members add items; every member reads the schedule; the member who
+// added an item (or an admin) edits or deletes it.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export const culturalProgram = sqliteTable('cultural_program', {
+  id: text('id').primaryKey(),
+  pujaDayId: text('puja_day_id')
+    .notNull()
+    .references(() => pujaDay.id),
+  itemName: text('item_name').notNull(),
+  itemType: text('item_type', {
+    enum: ['dance', 'music', 'instrumental', 'skit', 'poetry_recitation', 'dance_drama', 'others'],
+  }).notNull(),
+  itemTypeOther: text('item_type_other'), // what it is, when the type is Others
+  performers: text('performers', { enum: ['kids', 'adults', 'both'] }).notNull(),
+  durationMin: integer('duration_min'), // optional
+  participants: text('participants'),
+  /** The running order within the evening; new items go last, in steps of 10. */
+  sortOrder: integer('sort_order').notNull().default(1000),
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => person.id),
+  createdAt: text('created_at').notNull(), // ISO date-time
+  updatedAt: text('updated_at').notNull(),
 })

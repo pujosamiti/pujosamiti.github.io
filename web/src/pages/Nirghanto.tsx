@@ -1,7 +1,7 @@
 import type { AdminTimetableInput, PujoEvent, TimeTableEntry } from '@pujosamiti/shared'
 import { isCoreRole } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarDays, Check, Loader2, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
+import { CalendarDays, Check, Loader2, Music, Pencil, Plus, RefreshCw, Search, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 
 import { BackLink } from '@/components/BackLink'
@@ -15,7 +15,7 @@ import { api } from '@/lib/api'
 import { headingTint, PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
 import { cn } from '@/lib/utils'
 import { useMemberState } from '@/lib/member'
-import { resyncPujaDays, seedPujaDays, setNirghantoFinalized, usePujaDays } from '@/lib/pujaDays'
+import { resyncPujaDays, seedPujaDays, setCulturalEvening, setNirghantoFinalized, usePujaDays } from '@/lib/pujaDays'
 import { useEvents } from '@/lib/tasks'
 import { PageTitle } from '@/components/PageTitle'
 import { Seo } from '@/components/Seo'
@@ -398,8 +398,16 @@ function PujaDaysPanel({ event, isAdmin }: { event: PujoEvent; isAdmin: boolean 
   })
   const seedMut = useMutation({ mutationFn: () => seedPujaDays(event.id), onSettled: invalidate })
   const resyncMut = useMutation({ mutationFn: () => resyncPujaDays(event.id), onSettled: invalidate })
+  const culturalMut = useMutation({
+    mutationFn: ({ id, on }: { id: string; on: boolean }) => setCulturalEvening(id, on),
+    onSettled: () => {
+      invalidate()
+      queryClient.invalidateQueries({ queryKey: ['cultural-evenings'] })
+    },
+  })
   if (!data) return null
-  const err = finalizeMut.error ?? seedMut.error ?? resyncMut.error
+  const err = finalizeMut.error ?? seedMut.error ?? resyncMut.error ?? culturalMut.error
+  const culturalDays = data.days.filter((d) => d.hasCulturalEvening)
 
   return (
     // the calendar everything else builds on: the woven edge
@@ -428,6 +436,43 @@ function PujaDaysPanel({ event, isAdmin }: { event: PujoEvent; isAdmin: boolean 
         )}
         {data.days.length === 0 && data.finalizedOn && (
           <p className="text-sm text-muted-foreground">Not seeded yet.</p>
+        )}
+        {/* which evenings carry a cultural programme — the switch on /cultural is built from these */}
+        {data.days.length > 0 && (isAdmin || culturalDays.length > 0) && (
+          <div className="flex flex-col gap-1.5">
+            <p className="flex items-center gap-1.5 text-sm font-medium">
+              <Music className="size-4 text-shiuli" aria-hidden="true" /> Cultural evenings
+            </p>
+            {isAdmin ? (
+              <div className="flex flex-wrap gap-1.5">
+                {data.days.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    aria-pressed={d.hasCulturalEvening}
+                    disabled={culturalMut.isPending}
+                    onClick={() => culturalMut.mutate({ id: d.id, on: !d.hasCulturalEvening })}
+                    className={cn(
+                      'min-h-9 rounded-full border px-3 text-xs font-medium transition-colors disabled:opacity-60',
+                      d.hasCulturalEvening
+                        ? 'border-aparajita bg-aparajita text-aparajita-foreground'
+                        : 'bg-card text-muted-foreground hover:bg-accent hover:text-foreground',
+                    )}
+                  >
+                    {d.hasCulturalEvening && <Check className="-ml-0.5 mr-1 inline size-3.5" aria-hidden="true" />}
+                    {d.labelEn}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">{culturalDays.map((d) => d.labelEn).join(' · ')}</p>
+            )}
+            {isAdmin && (
+              <p className="text-xs text-muted-foreground">
+                Tap a day to give its evening a cultural programme; the Cultural Function page shows these.
+              </p>
+            )}
+          </div>
         )}
         {!data.inSync && (
           <p className="text-sm text-shiuli">

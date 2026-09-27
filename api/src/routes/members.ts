@@ -10,6 +10,7 @@ import type { Env } from '../env'
 import { readSheetRange } from '../lib/google'
 import { deriveDaysFromNirghanto } from '../lib/pujo'
 import { bhogRoutes } from './bhog'
+import { culturalRoutes } from './cultural'
 import { ledgerRoutes } from './ledger'
 import { procurementRoutes } from './procurement'
 import { taskRoutes } from './tasks'
@@ -79,6 +80,7 @@ memberRoutes.use('*', async (c, next) => {
     image: session.user.image ?? null,
     role,
     portfolio: p.portfolio,
+    isCulturalAdmin: p.isCulturalAdmin,
   })
   await next()
 })
@@ -182,6 +184,7 @@ memberRoutes.route('/tasks', taskRoutes)
 memberRoutes.route('/ledger', ledgerRoutes)
 memberRoutes.route('/procurement', procurementRoutes)
 memberRoutes.route('/bhog', bhogRoutes)
+memberRoutes.route('/cultural', culturalRoutes)
 
 /**
  * Accounts summary straight from the treasurers' Google Sheet.

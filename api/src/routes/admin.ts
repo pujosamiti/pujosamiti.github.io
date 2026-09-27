@@ -80,6 +80,7 @@ function toAdminPerson(
     gender: p.gender,
     isAdmin: p.isAdmin,
     isFinAdmin: p.isFinAdmin,
+    isCulturalAdmin: p.isCulturalAdmin,
     isActive: p.isActive,
     portfolio: p.portfolio,
     notes: p.notes,
@@ -107,6 +108,7 @@ function personValues(body: AdminPersonInput) {
     gender: body.gender?.trim() || null,
     isAdmin: !!body.isAdmin,
     isFinAdmin: !!body.isFinAdmin,
+    isCulturalAdmin: !!body.isCulturalAdmin,
     isActive: !!body.isActive,
     portfolio: body.portfolio?.trim() || null,
     notes: body.notes?.trim() || null,
@@ -323,6 +325,7 @@ adminRoutes.post('/people/:id/merge', async (c) => {
       tier: tierRank[src.tier] > tierRank[survivor.tier] ? src.tier : survivor.tier,
       isAdmin: survivor.isAdmin || src.isAdmin,
       isFinAdmin: survivor.isFinAdmin || src.isFinAdmin,
+      isCulturalAdmin: survivor.isCulturalAdmin || src.isCulturalAdmin,
       isActive: survivor.isActive || src.isActive,
     })
     .where(eq(schema.person.id, survivor.id))
@@ -593,4 +596,37 @@ adminRoutes.post('/events/:id/resync-puja-days', async (c) => {
   }
   const orphaned = existing.filter((x) => !matchedIds.has(x.id)).map((x) => x.labelEn)
   return c.json({ ok: true, data: { updated, created, orphaned } })
+})
+
+/**
+ * Admin: mark a Puja Day's evening as carrying a cultural programme (or not).
+ * Its name and date then show on /cultural. Unmarking is refused while items
+ * are planned for that evening — they would be left with nowhere to show.
+ */
+adminRoutes.post('/puja-days/:id/cultural-evening', async (c) => {
+  const deny = requireAdmin(c)
+  if (deny) return deny
+  const { on } = (await c.req.json()) as { on: boolean }
+  const db = drizzle(c.env.DB, { schema })
+  const [day] = await db.select().from(schema.pujaDay).where(eq(schema.pujaDay.id, c.req.param('id'))).limit(1)
+  if (!day) return c.json({ ok: false, error: 'puja day not found' }, 404)
+  if (!on) {
+    const planned = await db
+      .select({ id: schema.culturalProgram.id })
+      .from(schema.culturalProgram)
+      .where(eq(schema.culturalProgram.pujaDayId, day.id))
+    if (planned.length)
+      return c.json(
+        {
+          ok: false,
+          error:
+            planned.length === 1
+              ? `1 cultural item is planned for ${day.labelEn} evening — remove it first`
+              : `${planned.length} cultural items are planned for ${day.labelEn} evening — remove them first`,
+        },
+        400,
+      )
+  }
+  await db.update(schema.pujaDay).set({ hasCulturalEvening: !!on }).where(eq(schema.pujaDay.id, day.id))
+  return c.json({ ok: true, data: { id: day.id, hasCulturalEvening: !!on } })
 })

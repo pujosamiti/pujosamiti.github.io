@@ -15,6 +15,7 @@ import { Membership } from '@/pages/Membership'
 import { BrandColours } from '@/pages/BrandColours'
 import { Bhog } from '@/pages/Bhog'
 import { BhogCount } from '@/pages/BhogCount'
+import { Cultural, CulturalForm } from '@/pages/Cultural'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Procurement } from '@/pages/Procurement'
@@ -95,6 +96,9 @@ createRoot(document.getElementById('root')!).render(
                 <Route path="procurement" element={<Procurement />} />
                 <Route path="procurement/master" element={<ProcurementMaster />} />
                 <Route path="bhog" element={<Bhog />} />
+                <Route path="cultural" element={<Cultural />} />
+                <Route path="cultural/new/:day" element={<CulturalForm />} />
+                <Route path="cultural/:id/edit" element={<CulturalForm />} />
                 <Route path="membership" element={<Membership />} />
                 <Route path="events" element={<Events />} />
                 <Route path="nirghanto" element={<Nirghanto />} />

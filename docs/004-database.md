@@ -58,6 +58,9 @@ admin-curated grouping — **it gates nothing**. Key columns:
 - `alt_email` — a second Google account, matched the same way.
 - `is_admin` — full admin. `is_fin_admin` — finance authority *without* the
   membership roll (the treasurer case); admins hold fin powers implicitly.
+- `is_cultural_admin` — **cultural_admin** (migration 0013): runs the cultural
+  programme — adds, edits, deletes and arranges its items. Counts only for
+  core members; admins hold it implicitly (`canRunCulture` in shared).
 - `tier` — `core` · `member` · `non_member`. The column defaults to
   `non_member`, but every insert names its tier: admins choose it when
   creating anyone, and self-registration writes `non_member` explicitly.
@@ -86,6 +89,11 @@ year two tithis share one date (2024: Oct 10 was Saptami AND Ashtami) and a
 tithi can span two dates ("Ashtami · Day 2", 2026's Adhik Diba). No finalised
 nirghanto → no seeding; features wait. Later nirghanto edits surface as an
 out-of-sync warning with an admin re-sync.
+
+`has_cultural_evening` (migration 0013) marks the days whose evening carries a
+cultural programme — Saptami and Ashtami in 2026. Admins switch it per day in
+the Days of the Pujo on /nirghanto; re-sync updates rows in place, so the mark
+survives it.
 
 ### Procurement: `procurement_item` (+`procurement_suggestion`), `procurement_item_year`, `procurement_day`, `procurement_need`
 
@@ -217,6 +225,21 @@ claimant is a pass-through) and links it. Status:
 sub_category); NULL sub_category = whole-category "General" line. Budgets
 exist from season 2026 onward — no historical budgets.
 
+### Cultural function: `cultural_program`
+
+The pujo's evening programmes (27 Sep 2026). An evening is a Puja Day marked
+`has_cultural_evening` (above), so nothing about it is stored here: its name
+and date are the Puja Day's and follow the nirghanto. One row per item:
+`puja_day_id`, the evening; `sort_order`, its place in the evening's running
+order (new items join at the end; cultural admins move them up and down, and a
+move renumbers the evening 10, 20, 30… in one batch); `item_name`; `item_type` (dance, music, instrumental, skit,
+poetry_recitation, dance_drama, others — `item_type_other` describes an
+Others); `performers` (kids · adults · both); `duration_min` (optional); free-text
+`participants`; `created_by`, the member who added it. Only the active
+pujo's evenings take new or changed items — past years are the record — and
+a day cannot be unmarked while items are planned on it. Who may do what:
+[014](014-roles-and-access.md).
+
 ### উমা, the magazine: `uma_issue`, `uma_article`, `uma_section_editor`
 
 > **Archived 26 Sep 2026** — kept as a record, read by no code. See [015](015-uma-magazine.md).
@@ -278,6 +301,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0010 | `0010_sponsorship-tagline.sql` | `sponsorship_item.tagline` / `tagline_bn` — each slot's bilingual appeal |
 | 0011 | `0011_uma-section-editors.sql` | `uma_section_editor` — one editor per Uma section; retires `uma_role = 'editor'` |
 | 0012 | `0012_bhog-headcount.sql` | `bhog_link` — the headcount link, one live code per event (partial unique index), revoked codes kept; `bhog_rsvp.guests`; `bhog_setting` — per-event Food & Bhog in-charge and guest rate |
+| 0013 | `0013_cultural-program.sql` | `person.is_cultural_admin` (cultural_admin) + `puja_day.has_cultural_evening` (set for 2026's Saptami and Ashtami) + `cultural_program`, the evening programmes |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

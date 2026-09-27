@@ -97,6 +97,8 @@ export interface PujaDay {
   sourceLabel: string | null; // the nirghanto's wording, e.g. "Maha Ashtami (Adhik Diba)"
   sortOrder: number;
   notes: string | null;
+  /** The evening carries a cultural programme — set by an admin on the Days of the Pujo. */
+  hasCulturalEvening: boolean;
 }
 
 export interface PujaDaysView {
@@ -159,7 +161,17 @@ export interface Me {
   role: MemberRole;
   /** Portfolio, if held by a core member — e.g. "Treasurer", "Cultural Secretary" */
   portfolio: string | null;
+  /** Holds the cultural_admin flag (person.is_cultural_admin); see canRunCulture. */
+  isCulturalAdmin: boolean;
 }
+
+/**
+ * cultural_admin — who runs the cultural programme: adds, edits and deletes
+ * its items and arranges their order. A core member with the flag, or any
+ * admin (who holds it implicitly, as with finance). Everyone else reads.
+ */
+export const canRunCulture = (me: Pick<Me, 'role' | 'isCulturalAdmin'>): boolean =>
+  me.role === 'admin' || (isCoreRole(me.role) && me.isCulturalAdmin);
 
 // ── Task distribution (Core Members feature) ────────────────────────────────
 
@@ -741,6 +753,8 @@ export interface AdminPerson {
   isAdmin: boolean;
   /** Finance authority without the membership roll */
   isFinAdmin: boolean;
+  /** Runs the cultural programme (core members only; admins implicitly) */
+  isCulturalAdmin: boolean;
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;
@@ -769,6 +783,8 @@ export interface AdminPersonInput {
   isAdmin: boolean;
   /** Finance authority without the membership roll */
   isFinAdmin: boolean;
+  /** Runs the cultural programme (core members only; admins implicitly) */
+  isCulturalAdmin: boolean;
   isActive: boolean;
   portfolio: string | null;
   notes: string | null;
@@ -1099,4 +1115,74 @@ export interface LedgerSummary {
   spentSince: number;
   outstandingClaims: number; // Σ requested reimbursements (liability)
   wallets: WalletBalance[];
+}
+
+// ── Cultural function (evening programmes on marked Puja Days) ─────────────
+
+/**
+ * An evening with a cultural programme: a Puja Day an admin has marked
+ * (puja_day.has_cultural_evening), so its name and date follow the nirghanto.
+ */
+export interface CulturalEvening {
+  pujaDayId: string;
+  date: string;
+  labelEn: string; // "Saptami"
+  labelBn: string | null; // "মহা সপ্তমী"
+}
+
+export type CulturalItemType =
+  | 'dance'
+  | 'music'
+  | 'instrumental'
+  | 'skit'
+  | 'poetry_recitation'
+  | 'dance_drama'
+  | 'others';
+export const CULTURAL_ITEM_TYPES: Record<CulturalItemType, string> = {
+  dance: 'Dance',
+  music: 'Music',
+  instrumental: 'Instrumental',
+  skit: 'Skit',
+  poetry_recitation: 'Poetry Recitation',
+  dance_drama: 'Dance Drama',
+  others: 'Others',
+};
+
+/** Who performs the item. */
+export type CulturalPerformers = 'kids' | 'adults' | 'both';
+export const CULTURAL_PERFORMERS: Record<CulturalPerformers, string> = {
+  kids: 'Kids',
+  adults: 'Adults',
+  both: 'Both Kids and Adults',
+};
+
+/** One item of an evening's programme, as the schedule shows it. */
+export interface CulturalItem {
+  id: string;
+  /** The evening (a Puja Day) this item is on. */
+  pujaDayId: string;
+  itemName: string;
+  itemType: CulturalItemType;
+  /** What the item is, when the type is Others. */
+  itemTypeOther: string | null;
+  performers: CulturalPerformers;
+  /** Optional — null when not given. */
+  durationMin: number | null;
+  participants: string | null;
+  createdById: string;
+  createdByName: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Create or edit an item. The evening is fixed once created; its date is the Puja Day's. */
+export interface CulturalItemInput {
+  pujaDayId: string;
+  itemName: string;
+  itemType: CulturalItemType;
+  itemTypeOther: string | null;
+  performers: CulturalPerformers;
+  /** Optional — null when not given. */
+  durationMin: number | null;
+  participants: string | null;
 }
