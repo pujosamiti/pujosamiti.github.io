@@ -2,6 +2,7 @@ import { CircleHelp, Eye, History, Puzzle, RefreshCw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
+import { Alpona, motifForDay } from '@/components/Alpona'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { SlidingPuzzle } from '@/components/uma/SlidingPuzzle'
 import { UMA_PUZZLES } from '@/content/uma-puzzles'
 import { UMA_QUIZ } from '@/content/uma-quiz'
 import { useMemberState } from '@/lib/member'
+import { PUJO_DAYS } from '@/lib/pujoCalendar'
 import { UMA_SEASON_DAYS, canPreviewUma, dateOfDay, dayNumber, msToNextDay, pujoCountdown, readLocal, umaToday } from '@/lib/umaDaily'
 
 type Tab = 'quiz' | 'puzzle'
@@ -167,6 +169,10 @@ export function Uma() {
           'A puzzle and a question, every day of the pujo season'
         ) : (
           <>
+            {/* on a pujo day, that day's alpona — the same as on the Schedule */}
+            {PUJO_DAYS[date] && motifForDay(PUJO_DAYS[date]) && (
+              <Alpona name={motifForDay(PUJO_DAYS[date])!} className="h-6 w-6 text-primary/80" title={PUJO_DAYS[date]} />
+            )}
             <span>
               {pujoCountdown(date)} · {dayLabel(date)}
             </span>
@@ -263,6 +269,8 @@ export function Uma() {
                 alt="Maa Durga on Dashami"
                 className="aspect-square w-full max-w-sm rounded-xl border object-cover"
               />
+              {/* Dashami's fish pair: the farewell, and the promise to come again */}
+              <Alpona name="joraMaach" className="h-12 w-auto text-primary/80" />
               <p lang="bn" className="font-serif text-2xl">
                 আসছে বছর আবার হবে
               </p>

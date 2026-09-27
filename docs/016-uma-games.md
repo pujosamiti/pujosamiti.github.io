@@ -201,3 +201,10 @@ A puzzle solved in over two minutes earns no badge — the card says so and
 shows the five to aim for; "Play again" gives another go. (For one afternoon
 on 26 Sep 2026 a 20-second "blessing" overlay replaced the badges; the user
 preferred the badges and they came back.)
+
+## Alpona
+
+On a pujo day the day line carries that day's alpona, the same as the Schedule's;
+the win card has a lotus between the blessing and the badges; the farewell
+after Dashami sits under the jora maach. The pujo dates come from
+`web/src/lib/pujoCalendar.ts` (shared with the header's festive border).

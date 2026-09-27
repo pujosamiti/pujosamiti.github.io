@@ -1,9 +1,11 @@
-import { NavLink, Outlet } from 'react-router'
+import { NavLink, Outlet, useLocation } from 'react-router'
 
 import logo from '@/assets/logo-sm.png'
+import { KuriBorder } from '@/components/Alpona'
 import { AlponaBand } from '@/components/AlponaBand'
 import { BottomNav } from '@/components/BottomNav'
 import { SiteFooter } from '@/components/SiteFooter'
+import { isPujoDay, istToday } from '@/lib/pujoCalendar'
 import { cn } from '@/lib/utils'
 
 const desktopNav = [
@@ -15,6 +17,10 @@ const desktopNav = [
 ]
 
 export function AppLayout() {
+  // on the pujo days (Panchami → Dashami) the header's scallops become a kuri
+  // mala of lotus buds — Sandhi puja's 108 lotuses; `?festive` previews it any day
+  const { search } = useLocation()
+  const festive = isPujoDay(istToday()) || new URLSearchParams(search).has('festive')
   return (
     <div className="flex min-h-svh flex-col">
       <header className="bg-band text-band-foreground">
@@ -50,7 +56,7 @@ export function AppLayout() {
             ))}
           </nav>
         </div>
-        <AlponaBand className="mt-2" />
+        {festive ? <KuriBorder className="mt-2 text-band-foreground" /> : <AlponaBand className="mt-2" />}
       </header>
 
       {/* the footer below clears the fixed bottom nav on phones */}

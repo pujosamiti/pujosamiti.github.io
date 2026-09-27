@@ -7,26 +7,12 @@
  * no server, no sign-in.
  */
 
+import { PUJO_DAYS, SHASHTHI } from '@/lib/pujoCalendar'
+
 /** The first day of the games; day numbers count from here. */
 export const UMA_LAUNCH = '2026-09-26'
 /** The season runs 26 days, to Dashami (21 Oct 2026); after it the games rest until next year. */
 export const UMA_SEASON_DAYS = 26
-
-/**
- * The pujo's days in 2026, as the samiti's Days of the Pujo list them
- * (seeded from the finalised nirghanto), with Mahalaya ahead of them.
- */
-const SHASHTHI = '2026-10-16'
-const PUJO_DAYS: Record<string, string> = {
-  '2026-10-10': 'Mahalaya',
-  '2026-10-15': 'Panchami',
-  '2026-10-16': 'Shashthi',
-  '2026-10-17': 'Saptami',
-  '2026-10-18': 'Ashtami',
-  '2026-10-19': 'Ashtami · Day 2',
-  '2026-10-20': 'Nabami',
-  '2026-10-21': 'Dashami',
-}
 
 /**
  * The countdown line for a day: "19 days to Shashthi", "Shashthi is

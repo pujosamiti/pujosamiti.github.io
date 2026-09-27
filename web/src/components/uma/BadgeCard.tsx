@@ -1,6 +1,7 @@
 import { ArrowRight, Volume2, VolumeX } from 'lucide-react'
 import { forwardRef, useState } from 'react'
 
+import { AlponaDivider } from '@/components/Alpona'
 import { Button } from '@/components/ui/button'
 
 import type { UmaBadge } from '@/content/uma-badges'
@@ -114,6 +115,8 @@ export const BadgeCard = forwardRef<
               {verb} in {secsLabel(secs)}
             </p>
           </div>
+          {/* a lotus between the blessing and the row of badges */}
+          <AlponaDivider name="podmo" className="w-full max-w-xs" />
         </>
       ) : (
         <p className="text-sm">

@@ -85,6 +85,11 @@ Then the whole members area: every page got its own colour (title
 underline matching its tile), meaningful row edges, groups in turn, and the
 `soft` button for repeated actions — see 012, "The members area".
 
+And alpona on the public pages: a lata footer on every page, the year's
+festivals on Home, a motif for each pujo day on the Schedule and উমা,
+chapter dividers in the book, a lotus on sign-in, and a kuri mala header
+on the pujo days — see 012, "Alpona on the public pages".
+
 ## 3. Still open
 
 | # | Finding | Proposal | Needs |

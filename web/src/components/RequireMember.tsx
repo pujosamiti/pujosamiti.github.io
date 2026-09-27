@@ -6,6 +6,7 @@ import { Outlet, useLocation, useSearchParams } from 'react-router'
 
 import { ProfileForm } from '@/components/Onboarding'
 import { LogoSpinner } from '@/components/LogoSpinner'
+import { AlponaDivider } from '@/components/Alpona'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { signInWithGoogle, signOut } from '@/lib/auth'
@@ -76,6 +77,8 @@ export function SignInCard({
       />
       <Card>
         <CardHeader>
+          {/* the lotus above the title — the samiti's welcome at the door */}
+          <AlponaDivider name="podmo" className="mb-1" />
           <CardTitle>{title}</CardTitle>
           <CardDescription>{description}</CardDescription>
         </CardHeader>

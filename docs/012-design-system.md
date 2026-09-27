@@ -95,6 +95,16 @@ something where it stands:
   chapter's motif (same reading, `chapterMotif` in `DurgaPuja.tsx`), and a
   small shatadal marks the chapter's end.
 
+- **The header on the pujo days**: from Panchami to Dashami the header's
+  scallops become a kuri mala of lotus buds — Sandhi puja's 108 lotuses
+  (`KuriBorder`; the dates are the static `web/src/lib/pujoCalendar.ts`,
+  updated each year from the finalised nirghanto, so no page waits on the
+  API). Add `?festive` to any address to preview it.
+- **Sign in**: a podmo divider above the "Member sign in" title.
+- **উমা**: on a pujo day the day line carries that day's motif (`motifForDay`, shared with the Schedule);
+  the win card has a podmo between the blessing and the badges; the
+  after-season farewell sits under Dashami's jora maach.
+
 Never behind reading text, never on the members' working pages.
 
 ## The members area: colour with meaning

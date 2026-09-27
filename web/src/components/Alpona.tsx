@@ -211,6 +211,27 @@ const MOTIFS = {
 
 export type AlponaName = keyof typeof MOTIFS
 
+/**
+ * A pujo day's alpona, from its name ("Maha Ashtami", "Ashtami · Day 2",
+ * "Bijaya Dashami", "Lakshmi Puja"…): the conch that opens Devi Paksha, the
+ * welcome pot, the betel leaf of the bel boron, the paddy of the nabapatrika,
+ * Sandhi puja's 108 lotuses, the lamp, the fish pair of the farewell,
+ * Lakshmi's footsteps, Saraswati's swan. Shared by the Schedule and উমা.
+ */
+export function motifForDay(label: string): AlponaName | null {
+  const l = label.toLowerCase()
+  if (l.includes('mahalaya')) return 'shankha'
+  if (l.includes('panchami')) return 'mangalGhot'
+  if (l.includes('shashthi')) return 'panPata'
+  if (l.includes('saptami')) return 'dhanerShish'
+  if (l.includes('ashtami')) return 'shatadal'
+  if (l.includes('nabami')) return 'prodip'
+  if (l.includes('dashami')) return 'joraMaach'
+  if (l.includes('lakshmi')) return 'lakshmirPa'
+  if (l.includes('saraswati')) return 'rajhansh'
+  return null
+}
+
 export function Alpona({
   name,
   className,
@@ -277,6 +298,30 @@ export function LataBorder({ className }: { className?: string }) {
           </g>
           <circle cx="30" cy="25" r="1.6" fill="currentColor" />
           <circle cx="90" cy="15" r="1.6" fill="currentColor" />
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
+    </svg>
+  )
+}
+
+/**
+ * The kuri mala — lotus buds on a line, a bindu between — as a repeating
+ * border. `band` sizes it to replace the header's scallops (24 px tall).
+ */
+export function KuriBorder({ className }: { className?: string }) {
+  const id = useId()
+  return (
+    <svg className={cn('block h-6 w-full', className)} aria-hidden="true">
+      <defs>
+        <pattern id={id} width="30" height="24" patternUnits="userSpaceOnUse">
+          <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M15 20 Q 10.5 13 15 4.5 Q 19.5 13 15 20 Z" />
+            <path d="M15 20 Q 8.5 18.5 6.5 12.5 M15 20 Q 21.5 18.5 23.5 12.5" />
+            <path d="M0 22.5 H30" />
+          </g>
+          <circle cx="0" cy="15" r="1.4" fill="currentColor" />
+          <circle cx="30" cy="15" r="1.4" fill="currentColor" />
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} />
