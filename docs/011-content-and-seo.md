@@ -99,9 +99,41 @@ folder (`uma/index.html`), so GitHub Pages answers `/uma` with a **301 to
 `/uma/`**. Canonical, `og:url` and the sitemap therefore name the served
 address with its trailing slash (`servedUrl` in both `prerender.mjs` and
 `Seo.tsx`) — naming `/uma` made the canonical point at a redirect, a mixed
-signal search engines skip. `sitemap.xml` advertises exactly four pages:
-Home, Schedule, Uma and Durga Puja; the guide's chapters stay indexable
-through its links. `robots.txt` allows all crawlers. Google indexing also
+signal search engines skip. `robots.txt` allows all crawlers and names the
+sitemap.
+
+**The sitemap (from 27 Sep 2026).** `sitemap.xml` lists every public page —
+Home, Schedule, উমা, the Durga Puja guide and all 21 chapters (25) — and
+nothing members-only. Each entry carries:
+
+- `<lastmod>` — the last commit that touched the page's own source (the
+  chapter's markdown; `Home.tsx`; `Schedule.tsx` and the pujo calendar;
+  উমা's page and content), read with `git log` at build. CI checks out full
+  history for this (`fetch-depth: 0` in `deploy-web.yml`); a shallow clone
+  would stamp every page with today, and Google stops trusting a lastmod
+  that always moves.
+- `<changefreq>weekly</changefreq>` and a `<priority>` — Home 1.0, Schedule
+  0.9, the guide's front page 0.8, উমা and the day-and-ritual chapters (1–12,
+  21) 0.7, the mantra and fordo chapters 0.6. **Google ignores both**; Bing
+  and others may read them.
+- the page's picture as an `<image:image>` (image-sitemap extension).
+
+`public/sitemap.xsl` makes the file a readable, branded table in a browser;
+crawlers ignore it.
+
+**The favicon Google shows** (next to results, and as the property's icon in
+Search Console) must be square with a side that is a multiple of 48 px, and
+crawlable. Every page links `/favicon.ico` (16/32/48), `favicon-48.png`,
+`favicon-96.png` and `icon-192.png`, all cut from `icon-512.png` — the old
+32 px `favicon.png` was too small to qualify, and `/favicon.ico`, where many
+crawlers look first, did not exist. The Organization's `logo` in the JSON-LD
+is `icon-512.png`. Google refreshes favicons on its own schedule — days to a
+few weeks after a recrawl of the home page.
+
+**Breadcrumbs** do not come from the sitemap: every public page below Home
+carries a `BreadcrumbList` in its JSON-LD — "Home › Durga Puja, Explained ›
+Maha Ashtami", "Home › Schedule", "Home › উমা · UMA" — which Google may show
+above a result in place of the bare address. Google indexing also
 needs the site verified in **Google Search Console** and the sitemap
 submitted there (the owner's Google account — not something the code can do).
 

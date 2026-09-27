@@ -5,6 +5,7 @@
 //
 // Add public routes here as they are born (Durga Puja book chapters, Pujo
 // Sankhya articles) — see docs/seotags.md.
+import { execFileSync } from 'node:child_process'
 import { readFileSync, writeFileSync, mkdirSync, readdirSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -125,14 +126,35 @@ const pageNode = (r) => {
     publisher: { '@id': ORG_ID },
   }
 }
-const jsonLdFor = (r) => ({
-  '@context': 'https://schema.org',
-  '@graph': [...siteGraph, pageNode(r), ...(r.path === '/schedule' ? [pujoEvent] : [])],
-})
+/**
+ * The trail Google may show above a result instead of the bare address:
+ * Home › Durga Puja, Explained › Maha Ashtami. Every page below Home has one;
+ * `crumbs` lists the pages between Home and this one.
+ */
+const breadcrumbNode = (r) => {
+  const name = r.path === '/uma' ? 'উমা · UMA' : r.title.replace(` ${TITLE_SUFFIX}`, '')
+  const trail = [['Home', '/'], ...(r.crumbs ?? []), [name, r.path]]
+  return {
+    '@type': 'BreadcrumbList',
+    '@id': `${servedUrl(r.path)}#breadcrumb`,
+    itemListElement: trail.map(([label, path], i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: label,
+      item: servedUrl(path),
+    })),
+  }
+}
+const jsonLdFor = (r) => {
+  const page = pageNode(r)
+  const crumbs = r.path === '/' ? [] : [breadcrumbNode(r)]
+  if (crumbs.length) page.breadcrumb = { '@id': crumbs[0]['@id'] }
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [...siteGraph, page, ...crumbs, ...(r.path === '/schedule' ? [pujoEvent] : [])],
+  }
+}
 const ldScript = (data) => `<script type="application/ld+json">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>`
-
-/** The pages the sitemap advertises — the site's public front door. */
-const ADVERTISED = ['/', '/schedule', '/uma', '/durga-puja']
 
 const ROUTES = [
   // Members-only routes: prerendered so a shared link previews properly and a
@@ -163,6 +185,8 @@ const ROUTES = [
     title: `Durga Puja Timetable and Schedule ${TITLE_SUFFIX}`,
     description:
       'Nirghanto/Timetable/Schedule for Durga Pujo at Magarpatta City, Pune — tithi-wise puja timings from Shashthi to Dashami, as confirmed by the purohit.',
+    sources: ['web/src/pages/Schedule.tsx', 'web/src/content/pujo-calendar.json'],
+    priority: 0.9,
   },
 ]
 
@@ -197,6 +221,11 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
     title: `${isIndex ? 'Durga Puja, Explained' : meta.title} ${TITLE_SUFFIX}`,
     description: meta.oneLiner || meta.title || 'Bengali Durga Puja, explained properly.',
     image: meta.image ? (meta.image.startsWith('http') ? meta.image : `${ORIGIN}/bookdurgapuja/${meta.image}`) : undefined,
+    // sitemap: the chapter's own file dates it; the days and rituals (1–12,
+    // 21) rank above the reference chapters of mantras and the fordo
+    sources: [`web/src/content/durga-puja/${file}`],
+    priority: isIndex ? 0.8 : Number(m[1]) <= 12 || Number(m[1]) === 21 ? 0.7 : 0.6,
+    crumbs: isIndex ? [] : [['Durga Puja, Explained', '/durga-puja']],
   })
 }
 
@@ -216,6 +245,8 @@ ROUTES.push({
   imageHeight: 782,
   imageType: 'image/webp',
   imageAlt: "A shuffled 3 × 3 sliding puzzle of Maa Durga's face",
+  sources: ['web/src/pages/Uma.tsx', 'web/src/content/uma-quiz.ts', 'web/src/content/uma-puzzles.ts'],
+  priority: 0.7,
 })
 
 const dist = join(dirname(fileURLToPath(import.meta.url)), '..', 'dist')
@@ -278,19 +309,56 @@ const homeRoute = {
   title: template.match(/<title>([^<]*)<\/title>/)[1],
   description: template.match(/<meta\s+name="description"\s+content="([^"]*)"/s)[1].replace(/\s+/g, ' ').trim(),
   image: `${ORIGIN}/og.webp`,
+  sources: ['web/src/pages/Home.tsx', 'web/index.html'],
+  priority: 1.0,
 }
 writeFileSync(join(dist, 'index.html'), template.replace('</head>', `${ldScript(jsonLdFor(homeRoute))}</head>`))
 console.log('structured data -> /')
 
-// sitemap: the four advertised pages, at the addresses Pages serves them.
-// (The Durga Puja chapters stay indexable — crawlers reach them through the
-// guide's own links — they are just not advertised here.)
-const urls = ADVERTISED
+// ── sitemap.xml: every public page ─────────────────────────────────────────
+// Home, Schedule, উমা, the Durga Puja guide and every chapter, at the
+// addresses Pages serves them. <lastmod> is the last commit that touched the
+// page's own source (git log — CI checks out full history for it), so it only
+// moves when the page does; Google trusts lastmod only while it stays honest.
+// <changefreq> and <priority> are for the other search engines — Google
+// ignores both. Each page's picture rides along as an image-sitemap entry. The
+// XSL turns the file into a readable page in a browser; crawlers ignore it.
+const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
+const today = new Date().toISOString().slice(0, 10)
+const lastmod = (files = []) => {
+  try {
+    const out = execFileSync('git', ['log', '-1', '--format=%cs', '--', ...files], { cwd: repoRoot, encoding: 'utf8' }).trim()
+    return out || today
+  } catch {
+    return today
+  }
+}
+const xmlEsc = (s) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+const inSitemap = [homeRoute, ...ROUTES.filter((r) => !r.noindex)].sort((a, b) => (b.priority ?? 0.5) - (a.priority ?? 0.5))
+const entry = (r) =>
+  [
+    '  <url>',
+    `    <loc>${xmlEsc(servedUrl(r.path))}</loc>`,
+    `    <lastmod>${lastmod(r.sources)}</lastmod>`,
+    '    <changefreq>weekly</changefreq>',
+    `    <priority>${(r.priority ?? 0.5).toFixed(1)}</priority>`,
+    ...(r.image
+      ? [
+          '    <image:image>',
+          `      <image:loc>${xmlEsc(r.image)}</image:loc>`,
+          '    </image:image>',
+        ]
+      : []),
+    '  </url>',
+  ].join('\n')
 writeFileSync(
   join(dist, 'sitemap.xml'),
-  `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `  <url><loc>${servedUrl(u)}</loc></url>`).join('\n') +
-    `\n</urlset>\n`,
+  '<?xml version="1.0" encoding="UTF-8"?>\n' +
+    '<?xml-stylesheet type="text/xsl" href="/sitemap.xsl"?>\n' +
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"\n' +
+    '        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">\n' +
+    inSitemap.map(entry).join('\n') +
+    '\n</urlset>\n',
 )
 writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`)
-console.log('sitemap.xml + robots.txt written')
+console.log(`sitemap.xml (${inSitemap.length} pages) + robots.txt written`)

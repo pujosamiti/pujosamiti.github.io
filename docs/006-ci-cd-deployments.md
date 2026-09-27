@@ -31,7 +31,8 @@ both **path-filtered**:
 
 Two jobs in sequence:
 
-**`build`** (ubuntu-latest): checkout → `setup-node` with
+**`build`** (ubuntu-latest): checkout with **full history** (`fetch-depth: 0` —
+the sitemap dates each page by its last commit) → `setup-node` with
 `node-version-file: .nvmrc` (bump `.nvmrc` and CI follows) + npm cache →
 `npm ci` → `npm run build -w web` (`tsc -b && vite build` — full typecheck,
 then a production bundle to `web/dist/`, with per-page prerendering for the
