@@ -94,6 +94,28 @@ X showed every page with the home page's title. A route may also give
 until it was archived on 26 Sep 2026; `/uma` is now one static page.) Full recipe and history:
 the archived `seotags.md` (git history, or locally `docs/tmp/docs-v1/`).
 
+**Addresses and the sitemap (26–27 Sep 2026).** Every prerendered route is a
+folder (`uma/index.html`), so GitHub Pages answers `/uma` with a **301 to
+`/uma/`**. Canonical, `og:url` and the sitemap therefore name the served
+address with its trailing slash (`servedUrl` in both `prerender.mjs` and
+`Seo.tsx`) — naming `/uma` made the canonical point at a redirect, a mixed
+signal search engines skip. `sitemap.xml` advertises exactly four pages:
+Home, Schedule, Uma and Durga Puja; the guide's chapters stay indexable
+through its links. `robots.txt` allows all crawlers. Google indexing also
+needs the site verified in **Google Search Console** and the sitemap
+submitted there (the owner's Google account — not something the code can do).
+
+**What is indexed (audited 27 Sep 2026).** 25 public pages are indexed —
+Home, Schedule, Uma, the Durga Puja guide's front page ("Durga Puja,
+Explained", so it no longer shares the home page's title) and its 21
+chapters. Every members-only route is prerendered **noindex** — including
+Bhog, Procurement and its master list, which had no prerendered page and
+gave crawlers following the Members Only cards a 404 — and Brand Colours,
+which sits behind the sign-in (its `brand-identity.html` carries noindex
+too). Private content is gated by the app and the API; noindex only keeps
+the empty shells out of search. When adding a route: public → a prerender
+entry with its own title and description; members-only → the noindex list.
+
 ## 3. Other content on the site
 
 - **Nirghanto / events / timetable**: rows in D1, edited through the admin

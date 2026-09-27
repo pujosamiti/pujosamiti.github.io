@@ -45,6 +45,14 @@ const linked = (rel: string) => () => {
  * ones with `noindex`, so the previous page's tags never linger after a
  * client-side navigation.
  */
+/**
+ * The address GitHub Pages serves a page at: every prerendered route is a
+ * folder, so /uma is answered with a 301 to /uma/. Canonical and og:url must
+ * name the served address, or they point at a redirect and search engines
+ * skip the page. Keep in step with servedUrl in web/scripts/prerender.mjs.
+ */
+const servedUrl = (path: string) => `${ORIGIN}${path === '/' ? '/' : path.replace(/\/?$/, '/')}`
+
 export function Seo({
   title,
   description,
@@ -69,7 +77,7 @@ export function Seo({
   bareTitle?: boolean
 }) {
   const full = bareTitle ? title : `${title} ${TITLE_SUFFIX}`
-  const url = `${ORIGIN}${path}`
+  const url = servedUrl(path)
   const img = image ?? DEFAULT_IMAGE
 
   useEffect(() => {

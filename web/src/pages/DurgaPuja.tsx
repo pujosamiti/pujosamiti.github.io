@@ -46,7 +46,7 @@ export function DurgaPujaIndex() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-4">
       <Seo
-        title="Durga Puja"
+        title="Durga Puja, Explained"
         description={
           data?.meta.oneLiner ??
           'Bengali Durga Puja, explained properly — every day, every ritual, every story and every mantra, from Khunti Puja to Kojagari Lakshmi Puja. An encyclopedia by the Magarpatta pujo samiti.'

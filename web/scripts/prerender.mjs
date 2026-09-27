@@ -14,6 +14,18 @@ const SITE = 'পুজো সমিতি · Magarpatta'
 
 const TITLE_SUFFIX = 'Magarpatta City Pune'
 
+/**
+ * The address GitHub Pages actually serves a page at. Each prerendered route
+ * is a folder (uma/index.html), so Pages answers /uma with a 301 to /uma/ —
+ * canonical, og:url and the sitemap must name /uma/, or the canonical points
+ * at a redirect and search engines skip the page. Keep in step with
+ * servedUrl in web/src/components/Seo.tsx.
+ */
+const servedUrl = (path) => `${ORIGIN}${path === '/' ? '/' : path.replace(/\/?$/, '/')}`
+
+/** The pages the sitemap advertises — the site's public front door. */
+const ADVERTISED = ['/', '/schedule', '/uma', '/durga-puja']
+
 const ROUTES = [
   // Members-only routes: prerendered so a shared link previews properly and a
   // direct visit skips the 404-fallback redirect — but never indexed. The app
@@ -30,13 +42,14 @@ const ROUTES = [
     ['/wallets', 'Wallets', 'Wallets — samiti accounts, for core members.'],
     ['/sponsorship', 'Sponsorship', 'Sponsorship — samiti accounts, for core members.'],
     ['/reimbursements', 'Reimbursements', 'Reimbursements — samiti accounts, for core members.'],
+    // carded on Members Only too: without a prerendered page a crawler
+    // following the card got a 404 (and a shared link, no preview)
+    ['/bhog', 'Bhog & Food Menu', 'Bhog and food menus, and headcounts, for samiti members.'],
+    ['/procurement', 'Procurement', 'Day-wise shopping lists and order sheets, for core members.'],
+    ['/procurement/master', 'Procurement master list', 'The procurement item catalog, for core members.'],
+    // members-only behind the sign-in, so kept out of search like the rest
+    ['/brandcolours', 'Brand Colours', 'The laal-paar shada visual identity of the Magarpatta pujo samiti — palette, logo variants, alpona rules and usage.'],
   ].map(([path, title, description]) => ({ path, title: `${title} ${TITLE_SUFFIX}`, description, noindex: true })),
-  {
-    path: '/brandcolours',
-    title: `Brand Colours ${TITLE_SUFFIX}`,
-    description:
-      'The laal-paar shada visual identity of the Magarpatta pujo samiti — palette, logo variants, alpona rules and usage.',
-  },
   {
     path: '/schedule',
     title: `Durga Puja Timetable and Schedule ${TITLE_SUFFIX}`,
@@ -66,7 +79,9 @@ for (const file of readdirSync(contentDir).filter((f) => f.endsWith('.md')).sort
   const isIndex = Number(m[1]) === 0
   ROUTES.push({
     path: isIndex ? '/durga-puja' : `/durga-puja/${m[2]}`,
-    title: `${isIndex ? 'Durga Puja' : meta.title} ${TITLE_SUFFIX}`,
+    // the guide's front page is "Durga Puja, Explained" — "Durga Puja" alone
+    // duplicated the home page's title
+    title: `${isIndex ? 'Durga Puja, Explained' : meta.title} ${TITLE_SUFFIX}`,
     description: meta.oneLiner || meta.title || 'Bengali Durga Puja, explained properly.',
     image: meta.image ? (meta.image.startsWith('http') ? meta.image : `${ORIGIN}/bookdurgapuja/${meta.image}`) : undefined,
   })
@@ -113,7 +128,7 @@ for (const r of ROUTES) {
     /<meta\s+name="twitter:description"\s+content="[^"]*"\s*\/>/s,
     `<meta name="twitter:description" content="${esc(r.description)}" />`,
   )
-  html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${ORIGIN}${r.path}" />`)
+  html = html.replace(/<meta property="og:url" content="[^"]*" \/>/, `<meta property="og:url" content="${servedUrl(r.path)}" />`)
   html = html.replace(
     /<meta name="robots" content="[^"]*" \/>/,
     `<meta name="robots" content="${r.noindex ? 'noindex, follow' : 'index, follow, max-image-preview:large'}" />`,
@@ -133,7 +148,7 @@ for (const r of ROUTES) {
     ].filter(Boolean).join('')
     html = html.replace('</head>', `${extra}</head>`)
   }
-  html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${ORIGIN}${r.path}" />`)
+  html = html.replace(/<link rel="canonical" href="[^"]*" \/>/, `<link rel="canonical" href="${servedUrl(r.path)}" />`)
   if (r.type === 'article') html = html.replace(/<meta property="og:type" content="[^"]*" \/>/, `<meta property="og:type" content="article" />`)
   if (r.jsonLd)
     html = html.replace('</head>', `<script type="application/ld+json">${JSON.stringify(r.jsonLd)}</script></head>`)
@@ -143,12 +158,14 @@ for (const r of ROUTES) {
   console.log('prerendered', r.path, '->', out)
 }
 
-// sitemap for the public routes
-const urls = ['/', ...ROUTES.filter((r) => !r.noindex).map((r) => r.path)]
+// sitemap: the four advertised pages, at the addresses Pages serves them.
+// (The Durga Puja chapters stay indexable — crawlers reach them through the
+// guide's own links — they are just not advertised here.)
+const urls = ADVERTISED
 writeFileSync(
   join(dist, 'sitemap.xml'),
   `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n` +
-    urls.map((u) => `  <url><loc>${ORIGIN}${u}</loc></url>`).join('\n') +
+    urls.map((u) => `  <url><loc>${servedUrl(u)}</loc></url>`).join('\n') +
     `\n</urlset>\n`,
 )
 writeFileSync(join(dist, 'robots.txt'), `User-agent: *\nAllow: /\nSitemap: ${ORIGIN}/sitemap.xml\n`)
