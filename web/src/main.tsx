@@ -14,6 +14,7 @@ import { MembersOnly } from '@/pages/MembersOnly'
 import { Membership } from '@/pages/Membership'
 import { BrandColours } from '@/pages/BrandColours'
 import { Bhog } from '@/pages/Bhog'
+import { BhogCount } from '@/pages/BhogCount'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Procurement } from '@/pages/Procurement'
@@ -83,6 +84,9 @@ createRoot(document.getElementById('root')!).render(
               <Route path="membersonly" element={<MembersOnly />} />
               <Route path="login" element={<Login />} />
               <Route path="profile" element={<Profile />} />
+              {/* The bhog headcount link (?c=<code>): no sign-in — the code is
+                  the key. Outranks the members-only /bhog below. */}
+              <Route path="bhog/count" element={<BhogCount />} />
               {/* Everything below requires a signed-in, activated member: a
                   shared deep link shows the sign-in card and returns to the
                   same URL after Google. New member-only URLs go inside. */}

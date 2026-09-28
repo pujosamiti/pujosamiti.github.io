@@ -44,8 +44,8 @@ text on the night ground.
   typography plugin's variables mapped to tokens in `index.css` — warm ink,
   matir bullets, a shiuli quote rule, in both themes.
 - **Hard-coded colours**: confetti, the PDF band and spreadsheet title
-  (`reports-pdf.ts`, `reports-xlsx.ts`), the Bhog print sheet's ink and
-  rules.
+  (`reports-pdf.ts`, `reports-xlsx.ts`) — the Bhog count sheet now
+  among them, its old print window gone.
 - **Browser chrome**: `theme-color` in `index.html` and `404.html`, and the
   web manifest's theme and splash background.
 - **Brand page** (`public/brand-identity.html`): palette, token table, rules

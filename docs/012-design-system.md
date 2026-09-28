@@ -118,8 +118,12 @@ Every members-area page wears the pastel five (`web/src/lib/tint.ts`):
   faint wash (`tint(pastel, '6%')`) chosen by meaning: ledger entries by
   kind (money in river water, out sandalwood, moved blue lotus); claims by
   state (waiting rose, settled river water, closed sandalwood); members by
-  tier (core rose, member blue lotus, non-member sandalwood); festivals by
-  kind on Events; families and the Days of the Pujo card woven.
+  tier (core rose, member blue lotus, non-member sandalwood — `TIER_PASTEL`),
+  and the same on the bhog Responses table, whose group heading rows take a
+  deeper 16 % wash; festivals by kind on Events; families and the Days of the
+  Pujo card woven. Table rows use `tintRow()` / `.tint-row` — the wash on
+  each cell and the strip on the first, since Safari paints a row's own
+  background cell by cell.
 - **Groups in turn.** Categories and days — the sponsorship board, the
   procurement bands and master list, the bhog occasions and their day cards,
   the nirghanto's days, the planning sub-headings (Murti / Idol, Permissions…)
@@ -137,11 +141,26 @@ Every members-area page wears the pastel five (`web/src/lib/tint.ts`):
 
 Downloadable reports are built in the browser and loaded on first use. The
 ledger's three season lists (core subscriptions, non-core subscriptions,
-sponsorships) and the sponsorship board of a pujo year each come as a
-spreadsheet or a PDF: a small **Excel | PDF** switch sits before the
-download pills, Excel by default. What a report holds, its order and its
-totals are defined once in `web/src/lib/ledger-reports.ts`, so the two
+sponsorships), the sponsorship board of a pujo year and the bhog count sheet
+of an event each come as a spreadsheet or a PDF: a small **Excel | PDF**
+switch sits before the download pills, Excel by default (the shared
+`components/ReportDownload.tsx`). What a report holds, its order and its
+totals are defined once — `web/src/lib/ledger-reports.ts` for the ledger and
+the board, `web/src/lib/bhog-report.ts` for the count sheet — so the two
 formats never disagree.
+
+The **bhog count sheet** lists every household that paid or pledged that season, core first, one
+column per day (headed by the day's label without its "Bhog", and the date),
+then the total and the remarks. Unanswered days are blank, so a sheet taken
+before anyone answers is the counter's form: the PDF (landscape, under Core
+members / Members headings) leaves every row room to write in and its total
+row blank; the spreadsheet's totals are formulas — a household's total stays
+empty until it has a figure, and the plates row sums each day. The
+spreadsheet is plates only (no tier column, no money rows); fin_admin and
+admin see the per-plate and `Total ₹` rows on screen and in the PDF. Its file
+name carries the IST moment it was taken
+(`bhog-headcount-durga-pujo-2026_2026-09-28_1315.xlsx`), so repeated
+downloads during the pujo don't overwrite each other.
 
 ### Spreadsheets
 

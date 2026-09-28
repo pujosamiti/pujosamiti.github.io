@@ -57,6 +57,12 @@ makes WhatsApp show a rich card. Specs: 1200×630 (or ≥3:2, subject centred �
 WhatsApp crops square-ish), WebP, under ~300 KB. In-body images are normal
 markdown: `![alt](/bookdurgapuja/file.webp)`.
 
+Two app pages carry share cards of their own, set in the page's `<Seo>` (with
+`bareTitle`) and in its `scripts/prerender.mjs` entry, kept word for word
+alike: `/uma` (`uma-share.webp`, 782 × 782) and the bhog headcount link
+`/bhog/count` (`bhog-share.webp`, 1200 × 790, ~110 KB — a bhog thali on a
+banana leaf; the link stays noindex and out of the sitemap).
+
 ### Linking and markdown features
 
 Link siblings by filename — `[Mahalaya](04-mahalaya.md)` → `/durga-puja/

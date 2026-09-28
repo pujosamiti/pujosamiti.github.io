@@ -388,9 +388,12 @@ export interface BhogMenuView {
 /** One member's headcounts for an event's published days — Durga Puja in one go. */
 export interface BhogRsvpInput {
   eventId: EventId;
-  counts: { menuId: string; count: number }[];
-  /** Proxy target (admin/fin_admin only): record for this person instead of self. */
+  /** `guests`: guest bhog heads that day (core households only); omitted = unchanged. */
+  counts: { menuId: string; count: number; guests?: number }[];
+  /** Proxy target (admin/fin_admin only): record for this person's household instead of self. */
   personId?: string | null;
+  /** Proxy target by household (admin/fin_admin only) — the Responses list's key; wins over personId. */
+  householdKey?: string | null;
   /** Optional remark stored on the rows saved this submission (proxy mode). */
   note?: string | null;
 }
@@ -427,14 +430,215 @@ export interface CounterPersonInput {
   tier: FamilyTier;
 }
 
+/**
+ * One household on the count sheet: the family, or the person when they
+ * belong to none. Every household that paid or pledged in the season is
+ * listed, answered or not, so the sheet doubles as the blank form for the
+ * counter.
+ */
+export interface BhogHousehold {
+  key: string; // family id, or person id for someone without a family
+  name: string; // family name, else the person's display name
+  tier: 'core' | 'member'; // core when anyone in the household is core
+  /** Durga Pujo only: counts above what the household's money allows (a pledge cancelled after they were given). */
+  overAllowance: boolean;
+}
+
 /** One cell of the household-by-household count sheet (core view). */
 export interface BhogCountRow {
   personId: string;
   name: string;
-  tier: FamilyTier; // Core vs Member tag on the response
+  householdKey: string; // BhogHousehold.key
   menuId: string;
   count: number;
+  guests: number; // guest bhog heads on top of `count`
   notes: string | null; // the sheet's remark ("already paid for 10 guests")
+}
+
+export interface BhogCountSheet {
+  households: BhogHousehold[]; // sorted: core first, then by name
+  rows: BhogCountRow[];
+}
+
+// ── Durga Pujo bhog coupons: who may bring how many ─────────────────────────
+
+/**
+ * What a household's season money buys in Durga Pujo bhog. The money is the
+ * whole family's, one season (1 July → 30 June, pujo ledger): subscriptions
+ * and sponsorships paid, plus sponsorship pledges not yet paid — a pledge
+ * counts before the money arrives.
+ *
+ * - ₹10,000 or more, however it is made up: up to 10 people each day.
+ * - Less: one coupon per ₹500, spent on any days — all on one day if they like.
+ *
+ * Kojagari, Saraswati and the food menus carry no allowance.
+ */
+export type BhogAllowance =
+  | { kind: 'per_day'; perDay: number }
+  | { kind: 'coupons'; coupons: number };
+
+export const BHOG_PER_DAY_CAP = 10;
+export const BHOG_RUPEES_PER_COUPON = 500;
+/** Guest bhog: at most this many office colleagues / friends a day per household. */
+export const BHOG_GUEST_CAP = 20;
+/** The ledger sub-category guest bhog money lands under (contribution · misc_income), as in 2025. */
+export const GUEST_BHOG_SUBCATEGORY = 'Guest Bhog';
+
+/** A day's count closes this many days before it: Saptami (17 Oct) takes its last change on 13 Oct, IST. */
+export const BHOG_CUTOFF_DAYS = 4;
+
+export const bhogAllowance = (total: number): BhogAllowance =>
+  total >= CORE_CONTRIBUTION_THRESHOLD
+    ? { kind: 'per_day', perDay: BHOG_PER_DAY_CAP }
+    : { kind: 'coupons', coupons: Math.floor(Math.max(0, total) / BHOG_RUPEES_PER_COUPON) };
+
+/** Do these day counts (every day of the event, answered or not) fit the allowance? */
+export const bhogFits = (a: BhogAllowance, counts: number[]): boolean =>
+  a.kind === 'per_day' ? counts.every((n) => n <= a.perDay) : counts.reduce((s, n) => s + n, 0) <= a.coupons;
+
+/** "Up to 10 people each day" / "8 coupons for the five days" — the allowance in words. */
+export const bhogAllowanceText = (a: BhogAllowance, dayCount: number): string =>
+  a.kind === 'per_day'
+    ? `Up to ${a.perDay} people each day`
+    : `${a.coupons} coupon${a.coupons === 1 ? '' : 's'} for the ${dayCount === 5 ? 'five' : dayCount} days — use them on any day`;
+
+/** The last date (ISO, IST) a day's count can change: BHOG_CUTOFF_DAYS before it. */
+export const bhogLastChange = (date: string): string => {
+  const d = new Date(`${date}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - BHOG_CUTOFF_DAYS);
+  return d.toISOString().slice(0, 10);
+};
+
+/** Today in IST, as an ISO date — the samiti's calendar, whatever the device or server clock says. */
+export const todayIST = (now: Date = new Date()): string =>
+  new Date(now.getTime() + 330 * 60 * 1000).toISOString().slice(0, 10);
+
+/** Is a day still open for changes? Open through the whole of its last-change date, IST. */
+export const bhogDayOpen = (date: string, now: Date = new Date()): boolean => todayIST(now) <= bhogLastChange(date);
+
+/** One day on a household's headcount form. */
+export interface BhogHeadcountDay {
+  menuId: string;
+  date: string; // ISO
+  label: string;
+  labelBn: string | null;
+  /** The household's count; null = not answered yet. */
+  count: number | null;
+  /** Guest bhog heads that day, on top of `count`. */
+  guests: number;
+  /** Still taking changes (see bhogDayOpen). */
+  open: boolean;
+  /** The last date a change is taken, ISO. */
+  lastChange: string;
+}
+
+/**
+ * A household's headcount for one event — what the form shows, whether it
+ * was opened from a ?c= link, by a signed-in member, or by an admin at the
+ * counter. The server builds it; the browser only draws it.
+ */
+export interface BhogHeadcountView {
+  eventId: EventId;
+  eventName: string; // "Durga Pujo 2026"
+  eventNameBn: string | null;
+  household: { key: string; name: string };
+  /** null = no limit (occasions other than Durga Pujo). */
+  allowance: BhogAllowance | null;
+  /**
+   * Counts already above the allowance — a pledge was cancelled after they
+   * were given. They stand, but can only come down; the admin sees a flag.
+   */
+  overAllowance: boolean;
+  days: BhogHeadcountDay[];
+  /**
+   * Guest bhog, for a core household (₹10,000+ this season) when the event
+   * has a guest rate set; null otherwise — no toggle is shown.
+   */
+  guestBhog: {
+    /** May add guests: core now. False keeps guests already given visible, to come down only. */
+    canAdd: boolean;
+    rate: number; // ₹ per head
+    inchargeName: string | null; // "Suvadip(Suvo) Gupta" — who to pay
+    heads: number; // guests across the days
+    due: number;
+    received: number; // from the ledger (misc_income · Guest Bhog)
+  } | null;
+}
+
+/**
+ * What the ?c= link opens on: the event and the households to pick from —
+ * exactly the Responses list (households that paid or pledged this season,
+ * and anyone who has already answered), core first, names only.
+ */
+export interface BhogLinkSheet {
+  eventId: EventId;
+  eventName: string; // "Durga Pujo 2026"
+  eventNameBn: string | null;
+  households: { key: string; name: string; tier: 'core' | 'member' }[];
+}
+
+/** Save one household's counts from the link — no sign-in, the code is the key. */
+export interface BhogLinkSaveInput {
+  code: string;
+  householdKey: string;
+  counts: { menuId: string; count: number; guests?: number }[];
+}
+
+/** An event's bhog settings: the Food & Bhog in-charge and the guest rate. */
+export interface BhogSettingInfo {
+  inchargePersonId: string | null;
+  inchargeName: string | null;
+  guestRate: number | null; // ₹ per head; null = no guest bhog
+}
+
+/** One household on the guest bhog board (admin / fin_admin). */
+export interface GuestBhogRow {
+  householdKey: string;
+  name: string;
+  /** Who a payment is recorded against: the household's top giver this season. */
+  contactPersonId: string;
+  guestsByDay: number[]; // in day order
+  heads: number;
+  due: number;
+  received: number;
+  /** due − received; negative when overpaid (no refunds). */
+  balance: number;
+}
+
+/** The guest bhog board of one event: settings, days, and every household with guests or payments. */
+export interface GuestBhogSheet {
+  setting: BhogSettingInfo;
+  days: { menuId: string; label: string; date: string }[];
+  rows: GuestBhogRow[];
+  /**
+   * Every household that may bring guests — core, ₹10,000+ this season —
+   * answered or not: what the ledger's "Core Member Guest Bhog" picks from,
+   * since a core member often pays at the counter for a friend on the day.
+   */
+  eligible: { householdKey: string; name: string; contactPersonId: string }[];
+}
+
+/** Record a guest bhog payment — a ledger entry, misc_income · Guest Bhog. */
+export interface GuestBhogReceiveInput {
+  eventId: EventId;
+  householdKey: string;
+  amount: number;
+  entryDate: string; // ISO, IST
+  walletPersonId: string; // received by
+  /**
+   * Guests paid for at the counter on the day, added to that day's guests for
+   * the household (so the board's due matches the money) — optional.
+   */
+  menuId?: string | null;
+  guests?: number;
+  /** A remark added to the ledger note ("friend from office"). */
+  note?: string | null;
+}
+
+/** An event's live headcount link, for admin / fin_admin to share. */
+export interface BhogLinkInfo {
+  code: string;
+  createdAt: number; // ms since epoch
 }
 
 export interface BhogDayInput {

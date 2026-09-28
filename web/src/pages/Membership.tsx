@@ -21,7 +21,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { api } from '@/lib/api'
-import { PAGE_TINT, tint } from '@/lib/tint'
+import { PAGE_TINT, TIER_PASTEL, tint } from '@/lib/tint'
 import { GENDER_OPTIONS_ADMIN } from '@/lib/genderOptions'
 import { locationOptions } from '@/lib/locationOptions'
 import { cn } from '@/lib/utils'
@@ -229,9 +229,8 @@ function PeopleView({
   )
 }
 
-/** A person's edge by tier: core (rose), member (blue lotus), non-member (sandalwood). */
-const tierTint = (tier: AdminPerson['tier']) =>
-  tint(tier === 'core' ? 'golap' : tier === 'member' ? 'nilkamal' : 'chandan', '6%')
+/** A person's edge by tier (TIER_PASTEL): core rose, member blue lotus, non-member sandalwood. */
+const tierTint = (tier: AdminPerson['tier']) => tint(TIER_PASTEL[tier], '6%')
 
 function PersonCard({ person: p, families, canEdit }: { person: AdminPerson; families: AdminFamily[]; canEdit: boolean }) {
   const queryClient = useQueryClient()

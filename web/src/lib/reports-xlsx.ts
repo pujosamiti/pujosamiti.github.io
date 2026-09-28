@@ -1,7 +1,8 @@
 /**
  * Reports as spreadsheets — the same core / non-core subscription and
- * sponsorship lists, and the same sponsorship board, as the PDFs (see
- * ledger-reports), as an .xlsx a treasurer can sort, filter and add up.
+ * sponsorship lists, the same sponsorship board and the same bhog count
+ * sheet as the PDFs (see ledger-reports, bhog-report), as an .xlsx a
+ * treasurer can sort, filter and add up.
  *
  * Where the PDF prints text, the sheet keeps values: dates are dates and
  * amounts are numbers, written in rupees with Indian grouping, and the total
@@ -11,13 +12,16 @@
 import type { SponsorshipItemView } from '@pujosamiti/shared'
 import writeXlsxFile, { type Cell, type CellObject, type SheetData, type SheetOptions } from 'write-excel-file/browser'
 
-import { ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
+import { bhogReport, type BhogReportInput } from '@/lib/bhog-report'
+import { fileStampIST, ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // The PDF's palette (docs/012): jaba for the title only, kali ink, the wash behind header and total.
 const JABA = '#C40039'
 const GREY = '#807870'
 const WASH = '#F6F1EA'
 const RULE = '#E6DDD2'
+// durba, the paan-leaf green: guest bhog heads, as on the screen
+const DURBA = '#17664F'
 
 /**
  * ₹1,00,000 rather than ₹100,000: a spreadsheet format has no lakh grouping
@@ -29,7 +33,7 @@ const DATE = 'd mmm yyyy'
 /** Rows above the table: title, generated stamp, a gap. The header row follows them. */
 const HEADER_ROW = 4
 
-/** A1-style column letter for a 0-based index — the tables never pass H. */
+/** A1-style column letter for a 0-based index — the tables never pass Z. */
 const col = (i: number) => String.fromCharCode(65 + i)
 
 /** A row as wide as the table, the unused cells empty. */
@@ -173,5 +177,105 @@ export function renderSponsorshipSheet(
 
 export async function downloadSponsorshipXlsx(input: { year: number; items: SponsorshipItemView[] }): Promise<void> {
   const { data, options, filename } = renderSponsorshipSheet(input)
+  await writeXlsxFile(data, options).toFile(filename)
+}
+
+// ── Bhog count sheet of one event ───────────────────────────────────────────
+
+/**
+ * One row per household, one column per day, blank where a household has not
+ * answered — so a sheet downloaded before anyone answers is the form to fill
+ * in by hand. The totals are formulas, so counts typed in later add up: a
+ * household's total stays blank until it has a figure, and the plates row
+ * sums each day. Plates only — the money stays on the screen and the PDF.
+ * The file name carries the moment it was taken (IST), so successive
+ * downloads during the pujo sit side by side instead of overwriting.
+ */
+export function renderBhogSheet(input: BhogReportInput, now = new Date()): {
+  data: SheetData
+  options: SheetOptions<Blob>
+  filename: string
+} {
+  const r = bhogReport(input)
+  const n = r.days.length
+  const firstDay = 2
+  // Guest bhog: a day's cell is its plates, family and guests together, so the
+  // sums are the caterer's numbers; a Guests column (only once anyone has
+  // guests) and the remarks keep the guests visible.
+  const withGuests = r.grandGuests > 0
+  const guestCol = withGuests ? firstDay + n : -1
+  const totalCol = firstDay + n + (withGuests ? 1 : 0)
+  const heads = [
+    '#',
+    'Household',
+    ...r.days.map((d) => `${d.heading}\n${d.shortDate}`),
+    ...(withGuests ? ['Guests'] : []),
+    'Total',
+    'Remarks',
+  ]
+  const pad = padTo(heads.length)
+  const data = topRows(`${r.title} — ${r.subtitle}`, now, heads.length)
+
+  if (r.households.length === 0 || n === 0) {
+    data.push(pad([emptyLine(n === 0 ? `No bhog days for ${r.subtitle} yet.` : 'No household has paid or pledged this season yet.')]))
+  } else {
+    data.push(
+      heads.map((h, i) => ({
+        ...headCell(h, i === 0 || (i >= firstDay && i <= totalCol)),
+        ...(i === guestCol ? { textColor: DURBA } : {}),
+        wrap: true,
+        alignVertical: 'bottom' as const,
+        height: 32,
+      })),
+    )
+    const first = HEADER_ROW + 1
+    const last = HEADER_ROW + r.households.length
+    const dayCells = `${col(firstDay)}{row}:${col(firstDay + n - 1)}{row}`
+    for (const [i, h] of r.households.entries()) {
+      const row = first + i
+      const days = dayCells.replaceAll('{row}', String(row))
+      const guestNote = h.guestTotal
+        ? `Guests: ${r.days.flatMap((d, j) => (h.guests[j] ? [`${d.heading} ${h.guests[j]}`] : [])).join(', ')}`
+        : ''
+      const remarks = [guestNote, h.remarks].filter(Boolean).join('; ')
+      data.push([
+        { value: i + 1, textColor: GREY },
+        h.name,
+        ...h.counts.map((c, j): Cell =>
+          c == null && !h.guests[j] ? null : { value: (c ?? 0) + h.guests[j], type: Number },
+        ),
+        ...(withGuests ? [h.guestTotal ? ({ value: h.guestTotal, type: Number, textColor: DURBA } as Cell) : null] : []),
+        { type: 'Formula', value: `IF(COUNT(${days}),SUM(${days}),"")`, fontWeight: 'bold' },
+        remarks ? { value: remarks, textColor: GREY, wrap: true } : null,
+      ])
+    }
+    data.push(
+      heads.map((_, i): Cell => {
+        if (i === 0) return { ...FOOT, value: `Total plates · ${r.answered} of ${r.households.length} answered`, columnSpan: firstDay }
+        if (i < firstDay) return null // under the span
+        if (i <= totalCol) return { ...FOOT, type: 'Formula', value: `SUM(${col(i)}${first}:${col(i)}${last})` }
+        return FOOT
+      }),
+    )
+  }
+
+  return {
+    data,
+    options: {
+      sheet: 'Bhog headcount',
+      orientation: 'landscape',
+      // A day column is as wide as its heading, so the header stays two lines — label, then date
+      // ("Ashtami · Day-2" at a fixed 13 wrapped and pushed its date out of the row).
+      columns: [5, 40, ...r.days.map((d) => Math.max(12, d.heading.length + 4)), ...(withGuests ? [9] : []), 9, 40].map(
+        (width) => ({ width }),
+      ),
+      stickyRowsCount: r.households.length && n ? HEADER_ROW : 0,
+    },
+    filename: `${r.fileStem}_${fileStampIST(now)}.xlsx`,
+  }
+}
+
+export async function downloadBhogXlsx(input: BhogReportInput): Promise<void> {
+  const { data, options, filename } = renderBhogSheet(input)
   await writeXlsxFile(data, options).toFile(filename)
 }

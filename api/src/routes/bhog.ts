@@ -1,12 +1,26 @@
-import type { ApiResult, BhogCountRow, BhogDayInput, BhogItemsInput, BhogMenuView, BhogRsvpInput, Me } from '@pujosamiti/shared'
-import { isCoreRole, isProxyRole } from '@pujosamiti/shared'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import type {
+  ApiResult,
+  BhogCountSheet,
+  BhogDayInput,
+  BhogHousehold,
+  BhogItemsInput,
+  BhogLinkInfo,
+  GuestBhogReceiveInput,
+  BhogMenuView,
+  BhogRsvpInput,
+  Me,
+} from '@pujosamiti/shared'
+import { GUEST_BHOG_SUBCATEGORY, bhogAllowance, bhogFits, isCoreRole, isProxyRole } from '@pujosamiti/shared'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
 import { Hono } from 'hono'
 
 import * as schema from '../db/schema'
 import type { Env } from '../env'
 import { currentSeason, seasonOf, tithiOf } from '../lib/pujo'
+import { bhogSettingOf, guestBoard, headcountView, newCode, responsesList, saveHeadcount } from '../lib/headcount'
+import { contactOf, householdTotal, loadHouseholds } from '../lib/households'
+import { seasonMoney } from '../lib/roll'
 
 function ok<T>(data: T): ApiResult<T> {
   return { ok: true, data }
@@ -67,8 +81,12 @@ bhogRoutes.get('/', async (c) => {
         .from(schema.bhogRsvp)
         .where(inArray(schema.bhogRsvp.menuId, visible.map((d) => d.id)))
     : []
+  // "Your count" is the household's: a family answers once, whoever answered.
+  const { keyOf } = await loadHouseholds(db)
+  const myKey = keyOf.get(me.personId) ?? me.personId
   const view: BhogMenuView[] = visible.map((d) => {
     const dayRsvps = rsvps.filter((r) => r.menuId === d.id)
+    const mine = dayRsvps.filter((r) => (keyOf.get(r.personId) ?? r.personId) === myKey)
     return {
       id: d.id,
       eventId: d.eventId as BhogMenuView['eventId'],
@@ -83,18 +101,59 @@ bhogRoutes.get('/', async (c) => {
       items: items
         .filter((i) => i.menuId === d.id)
         .map((i) => ({ id: i.id, title: i.title, titleBn: i.titleBn, sortOrder: i.sortOrder })),
-      myCount: dayRsvps.find((r) => r.personId === me.personId)?.count ?? null,
+      myCount: mine.length ? mine.reduce((s, r) => s + r.count, 0) : null,
       totalCount: dayRsvps.reduce((s, r) => s + r.count, 0),
-      responses: dayRsvps.length,
+      responses: new Set(dayRsvps.map((r) => keyOf.get(r.personId) ?? r.personId)).size,
     }
   })
   return c.json(ok(view))
 })
 
 /**
- * Headcount: any active member submits their household's headcount for an
- * event's PUBLISHED days — Durga Puja in one go, single-meal events as one
- * row. 0 is a valid answer; resubmitting updates.
+ * The household a headcount request is about: the member's own, or — for
+ * admin/fin_admin recording at the counter — the household they picked from
+ * the Responses list (`householdKey`, saved against its contact), or the
+ * household of the person they picked (`personId`, the walk-in case).
+ */
+async function targetHousehold(
+  db: DB,
+  me: Me,
+  personId: string | null | undefined,
+  householdKey?: string | null,
+  ev?: { startsOn: string },
+) {
+  const { byKey, keyOf } = await loadHouseholds(db)
+  if (householdKey) {
+    if (!isProxyRole(me.role)) return { error: 'only admins record counts for someone else', status: 403 as const }
+    const h = byKey.get(householdKey)
+    if (!h) return { error: 'household not found', status: 404 as const }
+    const money = ev ? await seasonMoney(db, seasonOf(ev.startsOn)) : new Map<string, number>()
+    return { household: h, personId: contactOf(h, money).id }
+  }
+  const id = personId && personId !== me.personId ? personId : me.personId
+  if (id !== me.personId && !isProxyRole(me.role))
+    return { error: 'only admins record counts for someone else', status: 403 as const }
+  const key = keyOf.get(id)
+  if (!key) return { error: 'person not found', status: 404 as const }
+  return { household: byKey.get(key)!, personId: id }
+}
+
+/** A household's headcount form for one event: its days, counts, allowance and which days are still open. */
+bhogRoutes.get('/headcount', async (c) => {
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, c.req.query('eventId') ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  const t = await targetHousehold(db, c.get('me'), c.req.query('personId'), c.req.query('householdKey'), ev)
+  if ('error' in t) return c.json({ ok: false, error: t.error }, t.status)
+  return c.json(ok(await headcountView(db, ev, t.household)))
+})
+
+/**
+ * Headcount: a member gives their household's counts for an event's
+ * PUBLISHED days — Durga Puja in one go, single-meal events as one row. 0 is
+ * a valid answer; resubmitting updates. Durga Pujo holds the household to its
+ * allowance and closes each day four days before it (lib/headcount); an admin
+ * or fin_admin recording for someone may still change a closed day.
  */
 bhogRoutes.post('/rsvp', async (c) => {
   const body = (await c.req.json()) as BhogRsvpInput
@@ -102,78 +161,238 @@ bhogRoutes.post('/rsvp', async (c) => {
   const db = drizzle(c.env.DB, { schema })
   const ev = await loadEvent(db, body.eventId ?? '')
   if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
-  if (seasonOf(ev.startsOn) !== currentSeason())
-    return c.json({ ok: false, error: 'this season is closed — counts are the record now' }, 400)
-  // Counter entry: admin/fin_admin may record for anyone on the roll —
-  // households phone in their counts without ever signing in.
-  let targetId = me.personId
-  if (body.personId && body.personId !== me.personId) {
-    if (!isProxyRole(me.role))
-      return c.json({ ok: false, error: 'only admins record counts for someone else' }, 403)
-    const [target] = await db
-      .select({ id: schema.person.id })
-      .from(schema.person)
-      .where(eq(schema.person.id, body.personId))
-      .limit(1)
-    if (!target) return c.json({ ok: false, error: 'person not found' }, 404)
-    targetId = target.id
-  }
-  const note = isProxyRole(me.role) ? body.note?.trim() || null : null
-  const menus = await db.select().from(schema.bhogMenu).where(eq(schema.bhogMenu.eventId, ev.id))
-  const publishable = new Map(menus.filter((m) => m.isPublished).map((m) => [m.id, m]))
-  const now = new Date().toISOString()
-  let saved = 0
-  for (const entry of body.counts ?? []) {
-    if (!publishable.has(entry.menuId)) continue
-    const count = Math.floor(Number(entry.count))
-    if (!Number.isFinite(count) || count < 0 || count > 99) continue
-    const [existing] = await db
-      .select()
-      .from(schema.bhogRsvp)
-      .where(and(eq(schema.bhogRsvp.menuId, entry.menuId), eq(schema.bhogRsvp.personId, targetId)))
-      .limit(1)
-    if (existing)
-      await db
-        .update(schema.bhogRsvp)
-        .set({ count, updatedAt: now, ...(note ? { notes: note } : {}) })
-        .where(eq(schema.bhogRsvp.id, existing.id))
-    else
-      await db.insert(schema.bhogRsvp).values({
-        id: crypto.randomUUID(),
-        menuId: entry.menuId,
-        personId: targetId,
-        count,
-        notes: note,
-        updatedAt: now,
-      })
-    saved++
-  }
-  return c.json(ok({ saved }))
+  const t = await targetHousehold(db, me, body.personId, body.householdKey, ev)
+  if ('error' in t) return c.json({ ok: false, error: t.error }, t.status)
+  const proxy = isProxyRole(me.role)
+  const result = await saveHeadcount(db, {
+    ev,
+    household: t.household,
+    writerId: t.personId,
+    counts: body.counts ?? [],
+    note: proxy ? body.note?.trim() || null : null,
+    atCounter: proxy,
+  })
+  if (!result.ok) return c.json({ ok: false, error: result.error }, result.status)
+  return c.json(ok({ saved: result.saved }))
 })
 
-/** The household-by-household count sheet for one event (core). */
+/**
+ * The household-by-household count sheet for one event (core): the
+ * Responses list (lib/headcount responsesList — the same households, in the
+ * same order, as the link's picker), answered or not. A family's answers are
+ * the sum of its people's rows. Durga Pujo households whose counts are over
+ * their allowance (a pledge cancelled after they answered) are flagged.
+ */
 bhogRoutes.get('/counts', async (c) => {
   const me = c.get('me')
   if (!canEdit(me)) return c.json({ ok: false, error: 'core members only' }, 403)
-  const eventId = c.req.query('eventId')
-  if (!eventId) return c.json({ ok: false, error: 'eventId query param required' }, 400)
   const db = drizzle(c.env.DB, { schema })
-  const menus = await db.select({ id: schema.bhogMenu.id }).from(schema.bhogMenu).where(eq(schema.bhogMenu.eventId, eventId))
-  if (menus.length === 0) return c.json(ok([] as BhogCountRow[]))
-  const rows = await db
-    .select({
-      personId: schema.bhogRsvp.personId,
-      name: schema.person.displayName,
-      tier: schema.person.tier,
-      menuId: schema.bhogRsvp.menuId,
-      count: schema.bhogRsvp.count,
-      notes: schema.bhogRsvp.notes,
+  const ev = await loadEvent(db, c.req.query('eventId') ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  const { menus, rsvps, listed, keyOf, money } = await responsesList(db, ev)
+  const households: BhogHousehold[] = listed.map((h) => {
+    const counts = menus.map((m) =>
+      rsvps.filter((r) => r.menuId === m.id && keyOf.get(r.personId) === h.key).reduce((s, r) => s + r.count, 0),
+    )
+    const allowance = ev.kind === 'durga-pujo' ? bhogAllowance(householdTotal(h, money)) : null
+    return { key: h.key, name: h.name, tier: h.tier, overAllowance: !!allowance && !bhogFits(allowance, counts) }
+  })
+  const names = new Map(listed.flatMap((h) => h.people.map((p) => [p.id, p.name] as const)))
+  const sheet: BhogCountSheet = {
+    households,
+    rows: rsvps.map((r) => ({
+      personId: r.personId,
+      name: names.get(r.personId) ?? '',
+      householdKey: keyOf.get(r.personId) ?? r.personId,
+      menuId: r.menuId,
+      count: r.count,
+      guests: r.guests,
+      notes: r.notes,
+    })),
+  }
+  return c.json(ok(sheet))
+})
+
+// ── Guest bhog (admin / fin_admin) ──────────────────────────────────────────
+
+/**
+ * The guest bhog board: settings (in-charge, rate), and every household with
+ * guests or guest money — due, received (from the ledger), balance. Also what
+ * the ledger form's "Guest bhog payment" toggle picks a household from.
+ */
+bhogRoutes.get('/guests', async (c) => {
+  if (!isProxyRole(c.get('me').role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, c.req.query('eventId') ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (ev.kind !== 'durga-pujo') return c.json({ ok: false, error: 'guest bhog is for Durga Pujo' }, 400)
+  return c.json(ok(await guestBoard(db, ev)))
+})
+
+/**
+ * Set the event's Food & Bhog in-charge and guest rate (₹ per head; null
+ * turns guest bhog off). Current season only.
+ */
+bhogRoutes.post('/setting', async (c) => {
+  const me = c.get('me')
+  if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const body = (await c.req.json()) as { eventId: string; inchargePersonId: string | null; guestRate: number | null }
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, body.eventId ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (ev.kind !== 'durga-pujo') return c.json({ ok: false, error: 'guest bhog is for Durga Pujo' }, 400)
+  if (seasonOf(ev.startsOn) !== currentSeason())
+    return c.json({ ok: false, error: 'settings change only for the current season' }, 400)
+  const rate = body.guestRate == null ? null : Number(body.guestRate)
+  if (rate != null && (!Number.isInteger(rate) || rate <= 0 || rate > 10000))
+    return c.json({ ok: false, error: 'the guest rate is whole rupees per head' }, 400)
+  if (body.inchargePersonId) {
+    const [p] = await db.select({ id: schema.person.id }).from(schema.person).where(eq(schema.person.id, body.inchargePersonId)).limit(1)
+    if (!p) return c.json({ ok: false, error: 'person not found' }, 404)
+  }
+  const values = { inchargePersonId: body.inchargePersonId || null, guestRate: rate, updatedBy: me.personId, updatedAt: new Date() }
+  await db
+    .insert(schema.bhogSetting)
+    .values({ eventId: ev.id, ...values })
+    .onConflictDoUpdate({ target: schema.bhogSetting.eventId, set: values })
+  return c.json(ok(await bhogSettingOf(db, ev.id)))
+})
+
+/**
+ * Guest bhog received: a ledger entry — contribution · misc_income · Guest
+ * Bhog, tagged to the event, paid by the household's contact, into the
+ * receiver's wallet — exactly what the ledger form's toggle writes. The board
+ * reads received money back from the ledger, so there is nothing else to keep.
+ */
+bhogRoutes.post('/guests/receive', async (c) => {
+  const me = c.get('me')
+  if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'finance admins only' }, 403)
+  const body = (await c.req.json()) as GuestBhogReceiveInput
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, body.eventId ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (ev.kind !== 'durga-pujo') return c.json({ ok: false, error: 'guest bhog is for Durga Pujo' }, 400)
+  if (seasonOf(ev.startsOn) !== currentSeason())
+    return c.json({ ok: false, error: 'past seasons are archival' }, 400)
+  const amount = Number(body.amount)
+  if (!Number.isInteger(amount) || amount <= 0) return c.json({ ok: false, error: 'amount must be whole rupees above 0' }, 400)
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(body.entryDate ?? '')) return c.json({ ok: false, error: 'date must be YYYY-MM-DD' }, 400)
+  if (!body.walletPersonId) return c.json({ ok: false, error: 'who received it?' }, 400)
+  // Counter guests first: they are validated (the 20-a-day cap; the cut-off
+  // doesn't bind an admin at the counter) and saved before any money is
+  // written, so a refused count never leaves a payment behind.
+  const addGuests = Number(body.guests ?? 0)
+  if (!Number.isInteger(addGuests) || addGuests < 0) return c.json({ ok: false, error: 'guests must be a whole number' }, 400)
+  let board = await guestBoard(db, ev)
+  const eligible = board.eligible.find((e) => e.householdKey === body.householdKey)
+  if (addGuests > 0) {
+    if (!eligible) return c.json({ ok: false, error: 'guest bhog is for core households — ₹10,000 or more this season' }, 400)
+    const day = board.days.find((d) => d.menuId === body.menuId)
+    if (!day) return c.json({ ok: false, error: 'pick the bhog day the guests ate' }, 400)
+    const { byKey } = await loadHouseholds(db)
+    const h = byKey.get(body.householdKey)!
+    const view = await headcountView(db, ev, h)
+    const today = view.days.find((d) => d.menuId === day.menuId)!
+    const saved = await saveHeadcount(db, {
+      ev,
+      household: h,
+      writerId: eligible.contactPersonId,
+      counts: [{ menuId: day.menuId, count: today.count ?? 0, guests: today.guests + addGuests }],
+      note: null,
+      atCounter: true,
     })
-    .from(schema.bhogRsvp)
-    .innerJoin(schema.person, eq(schema.person.id, schema.bhogRsvp.personId))
-    .where(inArray(schema.bhogRsvp.menuId, menus.map((m) => m.id)))
-    .orderBy(asc(schema.person.displayName))
-  return c.json(ok(rows as BhogCountRow[]))
+    if (!saved.ok) return c.json({ ok: false, error: saved.error }, saved.status)
+    board = await guestBoard(db, ev)
+  }
+  const row = board.rows.find((r) => r.householdKey === body.householdKey)
+  if (!row && !eligible) return c.json({ ok: false, error: 'that household has no guest bhog on record' }, 400)
+  const name = row?.name ?? eligible!.name
+  const heads = row?.heads ?? 0
+  const days = row
+    ? board.days
+        .map((d, i) => (row.guestsByDay[i] ? `${d.label.replace(/\s+Bhog$/i, '')} ${row.guestsByDay[i]}` : null))
+        .filter(Boolean)
+        .join(', ')
+    : ''
+  const counter = addGuests > 0 ? ` · ${addGuests} at the counter` : ''
+  const remark = body.note?.trim() ? ` · ${body.note.trim()}` : ''
+  const id = crypto.randomUUID()
+  await db.insert(schema.ledgerEntry).values({
+    id,
+    bookId: 'pujo-ledger',
+    eventId: ev.id,
+    entryDate: body.entryDate,
+    kind: 'contribution',
+    category: 'misc_income',
+    subCategory: GUEST_BHOG_SUBCATEGORY,
+    amount,
+    personId: row?.contactPersonId ?? eligible!.contactPersonId,
+    walletPersonId: body.walletPersonId,
+    notes: `Guest bhog · ${name} · ${heads} head${heads === 1 ? '' : 's'}${days ? ` (${days})` : ''}${counter}${remark}`,
+    createdBy: me.personId,
+    createdAt: new Date(),
+  })
+  return c.json(ok({ id }))
+})
+
+// ── The headcount link (admin / fin_admin) ──────────────────────────────────
+
+/** A fresh code no live or revoked link has used — collisions are rare, but checked. */
+async function uniqueCode(db: DB): Promise<string> {
+  for (let i = 0; i < 20; i++) {
+    const code = newCode()
+    const [taken] = await db
+      .select({ id: schema.bhogLink.id })
+      .from(schema.bhogLink)
+      .where(eq(schema.bhogLink.code, code))
+      .limit(1)
+    if (!taken) return code
+  }
+  throw new Error('could not find a free code')
+}
+
+const liveLink = async (db: DB, eventId: string) =>
+  (
+    await db
+      .select()
+      .from(schema.bhogLink)
+      .where(and(eq(schema.bhogLink.eventId, eventId), isNull(schema.bhogLink.revokedAt)))
+      .limit(1)
+  )[0]
+
+/**
+ * The event's live link, null until one is issued. The code opens every
+ * paying household's counts, so only admin and fin_admin see it.
+ */
+bhogRoutes.get('/link', async (c) => {
+  if (!isProxyRole(c.get('me').role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const db = drizzle(c.env.DB, { schema })
+  const link = await liveLink(db, c.req.query('eventId') ?? '')
+  return c.json(ok(link ? ({ code: link.code, createdAt: link.createdAt.getTime() } satisfies BhogLinkInfo) : null))
+})
+
+/**
+ * Issue the event's link — Durga Pujo, current season. With a live one
+ * already out, `replace` revokes it first (a link that went astray); without
+ * it, the live one is returned unchanged.
+ */
+bhogRoutes.post('/link', async (c) => {
+  const me = c.get('me')
+  if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'admins only' }, 403)
+  const body = (await c.req.json()) as { eventId: string; replace?: boolean }
+  const db = drizzle(c.env.DB, { schema })
+  const ev = await loadEvent(db, body.eventId ?? '')
+  if (!ev) return c.json({ ok: false, error: 'event not found' }, 404)
+  if (ev.kind !== 'durga-pujo') return c.json({ ok: false, error: 'the headcount link is for Durga Pujo' }, 400)
+  if (seasonOf(ev.startsOn) !== currentSeason())
+    return c.json({ ok: false, error: 'links are issued only for the current season' }, 400)
+  const live = await liveLink(db, ev.id)
+  if (live && !body.replace) return c.json(ok({ code: live.code, createdAt: live.createdAt.getTime() } satisfies BhogLinkInfo))
+  const now = new Date()
+  if (live) await db.update(schema.bhogLink).set({ revokedAt: now }).where(eq(schema.bhogLink.id, live.id))
+  const code = await uniqueCode(db)
+  await db.insert(schema.bhogLink).values({ id: crypto.randomUUID(), eventId: ev.id, code, createdBy: me.personId, createdAt: now })
+  return c.json(ok({ code, createdAt: now.getTime() } satisfies BhogLinkInfo))
 })
 
 /** Tithis that get bhog by default — Devi Baran and Bodhon days don't. */
@@ -223,11 +442,13 @@ bhogRoutes.post('/days/seed', async (c) => {
   let created = 0
   for (const [date, group] of byDate) {
     // A shared date is one lunch for both tithis ("Saptami / Ashtami Bhog");
-    // a lone day keeps its full identity ("Ashtami · Day 2 Bhog").
+    // a lone day keeps its full identity ("Ashtami · Day-2 Bhog"). "Day-2",
+    // not the Puja Day's "Day 2": hyphenated it never breaks across a line,
+    // so a narrow column or a spreadsheet heading can't strand the "2".
     const label =
       group.length > 1
         ? [...new Set(group.map((pd) => tithiOf(pd.labelEn) ?? pd.labelEn))].join(' / ')
-        : group[0].labelEn
+        : group[0].labelEn.replace(/\bDay (\d+)\b/, 'Day-$1')
     await db.insert(schema.bhogMenu).values({
       id: crypto.randomUUID(),
       eventId: ev.id,

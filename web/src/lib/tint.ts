@@ -1,3 +1,4 @@
+import type { FamilyTier } from '@pujosamiti/shared'
 import type { CSSProperties } from 'react'
 
 /**
@@ -27,6 +28,19 @@ export function tint(t: Tint, amount?: string): { className: string; style?: CSS
     style: Object.keys(style).length ? (style as CSSProperties) : undefined,
   }
 }
+
+/**
+ * Props for a tinted table row (see .tint-row in index.css): the wash on every
+ * cell, the strip on the first. `amount` as for tint() — rows want 5–7 %.
+ */
+export function tintRow(t: Pastel, amount?: string): { className: string; style: CSSProperties } {
+  const style: Record<string, string> = { '--tint': `var(--${t})` }
+  if (amount) style['--tint-amount'] = amount
+  return { className: 'tint-row', style: style as CSSProperties }
+}
+
+/** A tier's edge wherever people are listed: core rose, member blue lotus, non-member sandalwood. */
+export const TIER_PASTEL: Record<FamilyTier, Pastel> = { core: 'golap', member: 'nilkamal', non_member: 'chandan' }
 
 /**
  * Each members-area page's own colour: its tile on Members Only and the

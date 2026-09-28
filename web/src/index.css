@@ -250,6 +250,15 @@
   --tint-amount: 100%;
   --tint-edge: linear-gradient(var(--golap) 0 25%, var(--chandan) 0 50%, var(--ganga) 0 75%, var(--nilkamal) 0);
 }
+/* The same edge on a table row. A row's own background is painted cell by
+   cell in some browsers (Safari), which would draw the strip at every cell's
+   left — so the wash goes on each cell and the strip on the first alone. */
+.tint-row > td {
+  background: color-mix(in srgb, var(--tint) var(--tint-amount, 6%), var(--card));
+}
+.tint-row > td:first-child {
+  box-shadow: inset 5px 0 0 var(--tint);
+}
 .tint-disc {
   background: color-mix(in srgb, var(--tint) 55%, var(--card));
   color: color-mix(in srgb, var(--tint) 45%, var(--foreground));

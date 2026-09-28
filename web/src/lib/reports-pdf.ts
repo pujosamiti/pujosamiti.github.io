@@ -1,6 +1,7 @@
 /**
  * Season reports as PDF — the ledger's core / non-core subscriptions and
- * sponsorship lists, and the sponsorship board of a pujo year.
+ * sponsorship lists, the sponsorship board of a pujo year, and the bhog
+ * count sheet of an event.
  *
  * Pure with respect to the page: each builder takes the already-filtered
  * rows and the logo as a data URL, so the same code runs in a Node smoke
@@ -10,6 +11,7 @@ import { jsPDF } from 'jspdf'
 import { autoTable, type RowInput, type UserOptions } from 'jspdf-autotable'
 import type { SponsorshipItemView } from '@pujosamiti/shared'
 
+import { bhogReport, type BhogReportInput } from '@/lib/bhog-report'
 import { ledgerReport, payerOf, sponsorshipBoard, stampIST, type LedgerReportInput } from '@/lib/ledger-reports'
 
 // jaba and kali from docs/012 — the two colours a report is allowed.
@@ -18,6 +20,8 @@ const KALI: [number, number, number] = [0x2b, 0x1a, 0x10]
 const GREY: [number, number, number] = [0x80, 0x78, 0x70]
 const WASH: [number, number, number] = [0xf6, 0xf1, 0xea]
 const RULE: [number, number, number] = [0xe6, 0xdd, 0xd2]
+// durba, the paan-leaf green: guest bhog heads, as on the screen
+const DURBA: [number, number, number] = [0x17, 0x66, 0x4f]
 const BAND_H = 12 // mm
 const MARGIN = 12
 
@@ -277,5 +281,111 @@ async function bengaliLines(items: SponsorshipItemView[]): Promise<Record<string
 export async function downloadSponsorshipPdf(input: Omit<SponsorshipPdfInput, 'logo' | 'bengali'>): Promise<void> {
   const [logo, bengali] = await Promise.all([loadLogo(), bengaliLines(input.items)])
   const { doc, filename } = renderSponsorshipPdf({ ...input, logo, bengali })
+  doc.save(filename)
+}
+
+// ── Bhog count sheet of one event ───────────────────────────────────────────
+
+export interface BhogPdfInput extends BhogReportInput {
+  logo: string
+}
+
+/**
+ * Landscape, one row per household under a Core members / Members heading,
+ * one column per day. Unanswered days print blank and every row has room to
+ * write in, so the sheet taken before anyone answers is the counter's form.
+ */
+export function renderBhogPdf({ logo, ...input }: BhogPdfInput): { doc: jsPDF; filename: string } {
+  const r = bhogReport(input)
+  const page = openReport(r.title, r.subtitle, logo, 'landscape')
+  if (r.households.length === 0 || r.days.length === 0) {
+    page.empty(r.days.length === 0 ? `No bhog days for ${r.subtitle} yet.` : 'No household has paid or pledged this season yet.')
+  } else {
+    const n = r.days.length
+    // Guest bhog: a day reads "4 + 5" (family + guests); a Guests column shows once anyone has guests
+    const withGuests = r.grandGuests > 0
+    const g = withGuests ? 1 : 0
+    const width = n + 4 + g // #, household, the days, [guests], total, remarks
+    const body: RowInput[] = []
+    let number = 0
+    for (const [i, h] of r.households.entries()) {
+      if (i === 0 || r.households[i - 1].tier !== h.tier)
+        body.push([
+          {
+            content: h.tier === 'core' ? 'Core members' : 'Members',
+            colSpan: width,
+            styles: { fontStyle: 'bold', textColor: GREY, fontSize: 7.5, halign: 'left' },
+          },
+        ])
+      number++
+      body.push([
+        String(number),
+        h.name,
+        ...h.counts.map((c, j) => (h.guests[j] ? `${c ?? 0} + ${h.guests[j]}` : c == null ? '' : String(c))),
+        ...(withGuests ? [h.guestTotal ? String(h.guestTotal) : ''] : []),
+        h.counts.some((c) => c != null) || h.guestTotal ? String(h.total) : '',
+        { content: h.remarks, styles: { textColor: GREY, fontSize: 7.5 } },
+      ])
+    }
+    const footRow = (label: string, cells: string[], total: string, guests = ''): RowInput => [
+      { content: label, colSpan: 2 },
+      ...cells.map((c) => ({ content: c, styles: { halign: 'right' as const } })),
+      ...(withGuests ? [{ content: guests, styles: { halign: 'right' as const } }] : []),
+      { content: total, styles: { halign: 'right' as const } },
+      '',
+    ]
+    // Nobody has answered: the form's total row stays blank to be written in, like its cells.
+    const blank = r.answered === 0
+    const foot: RowInput[] = [
+      footRow(
+        `Total plates · ${r.answered} of ${r.households.length} answered`,
+        r.plates.map((n) => (blank ? '' : String(n))),
+        blank ? '' : String(r.grandPlates),
+        withGuests ? String(r.grandGuests) : '',
+      ),
+    ]
+    if (r.money)
+      foot.push(
+        footRow('Per plate', r.days.map((d) => (d.perPlateCost != null ? rs(d.perPlateCost) : '')), ''),
+        footRow('Total', r.money.map((m) => (m != null ? rs(m) : '')), r.grandMoney != null ? rs(r.grandMoney) : ''),
+      )
+    const dayCols = Object.fromEntries(
+      r.days.map((_, i) => [i + 2, { cellWidth: withGuests ? 27 : 28, halign: 'right' as const }]),
+    )
+    page.table({
+      head: [
+        [
+          '#',
+          'Household',
+          ...r.days.map((d) => `${d.heading}\n${d.shortDate}`),
+          ...(withGuests ? ['Guests'] : []),
+          'Total',
+          'Remarks',
+        ],
+      ],
+      body,
+      foot,
+      columnStyles: {
+        0: { cellWidth: 8, halign: 'right', textColor: GREY },
+        1: { cellWidth: withGuests ? 54 : 64 },
+        ...dayCols,
+        ...(withGuests ? { [n + 2]: { cellWidth: 14, halign: 'right' as const, textColor: DURBA } } : {}),
+        [n + 2 + g]: { cellWidth: 16, halign: 'right', fontStyle: 'bold' },
+      },
+      didParseCell: (data) => {
+        if (data.section === 'head' && data.column.index >= 2 && data.column.index <= n + 2 + g) data.cell.styles.halign = 'right'
+        // Household rows get room to write a figure in by hand; the headings stay slim.
+        if (data.section === 'body' && Array.isArray(data.row.raw) && data.row.raw.length > 1) {
+          data.cell.styles.minCellHeight = 6.5
+          data.cell.styles.valign = 'middle'
+        }
+      },
+    })
+  }
+  return { doc: page.finish(), filename: `${r.fileStem}.pdf` }
+}
+
+export async function downloadBhogPdf(input: BhogReportInput): Promise<void> {
+  const { doc, filename } = renderBhogPdf({ ...input, logo: await loadLogo() })
   doc.save(filename)
 }

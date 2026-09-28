@@ -123,12 +123,41 @@ a whole-₹ `per_plate_cost` (₹160/180/190 in the 2024–25 sheets) and an
 `is_published` flag: drafts are core-editor-only, published days are visible
 to every member. Only the current season is writable.
 
-`bhog_rsvp` is the **headcount** — the digital food-coupon-details sheet:
-one row per (menu day × person), the signed-in member answering for their
-household ("Bhog Count, 5+ yrs"), unique-indexed, 0 a valid answer. Any
-active member submits — Durga Puja's days in one go — and resubmitting
-updates; core members read the household-by-household sheet. Bhog coupons
-will build on these counts.
+`bhog_rsvp` is the **headcount** — the digital food-coupon-details sheet
+("Bhog Count, 5+ yrs"), 0 a valid answer. The unit is the **household**: a
+`family`, or a person who has none (`api/src/lib/households.ts`). A household
+keeps one row per menu day — saving replaces whatever its people had on that
+day with a single row recorded against whoever answered (unique per menu ×
+person in the schema; one-per-household in `api/src/lib/headcount.ts`). The
+core members' sheet lists the households that paid a subscription or
+sponsorship, or pledged one, that season (`seasonMoney` in
+`api/src/lib/roll.ts`), plus any that have answered — lifetime members who no
+longer pay are left off.
+
+**Durga Pujo coupons.** A family's season money — subscriptions and
+sponsorships paid, plus pledges still marked `pledged` — sets its allowance
+(`bhogAllowance` in shared): **₹10,000 or more → up to 10 people each day**;
+less → **one coupon per ₹500**, spent on any days (all on one if they like).
+Each day closes **four days before it** (Saptami 17 Oct takes its last change
+on 13 Oct, IST); admin/fin_admin can still change a closed day. Counts left
+above the allowance by a cancelled pledge stand and may come down, not up,
+and are flagged on the sheet. Other occasions have no allowance or cut-off.
+
+`bhog_link` (0012) is the **headcount link**: one live code per event
+(`/bhog/count/?c=X481216` — a letter without I/O, six digits), shared with
+the samiti. Opening it offers the same household list as the sheet; saves go
+through the same rules. Replacing a code sets `revoked_at` on the old row.
+
+**Guest bhog.** A core household (₹10,000+ that season) may bring office
+colleagues and friends: `bhog_rsvp.guests`, up to 20 a day on top of its
+own count, same cut-off. They are charged per head at the event's rate in
+`bhog_setting` (`guest_rate`, NULL = off; `incharge_person_id` is the Food &
+Bhog in-charge, pre-selected as the receiver and named on the form). Money
+received is **not stored here**: it is read from the ledger — active pujo
+entries `contribution · misc_income · Guest Bhog`, tagged to the event or
+untagged within its season — so voiding an entry reopens the balance. No
+refunds: an overpaid household shows a negative balance. Plates on the
+count sheet include guests.
 
 ### Money: `book`, `ledger_entry`, `sponsorship_item`, `sponsorship_item_year`, `sponsorship_pledge`, `expense_reimbursement`, `budget_line`
 
@@ -248,6 +277,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0009 | `0009_uma.sql` | উমা — `uma_issue`, `uma_article`, `person.uma_role` ([015](015-uma-magazine.md)) |
 | 0010 | `0010_sponsorship-tagline.sql` | `sponsorship_item.tagline` / `tagline_bn` — each slot's bilingual appeal |
 | 0011 | `0011_uma-section-editors.sql` | `uma_section_editor` — one editor per Uma section; retires `uma_role = 'editor'` |
+| 0012 | `0012_bhog-headcount.sql` | `bhog_link` — the headcount link, one live code per event (partial unique index), revoked codes kept; `bhog_rsvp.guests`; `bhog_setting` — per-event Food & Bhog in-charge and guest rate |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

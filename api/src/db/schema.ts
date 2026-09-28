@@ -543,9 +543,50 @@ export const bhogRsvp = sqliteTable('bhog_rsvp', {
     .notNull()
     .references(() => person.id, { onDelete: 'cascade' }),
   count: integer('count').notNull(),
+  /**
+   * Guest bhog: office colleagues and friends a core household brings on top
+   * of its own count — up to 20 a day, paid per head (bhog_setting).
+   */
+  guests: integer('guests').notNull().default(0),
   /** The sheet's remark column: "already paid for 10 Ashtami guests". */
   notes: text('notes'),
   updatedAt: text('updated_at').notNull(), // ISO date-time of the last change
+})
+
+/**
+ * The headcount link of one event: /bhog/count/?c=<code>, no sign-in, shared
+ * with the whole samiti. Whoever opens it picks their household from the
+ * Responses list and gives its counts. At most one live code per event (a
+ * partial unique index in 0012); revoking keeps the row and a new one is issued.
+ */
+export const bhogLink = sqliteTable('bhog_link', {
+  id: text('id').primaryKey(),
+  eventId: text('event_id')
+    .notNull()
+    .references(() => event.id, { onDelete: 'cascade' }),
+  code: text('code').notNull(), // "X481216": a letter (no I or O), six digits
+  createdBy: text('created_by')
+    .notNull()
+    .references(() => person.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).notNull(),
+  revokedAt: integer('revoked_at', { mode: 'timestamp' }),
+})
+
+/**
+ * Per-event bhog settings (admin / fin_admin, on /bhog): the Food & Bhog
+ * in-charge — pre-selected as "Received by" for guest bhog and named on the
+ * form's payment line — and the guest rate per head (NULL = no guest bhog).
+ */
+export const bhogSetting = sqliteTable('bhog_setting', {
+  eventId: text('event_id')
+    .primaryKey()
+    .references(() => event.id, { onDelete: 'cascade' }),
+  inchargePersonId: text('incharge_person_id').references(() => person.id, { onDelete: 'set null' }),
+  guestRate: integer('guest_rate'), // whole ₹ per head
+  updatedBy: text('updated_by')
+    .notNull()
+    .references(() => person.id),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).notNull(),
 })
 
 // ─────────────────────────────────────────────────────────────────────────────

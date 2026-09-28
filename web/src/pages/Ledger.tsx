@@ -14,13 +14,12 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, GUEST_BHOG_SUBCATEGORY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDownLeft,
   ArrowUpRight,
   Ban,
-  FileDown,
   HandCoins,
   History,
   Loader2,
@@ -43,6 +42,10 @@ import { PAGE_TINT, pastelAt, tint, type Tint } from '@/lib/tint'
 import { cn } from '@/lib/utils'
 import { PageTitle } from '@/components/PageTitle'
 import { SearchSelect, TextPicker } from '@/components/SearchSelect'
+import { DownloadPill, FormatSwitch } from '@/components/ReportDownload'
+import { Switch } from '@/components/Switch'
+import { receiveGuestBhog, useGuestBoard } from '@/lib/bhog'
+import { FORMAT_LABEL, type ReportFormat } from '@/lib/report-format'
 import { Seo } from '@/components/Seo'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -908,70 +911,6 @@ function ReportDownload({ bookId, season, entries }: { bookId: BookId; season: n
   )
 }
 
-type ReportFormat = 'xlsx' | 'pdf'
-const FORMAT_LABEL: Record<ReportFormat, string> = { xlsx: 'Excel', pdf: 'PDF' }
-
-/**
- * Which file the pills beside it download: a two-way switch, as small as the
- * pills. The chosen format is filled in sharat blue — the choice — so it reads
- * apart from the crimson download pills, the action.
- */
-function FormatSwitch({ value, onChange, disabled }: { value: ReportFormat; onChange: (f: ReportFormat) => void; disabled: boolean }) {
-  return (
-    <span role="radiogroup" aria-label="Download format" className="inline-flex rounded-full border p-0.5">
-      {(['xlsx', 'pdf'] as const).map((f) => (
-        <button
-          key={f}
-          type="button"
-          role="radio"
-          aria-checked={value === f}
-          disabled={disabled}
-          onClick={() => onChange(f)}
-          className={cn(
-            'rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors disabled:opacity-60',
-            value === f ? 'bg-sharat text-sharat-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground',
-          )}
-        >
-          {FORMAT_LABEL[f]}
-        </button>
-      ))}
-    </span>
-  )
-}
-
-/**
- * A pill with the download mark: one tap, one file. Drawn in crimson outline,
- * not filled — several sit in a row, and the page's one filled red belongs to
- * its main action (Add entry, Pledge).
- */
-function DownloadPill({
-  label,
-  format = 'PDF',
-  busy,
-  disabled,
-  onClick,
-}: {
-  label: string
-  /** What the tap downloads, for screen readers: "Excel" or "PDF". */
-  format?: string
-  busy: boolean
-  disabled: boolean
-  onClick: () => void
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      className="inline-flex items-center gap-1 rounded-full border border-primary/60 bg-card px-3 py-1 text-xs font-medium text-primary transition-colors hover:border-primary hover:bg-primary hover:text-primary-foreground disabled:opacity-60"
-      aria-label={`Download ${label} ${format}`}
-    >
-      {busy ? <Loader2 className="size-3.5 animate-spin" /> : <FileDown className="size-3.5" />}
-      {label}
-    </button>
-  )
-}
-
 /** The sponsorship board of one year as a spreadsheet or a PDF — the rows exactly as drawn on screen. */
 function SponsorshipDownload({ year, items }: { year: number; items: SponsorshipItemView[] }) {
   // Excel first, as on the ledger's season lists.
@@ -1245,14 +1184,83 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   const [savedFor, setSavedFor] = useState<{ personId: string; coreQualified: boolean } | null>(null)
   const queryClient = useQueryClient()
 
+  // Core Member Guest Bhog: the same entry the /bhog board's "Mark
+  // received" writes — misc_income · Guest Bhog, tagged to this Durga Pujo,
+  // paid by the household's contact — for any eligible core household, not
+  // only those that gave a headcount: a core member often pays at the
+  // counter on the day for a friend (the kitchen keeps 50 extra a day). Such
+  // counter guests are added to that day's guests, so the board's due and
+  // the money agree.
+  const { data: events } = useEvents()
+  const durga = (events ?? []).find((e) => e.kind === 'durga-pujo' && e.isActive) ?? null
+  const [guestMode, setGuestMode] = useState(false)
+  const [guestHousehold, setGuestHousehold] = useState<string | null>(null)
+  const [counterGuests, setCounterGuests] = useState('')
+  const [counterDay, setCounterDay] = useState<string | null>(null)
+  const { data: guestBoard } = useGuestBoard(guestMode && durga ? durga.id : null)
+  const canGuest = !editing && kind === 'contribution' && bookId === 'pujo-ledger' && !!durga
+  const guestRow = guestBoard?.rows.find((r) => r.householdKey === guestHousehold) ?? null
+  const guestRate = guestBoard?.setting.guestRate ?? 0
+  /** What the household owes now: its outstanding balance, plus the counter guests at the rate. */
+  const guestAmount = (key: string | null, extra: string) => {
+    const row = guestBoard?.rows.find((r) => r.householdKey === key)
+    const owed = Math.max(0, row?.balance ?? 0) + (Number(extra) || 0) * guestRate
+    return owed > 0 ? String(owed) : ''
+  }
+  const switchGuest = (on: boolean) => {
+    setGuestMode(on)
+    setGuestHousehold(null)
+    setCounterGuests('')
+    setCounterDay(null)
+    setPersonId(null)
+    setCounterparty('')
+    setAmount('')
+    setNotes('')
+    if (on) {
+      setCategoryRaw('misc_income')
+      setSubCategory(GUEST_BHOG_SUBCATEGORY)
+    } else {
+      setCategoryRaw('subscription')
+      setSubCategory(SUBSCRIPTION_SUBCATS[0])
+    }
+  }
+  const pickGuestHousehold = (key: string) => {
+    const e = guestBoard?.eligible.find((x) => x.householdKey === key)
+    const row = guestBoard?.rows.find((r) => r.householdKey === key)
+    if (!guestBoard || (!e && !row)) return
+    setGuestHousehold(key)
+    setPersonId(row?.contactPersonId ?? e!.contactPersonId)
+    setAmount(guestAmount(key, counterGuests))
+    // the bhog day matching the entry's date, when there is one — the counter case
+    if (!counterDay) setCounterDay(guestBoard.days.find((d) => d.date === entryDate)?.menuId ?? null)
+    if (!walletId && guestBoard.setting.inchargePersonId) setWalletId(guestBoard.setting.inchargePersonId)
+  }
+  const changeCounterGuests = (v: string) => {
+    const clean = v.replace(/\D/g, '')
+    setCounterGuests(clean)
+    setAmount(guestAmount(guestHousehold, clean))
+  }
+
   const save = useMutation({
     mutationFn: (body: LedgerEntryInput) =>
-      post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body) as Promise<{
-        id: string
-        coreQualified?: boolean
-      }>,
+      guestMode && durga
+        ? (receiveGuestBhog({
+            eventId: durga.id,
+            householdKey: guestHousehold!,
+            amount: body.amount,
+            entryDate: body.entryDate,
+            walletPersonId: body.walletPersonId,
+            menuId: Number(counterGuests) > 0 ? counterDay : null,
+            guests: Number(counterGuests) || 0,
+            note: notes.trim() || null,
+          }) as Promise<{ id: string; coreQualified?: boolean }>)
+        : (post(editing ? `/api/members/ledger/entries/${initial.id}/update` : '/api/members/ledger/entries', body) as Promise<{
+            id: string
+            coreQualified?: boolean
+          }>),
     onSuccess: (r) => {
       invalidate()
+      if (guestMode) void queryClient.invalidateQueries({ queryKey: ['bhog-guests'] })
       // Counter flow: a fresh contribution keeps the panel open with the
       // roll-update message and a one-tap jump to their headcount.
       if (!editing && kind === 'contribution' && personId) {
@@ -1265,7 +1273,7 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
 
   const buildBody = (): LedgerEntryInput => ({
     bookId,
-    eventId: null,
+    eventId: guestMode && durga ? durga.id : null,
     entryDate,
     kind,
     category: kind === 'transfer' ? null : category,
@@ -1291,9 +1299,13 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
     setPersonId(null)
     setCounterparty('')
     setNotes('')
+    setGuestHousehold(null)
+    setCounterGuests('')
   }
 
   const switchKind = (k: LedgerKind) => {
+    setGuestMode(false)
+    setGuestHousehold(null)
     setKind(k)
     setCategoryRaw(k === 'contribution' ? 'subscription' : k === 'expense' ? Object.keys(EXPENSE_TAXONOMY)[0] : '')
     setSubCategory(k === 'contribution' ? SUBSCRIPTION_SUBCATS[0] : '')
@@ -1350,8 +1362,84 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
               placeholder="5000"
             />
           </Field>
-          <CategoryFields {...{ kind, category, setCategory, subCategory, setSubCategory }} />
-          {kind === 'contribution' && (
+          {canGuest && (
+            <div className="sm:col-span-2">
+              <Switch
+                checked={guestMode}
+                onChange={switchGuest}
+                label="Core Member Guest Bhog"
+                hint={`A core household's office colleagues / friends at ${durga!.nameEn} ${durga!.year} bhog${guestRate ? ` — ₹${guestRate} a head` : ''}`}
+              />
+            </div>
+          )}
+          {guestMode ? (
+            <>
+              <Field label="Category">
+                <p className="py-2 text-sm text-muted-foreground">
+                  Misc income · {GUEST_BHOG_SUBCATEGORY} · {durga?.nameEn} {durga?.year}
+                </p>
+              </Field>
+              <Field label="Household (core)">
+                <SearchSelect
+                  ariaLabel="Household"
+                  align="left"
+                  fullWidth
+                  placeholder={guestBoard ? 'Pick the household…' : 'Loading…'}
+                  value={guestHousehold}
+                  options={[
+                    ...(guestBoard?.eligible ?? []).map((e) => ({ value: e.householdKey, name: e.name })),
+                    // a household with guest money on record that is no longer core still settles here
+                    ...(guestBoard?.rows ?? [])
+                      .filter((r) => !guestBoard?.eligible.some((e) => e.householdKey === r.householdKey))
+                      .map((r) => ({ value: r.householdKey, name: r.name })),
+                  ].map(({ value, name }) => {
+                    const row = guestBoard?.rows.find((r) => r.householdKey === value)
+                    return {
+                      value,
+                      label: name,
+                      hint: row && row.balance > 0 ? `₹${row.balance.toLocaleString('en-IN')} due` : undefined,
+                    }
+                  })}
+                  onChange={pickGuestHousehold}
+                />
+              </Field>
+              <Field label="Guests at the counter (optional)">
+                <input
+                  className={inputCls}
+                  inputMode="numeric"
+                  value={counterGuests}
+                  onChange={(e) => changeCounterGuests(e.target.value)}
+                  placeholder="0"
+                />
+              </Field>
+              <Field label="Bhog day for them">
+                <SearchSelect
+                  ariaLabel="Bhog day"
+                  align="left"
+                  fullWidth
+                  placeholder="Pick the day…"
+                  invalid={Number(counterGuests) > 0 && !counterDay}
+                  value={counterDay}
+                  options={(guestBoard?.days ?? []).map((d) => ({
+                    value: d.menuId,
+                    label: d.label,
+                    // "17 Oct", not "10-17"
+                    hint: new Date(`${d.date}T00:00:00Z`).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', timeZone: 'UTC' }),
+                  }))}
+                  onChange={setCounterDay}
+                />
+              </Field>
+              {guestRow && (
+                <p className="text-sm text-muted-foreground sm:col-span-2">
+                  On record: {guestRow.heads} guest{guestRow.heads === 1 ? '' : 's'} · ₹{guestRow.due.toLocaleString('en-IN')} due ·
+                  ₹{guestRow.received.toLocaleString('en-IN')} received
+                </p>
+              )}
+            </>
+          ) : (
+            <CategoryFields {...{ kind, category, setCategory, subCategory, setSubCategory }} />
+          )}
+          {kind === 'contribution' && !guestMode && (
             <>
               <Field label="Contributor">
                 <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Contributor" everyone allowCreate />
@@ -1397,8 +1485,13 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
               <PersonSelect value={toWalletId} onChange={setToWalletId} ariaLabel="To wallet" coreOnly exclude={walletId ? [walletId] : []} />
             </Field>
           )}
-          <Field label="Notes">
-            <input className={inputCls} value={notes} onChange={(e) => setNotes(e.target.value)} />
+          <Field label={guestMode ? 'Remark (added to the note)' : 'Notes'}>
+            <input
+              className={inputCls}
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder={guestMode ? 'e.g. friend from office' : undefined}
+            />
           </Field>
         </fieldset>
         {save.isError && <p className="text-sm text-destructive">{(save.error as Error).message}</p>}
@@ -1422,7 +1515,12 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
           ) : (
             <Button
               size="sm"
-              disabled={save.isPending || !amount || !walletId}
+              disabled={
+                save.isPending ||
+                !amount ||
+                !walletId ||
+                (guestMode && (!guestHousehold || (Number(counterGuests) > 0 && !counterDay)))
+              }
               onClick={() => (editing ? setConfirming(true) : save.mutate(buildBody()))}
             >
               {save.isPending && <Loader2 className="animate-spin" />} {editing ? 'Save changes' : 'Save entry'}

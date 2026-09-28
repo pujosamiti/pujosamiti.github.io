@@ -24,14 +24,14 @@ INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '4c
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '7a6a9d95-02f3-593a-92d7-d70283023b1e', id, 'Pineapple Chatni', 'আনারসের চাটনি', 60 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '0890a590-db92-5c85-8581-7ecb2f597c31', id, 'Water Bottle', 'জলের বোতল', 70 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami Bhog';
 
-UPDATE bhog_menu SET per_plate_cost=225 WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'aa61a19e-12a9-530c-a915-51e4c66de132', id, 'Khichudi', 'খিচুড়ি', 10 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '0927f1fb-d564-5150-9b99-233d1f06ae13', id, 'Labra', 'লাবড়া', 20 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'f8b1d4b1-3f2e-5e95-847b-8d377baa5859', id, 'Beguni', 'বেগুনি', 30 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'a36e7974-811a-5be3-85f0-c37b857c28ab', id, 'Papad', 'পাপড়', 40 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'b890e593-9643-5ff7-bf9a-c639b0edd322', id, 'Rasgulla', 'রসগোল্লা', 50 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'c2d00648-3342-5410-b2de-9a6c92db849c', id, 'Pineapple Chatni', 'আনারসের চাটনি', 60 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'da96055e-979f-5fbb-9e59-0107fbb7e4ee', id, 'Water Bottle', 'জলের বোতল', 70 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day 2 Bhog';
+UPDATE bhog_menu SET per_plate_cost=225 WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'aa61a19e-12a9-530c-a915-51e4c66de132', id, 'Khichudi', 'খিচুড়ি', 10 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '0927f1fb-d564-5150-9b99-233d1f06ae13', id, 'Labra', 'লাবড়া', 20 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'f8b1d4b1-3f2e-5e95-847b-8d377baa5859', id, 'Beguni', 'বেগুনি', 30 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'a36e7974-811a-5be3-85f0-c37b857c28ab', id, 'Papad', 'পাপড়', 40 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'b890e593-9643-5ff7-bf9a-c639b0edd322', id, 'Rasgulla', 'রসগোল্লা', 50 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'c2d00648-3342-5410-b2de-9a6c92db849c', id, 'Pineapple Chatni', 'আনারসের চাটনি', 60 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'da96055e-979f-5fbb-9e59-0107fbb7e4ee', id, 'Water Bottle', 'জলের বোতল', 70 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Ashtami · Day-2 Bhog';
 
 UPDATE bhog_menu SET per_plate_cost=250 WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '9041cb15-2a6d-5db0-bed5-5e2c35ae69a7', id, 'Pulao', 'পোলাও', 10 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';

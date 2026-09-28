@@ -22,11 +22,20 @@ local `http://localhost:8787`.
 
 ## Public (no auth)
 
+The three `/api/public/bhog/headcount` routes are the **headcount link**
+(`/bhog/count/?c=X481216`): one code per Durga Pujo, shared on WhatsApp, no
+sign-in. A wrong, revoked or past-season code gets a plain message; every
+call is capped per IP (`HEADCOUNT_LIMITER`, 20 a minute — see
+[007](007-cloudflare.md)).
+
 | Route | Returns | Called by |
 | --- | --- | --- |
 | `GET /health` | `{ok:true}` | monitoring / smoke tests |
 | `GET /api/public/events` | Event list (no purohit phone) | Home, Events, Schedule pages |
 | `GET /api/public/timetable` | Nirghanto rows for the active event | Nirghanto page |
+| `GET /api/public/bhog/headcount?c=` | The headcount link's front page (`BhogLinkSheet`): the event and the households to pick from — the Responses list, names only | `/bhog/count/` |
+| `GET /api/public/bhog/headcount/household?c=&h=` | One listed household's form (`BhogHeadcountView`): days, counts, allowance, which days are open | `/bhog/count/` |
+| `POST /api/public/bhog/headcount` | Save one listed household's counts (`{code, householdKey, counts}`), same rules as `/rsvp`; recorded against the household's contact (its top giver this season) | `/bhog/count/` |
 | `GET /api/public/posts` · `GET /api/public/posts/:slug` | Blog/magazine posts listed from the content **Drive folder** | ⚠️ **dormant — no frontend caller**; needs `CONTENT_DRIVE_FOLDER_ID` (unset in prod) |
 
 ## OAuth completion
@@ -116,8 +125,13 @@ One menu per calendar date per event — five occasions a season
 | `POST /days` · `POST /days/:id` · `POST /days/:id/delete` | Day CRUD (event/label/date/per-plate ₹/notes) — single-meal events add their one menu here |
 | `POST /days/:id/publish` | Publish/unpublish a day to the members |
 | `POST /days/:id/items` | Replace a day's dishes wholesale |
-| `POST /rsvp` | **Any member**: their household's headcount, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`); never changes a tier |
-| `GET /counts?eventId=` | **Core**: the household-by-household count sheet for one event |
+| `GET /headcount?eventId=&householdKey=&personId=` | A household's form (`BhogHeadcountView`) — the member's own; admin/fin_admin pass `householdKey` (the Responses list, as the link's picker) or `personId` (a walk-in) for anyone's. `POST /rsvp` takes the same two |
+| `POST /rsvp` | **Any member**: their household's headcount, in one go; admin/fin_admin may pass `personId` to record for any household (+optional `note`); never changes a tier. One row per household per day (a family's old rows are replaced). **Durga Pujo** enforces the allowance and the cut-off (`api/src/lib/headcount.ts`); admin/fin_admin may still change a closed day |
+| `GET /counts?eventId=` | **Core**: the household-by-household count sheet for one event — `{households, rows}`: every household (a family, or the person when they have none) where someone paid a subscription or sponsorship, or holds a sponsorship pledge that isn't cancelled, in the event's season — answered or not — plus anyone who has answered; each row carries its `householdKey` and a family's counts are the sum of its people's; Durga Pujo households over their allowance carry `overAllowance` |
+| `GET /guests?eventId=` | **admin/fin_admin**: the guest bhog board (`GuestBhogSheet`) — settings, and each household with guests or guest money: guests by day, due, received (from the ledger), balance |
+| `POST /setting` | **admin/fin_admin**: the event's Food & Bhog in-charge and guest rate (`{eventId, inchargePersonId, guestRate}`; null rate = off) |
+| `POST /guests/receive` | **admin/fin_admin**: record a guest bhog payment — writes the ledger entry `misc_income · Guest Bhog`, event-tagged, payer = the household's contact, wallet = the receiver. Optional `{menuId, guests}` adds guests paid for at the counter to that day's count first (20-a-day cap, cut-off waived), so due and money agree; the ledger form's "Core Member Guest Bhog" toggle posts here for any eligible core household |
+| `GET /link?eventId=` · `POST /link` | **admin/fin_admin**: the event's one headcount link (`{code, createdAt}` or null); `POST {eventId, replace?}` issues it — Durga Pujo, current season — and with `replace` revokes the live one first |
 
 ## Admin (`/api/admin` — core/admin read, admin write)
 

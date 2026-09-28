@@ -8,6 +8,12 @@ export interface Env {
    */
   FILES?: R2Bucket
 
+  /**
+   * Per-IP cap on the public headcount link endpoints (wrangler.jsonc
+   * "ratelimits"). Optional so a Worker without the binding still serves.
+   */
+  HEADCOUNT_LIMITER?: RateLimit
+
   WEB_ORIGIN: string
 
   BETTER_AUTH_SECRET: string

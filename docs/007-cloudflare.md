@@ -35,6 +35,7 @@ account/user (read) + workers, workers_kv, workers_routes, workers_scripts
 | Worker | `pujosamiti-api` | Live at https://pujosamiti-api.pujosamiti.workers.dev; config `api/wrangler.jsonc` (`compatibility_date` 2026-07-01, `nodejs_compat`); deployed by CI on pushes touching `api/**`/`shared/**` |
 | D1 | `pujosamiti` | id `ecdf8218-2679-4866-abde-57d405d5efb2`, APAC, created 27 Jul 2026, ~623 kB, 18 tables; bound as `env.DB`; read replication disabled |
 | Runtime secrets | 8 set, 2 pending | Full table with per-secret status in [002](002-accounts-and-secrets.md) §3 — `ACCOUNTS_SHEET_ID`/`CONTENT_DRIVE_FOLDER_ID` are unset (their features are dormant) |
+| Rate limiter | `HEADCOUNT_LIMITER` | `ratelimits` in `wrangler.jsonc` (namespace `4101`): 20 calls a minute per IP on the public headcount link, so its codes can't be walked; optional in `Env`, so a Worker without it still serves |
 | Plain var | `WEB_ORIGIN` | In `wrangler.jsonc`: `https://pujosamiti.github.io` (CORS + auth trusted origin); `.dev.vars` overrides it locally |
 | R2 bucket | — | Not created yet; a commented-out `pujosamiti-files` binding sits in `wrangler.jsonc` for the future |
 

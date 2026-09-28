@@ -66,3 +66,31 @@ export async function qualifiesForCore(db: DB, personId: string, paidOn: string)
     .where(and(eq(schema.ledgerEntry.personId, personId), seasonFilter(seasonOf(paidOn))))
   return Number(row?.total ?? 0) >= CORE_CONTRIBUTION_THRESHOLD
 }
+
+/**
+ * What each person has given to the pujo in a season, whole ₹: active
+ * subscriptions and sponsorships in the pujo ledger (the core rule's own
+ * filter), plus sponsorship pledges for that pujo year still marked
+ * 'pledged' — pledged money counts before it arrives. A paid pledge is
+ * already in the ledger, so it isn't counted twice; a cancelled one counts
+ * for nothing.
+ *
+ * Everyone in the map has given something. The bhog count sheet lists their
+ * households — lifetime members who no longer pay aren't on it — and a
+ * family's total sets its Durga Pujo bhog allowance (bhogAllowance).
+ */
+export async function seasonMoney(db: DB, season: number): Promise<Map<string, number>> {
+  const paid = await db
+    .select({ personId: schema.ledgerEntry.personId, total: sum(schema.ledgerEntry.amount) })
+    .from(schema.ledgerEntry)
+    .where(seasonFilter(season))
+    .groupBy(schema.ledgerEntry.personId)
+  const pledged = await db
+    .select({ personId: schema.sponsorshipPledge.personId, total: sum(schema.sponsorshipPledge.amount) })
+    .from(schema.sponsorshipPledge)
+    .where(and(eq(schema.sponsorshipPledge.year, season), eq(schema.sponsorshipPledge.status, 'pledged')))
+    .groupBy(schema.sponsorshipPledge.personId)
+  const out = new Map<string, number>()
+  for (const r of [...paid, ...pledged]) if (r.personId) out.set(r.personId, (out.get(r.personId) ?? 0) + Number(r.total ?? 0))
+  return out
+}

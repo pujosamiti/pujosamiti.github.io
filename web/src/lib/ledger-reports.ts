@@ -67,6 +67,27 @@ export const stampIST = (d: Date) =>
     timeZone: 'Asia/Kolkata',
   }) + ' IST'
 
+/**
+ * "2026-09-28_1315" — the IST moment for a file name: sortable, and free of
+ * the colons and spaces some systems refuse.
+ */
+export const fileStampIST = (d: Date) => {
+  const part = Object.fromEntries(
+    new Intl.DateTimeFormat('en-GB', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      hourCycle: 'h23',
+      timeZone: 'Asia/Kolkata',
+    })
+      .formatToParts(d)
+      .map((p) => [p.type, p.value]),
+  )
+  return `${part.year}-${part.month}-${part.day}_${part.hour}${part.minute}`
+}
+
 /** Who a row is for: the family when the contributor has one, else the person or the walk-in name. */
 export const payerOf = (e: LedgerEntry) => e.familyName ?? e.personName ?? e.counterparty ?? ''
 

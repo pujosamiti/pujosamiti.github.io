@@ -17,6 +17,16 @@
   // pujosamiti-files`, then uncomment the line below and redeploy. Until then
   // the upload routes answer 503 and article art ships in web/public/uma-media.
   // "r2_buckets": [{ "binding": "FILES", "bucket_name": "pujosamiti-files" }],
+  // Public headcount links (/api/public/bhog/headcount): a per-IP cap, so the
+  // ~24 million codes can't be walked by brute force. A family loading and
+  // saving its form uses a handful of requests.
+  "ratelimits": [
+    {
+      "name": "HEADCOUNT_LIMITER",
+      "namespace_id": "4101",
+      "simple": { "limit": 20, "period": 60 }
+    }
+  ],
   "vars": {
     // Public, non-secret config. Secrets go in .dev.vars locally and
     // `wrangler secret put` in production — see .dev.vars.example.

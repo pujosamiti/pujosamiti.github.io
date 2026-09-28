@@ -88,10 +88,18 @@ a payment, or release a pledge — a slot someone has claimed goes back on the
 board only when an admin decides the money is not coming.
 
 **Bhog splits three ways.** Everyone reads the menu and gives their own
-headcount. Core members also see the responses table (plate counts). fin_admin
-and admin additionally see the per-plate cost — on the cards, in the `Total ₹`
-row, and in the CSV and printed sheet — and may record a headcount for another
-household. Recording a count never changes that household's tier.
+headcount. Core members also see the responses table — every household that
+paid or pledged this season, answered or not, with plate counts — and download it as Excel or
+PDF. fin_admin and admin additionally see the per-plate cost — on the cards,
+in the `Total ₹` row, and in the downloaded sheet — and may record a
+headcount for another household (closed days included), and see and share
+the event's **headcount link** — the one code that opens every paying
+household's counts without sign-in, so only they hold it and can replace it.
+A family on the link can change any listed household's counts, within that
+household's allowance. **Guest bhog** — a core household's office colleagues
+and friends, charged per head — is marked received only by admin and
+fin_admin (the Guest bhog panel on /bhog, or the ledger form's "Guest bhog
+payment" toggle); both write the same ledger entry. Recording a count never changes that household's tier.
 Only `admin` adds, edits, publishes, unpublishes or deletes a menu day.
 
 **Archival seasons are read-only for everyone**, admins included. Past

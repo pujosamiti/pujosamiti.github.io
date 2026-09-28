@@ -1,7 +1,22 @@
-import type { BhogMenuView, Me, PujoEvent } from '@pujosamiti/shared'
-import { isCoreRole, isProxyRole, menuKindLabel, seasonOf } from '@pujosamiti/shared'
+import type { BhogMenuView, BhogSettingInfo, GuestBhogReceiveInput, GuestBhogRow, Me, PujoEvent } from '@pujosamiti/shared'
+import { BHOG_GUEST_CAP, isCoreRole, isProxyRole, menuKindLabel, seasonOf, todayIST } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Download, Loader2, Pencil, Plus, Printer, Trash2, Users, UtensilsCrossed } from 'lucide-react'
+import {
+  CalendarCog,
+  Check,
+  Copy,
+  Link2,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Share2,
+  Trash2,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
+  X,
+} from 'lucide-react'
 import { Fragment, useEffect, useMemo, useState } from 'react'
 import { useSearchParams } from 'react-router'
 
@@ -13,23 +28,35 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PageTitle } from '@/components/PageTitle'
+import { DownloadPill, FormatSwitch } from '@/components/ReportDownload'
 import { Seo } from '@/components/Seo'
+import { HeadcountEditor } from '@/components/HeadcountEditor'
 import {
+  bhogLinkUrl,
   createBhogDay,
   deleteBhogDay,
+  issueBhogLink,
   publishBhogDay,
+  receiveGuestBhog,
+  saveBhogSetting,
   saveBhogItems,
   seedBhogDays,
   submitBhogCounts,
   updateBhogDay,
   useBhog,
   useBhogCounts,
+  useBhogLink,
+  useGuestBoard,
+  useHeadcount,
 } from '@/lib/bhog'
+import { bhogReport } from '@/lib/bhog-report'
 import { useMemberState } from '@/lib/member'
-import { headingTint, PAGE_TINT, pastelAt, tint, type Pastel } from '@/lib/tint'
+import { FORMAT_LABEL, type ReportFormat } from '@/lib/report-format'
+import { headingTint, PAGE_TINT, pastelAt, TIER_PASTEL, tint, tintRow, type Pastel } from '@/lib/tint'
+import { cn } from '@/lib/utils'
 import { PersonPicker } from '@/components/PersonPicker'
 import { usePujaDays } from '@/lib/pujaDays'
-import { useEvents } from '@/lib/tasks'
+import { useEvents, useMembersLite } from '@/lib/tasks'
 
 const fmtDate = (iso: string) =>
   new Date(`${iso}T12:00:00`).toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })
@@ -184,6 +211,8 @@ function EventSection({
   const [adding, setAdding] = useState(false)
   const [counting, setCounting] = useState(!!initialCountFor)
   const [showResponses, setShowResponses] = useState(false)
+  const [showLink, setShowLink] = useState(false)
+  const [showGuests, setShowGuests] = useState(false)
   const kindLabel = menuKindLabel(event.kind)
   const isDurga = event.kind === 'durga-pujo'
   const publishedDays = days.filter((d) => d.isPublished)
@@ -204,12 +233,23 @@ function EventSection({
         <span className="ml-auto flex flex-wrap gap-2">
           {canRsvp && publishedDays.length > 0 && (
             <Button size="sm" onClick={() => setCounting(!counting)}>
-              <Users /> {publishedDays.some((d) => d.myCount != null) ? 'Update headcount' : 'Give headcount'}
+              <Users />{' '}
+              {counting ? 'Hide headcount' : publishedDays.some((d) => d.myCount != null) ? 'Update headcount' : 'Give headcount'}
             </Button>
           )}
-          {isCore && days.some((d) => d.responses > 0) && (
+          {isCore && days.length > 0 && (
             <Button size="sm" variant="outline" onClick={() => setShowResponses(!showResponses)}>
               {showResponses ? 'Hide responses' : 'Responses'}
+            </Button>
+          )}
+          {isDurga && showMoney && canRsvp && publishedDays.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}>
+              <Link2 /> {showLink ? 'Hide link' : 'Headcount link'}
+            </Button>
+          )}
+          {isDurga && showMoney && canRsvp && publishedDays.length > 0 && (
+            <Button size="sm" variant="outline" onClick={() => setShowGuests(!showGuests)}>
+              <UserPlus /> {showGuests ? 'Hide guest bhog' : 'Guest bhog'}
             </Button>
           )}
           {canEdit && days.length === 0 && !isDurga && (
@@ -235,13 +275,16 @@ function EventSection({
         <HeadcountForm
           event={event}
           season={season}
-          days={publishedDays}
           me={me}
           initialPersonId={initialCountFor}
           onClose={() => setCounting(false)}
         />
       )}
-      {showResponses && isCore && <ResponsesTable event={event} days={days} showMoney={showMoney} />}
+      {showLink && isDurga && showMoney && canRsvp && <LinkPanel event={event} onClose={() => setShowLink(false)} />}
+      {showGuests && isDurga && showMoney && canRsvp && <GuestPanel event={event} onClose={() => setShowGuests(false)} />}
+      {showResponses && isCore && days.length > 0 && (
+        <ResponsesTable event={event} days={days} showMoney={showMoney} onClose={() => setShowResponses(false)} />
+      )}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
         <p className="text-sm text-muted-foreground">
           No Puja Days for {event.year} yet — finalise the nirghanto and seed them first (Nirghanto page).
@@ -370,265 +413,645 @@ function DayCard({
 }
 
 /**
- * The household's headcount for an event's published days, submitted in one
- * go — the digital "Bhog Count" columns of the food-coupon-details sheet.
+ * The household's headcount, submitted in one go — the digital "Bhog Count"
+ * columns of the food-coupon-details sheet, on the same form as the ?c= link
+ * (HeadcountEditor), at the same width. A member answers for their own
+ * household. Admin and fin_admin pick a household the way the link does —
+ * the Responses list, core first — or, for a walk-in not on it, any person on
+ * the roll (created on the spot if need be); closed days stay editable, and a
+ * note can go with the count.
  */
 function HeadcountForm({
   event,
   season,
-  days,
   me,
   initialPersonId = null,
   onClose,
 }: {
   event: PujoEvent
   season: number
-  days: BhogMenuView[]
   me: Me
   initialPersonId?: string | null
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
   const proxy = isProxyRole(me.role)
-  // Counter entry: admins/fin_admins record for any household on the roll
-  const [personId, setPersonId] = useState(initialPersonId ?? me.personId)
+  // the counter's jump from a fresh ledger entry (?count=<personId>) opens on that person
+  const [byPerson, setByPerson] = useState(!!initialPersonId)
+  const [personId, setPersonId] = useState<string | null>(initialPersonId)
+  const [householdKey, setHouseholdKey] = useState<string | null>(null)
   const [note, setNote] = useState('')
-  const { data: sheetRows } = useBhogCounts(proxy ? event.id : null)
-
-  const countsFor = (pid: string): Record<string, string> =>
-    pid === me.personId
-      ? Object.fromEntries(days.map((d) => [d.id, d.myCount != null ? String(d.myCount) : '']))
-      : Object.fromEntries(
-          days.map((d) => {
-            const row = (sheetRows ?? []).find((r) => r.personId === pid && r.menuId === d.id)
-            return [d.id, row ? String(row.count) : '']
-          }),
-        )
-  const [counts, setCounts] = useState<Record<string, string>>(() => countsFor(personId))
-  const pickPerson = (pid: string) => {
-    setPersonId(pid)
-    setCounts(countsFor(pid))
-  }
-  // The sheet may arrive after the form opened on someone else (deep link)
-  useEffect(() => {
-    if (personId !== me.personId) setCounts(countsFor(personId))
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sheetRows])
-
-  const save = useMutation({
-    mutationFn: () =>
-      submitBhogCounts({
-        eventId: event.id,
-        counts: days
-          .filter((d) => counts[d.id]?.trim() !== '')
-          .map((d) => ({ menuId: d.id, count: Number(counts[d.id]) })),
-        personId: proxy ? personId : undefined,
-        note: proxy ? note.trim() || null : undefined,
-      }),
-    onSettled: () => {
-      void queryClient.invalidateQueries({ queryKey: ['bhog', season] })
-      void queryClient.invalidateQueries({ queryKey: ['bhog-counts', event.id] })
-    },
-    onSuccess: () => onClose(),
-  })
+  const { data: sheet } = useBhogCounts(proxy ? event.id : null)
+  const target = !proxy ? null : byPerson ? (personId ? { personId } : null) : householdKey ? { householdKey } : null
+  // a member's own household loads at once; an admin's form waits for a pick
+  const { data: view, isFetching, error } = useHeadcount(event.id, target, !proxy || !!target)
 
   return (
-    <Card>
+    <Card className="w-full max-w-2xl">
       <CardHeader>
-        <CardTitle>Headcount — {event.nameEn}</CardTitle>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle>Headcount — {view?.household.name ?? event.nameEn}</CardTitle>
+          <PanelClose onClose={onClose} what="headcount" />
+        </div>
         <CardDescription>
           {proxy
-            ? 'Recording on behalf of a household? Pick the person — their existing counts load for editing. 0 means not coming; blank leaves a day unanswered.'
-            : 'How many from your household (5 yrs and older) will eat each day? 0 means not coming; leave a day blank to answer later.'}
+            ? 'Recording for a household? Find it the way the link does. Days that have closed stay editable here.'
+            : 'For your whole household — one count per family, whoever gives it.'}
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {proxy && (
-          <Field label="Household">
-            <PersonPicker value={personId} onChange={pickPerson} ariaLabel="Household" allowCreate />
-          </Field>
+          <div className="flex flex-col gap-1.5">
+            {byPerson ? (
+              <Field label="Person (walk-in)">
+                <PersonPicker value={personId} onChange={setPersonId} ariaLabel="Person" allowCreate />
+              </Field>
+            ) : (
+              <Field label="Household">
+                <SearchSelect
+                  options={(sheet?.households ?? []).map((h) => ({
+                    value: h.key,
+                    label: h.name,
+                    group: h.tier === 'core' ? 'Core members' : 'Members',
+                  }))}
+                  value={householdKey}
+                  onChange={setHouseholdKey}
+                  ariaLabel="Household"
+                  placeholder={sheet ? 'Find the household…' : 'Loading…'}
+                  align="left"
+                  fullWidth
+                />
+              </Field>
+            )}
+            <button
+              type="button"
+              className="self-start text-xs text-primary underline-offset-4 hover:underline"
+              onClick={() => setByPerson(!byPerson)}
+            >
+              {byPerson ? 'Back to the household list' : 'Not on the list? Record for a person instead'}
+            </button>
+          </div>
         )}
-        <div className="flex flex-wrap items-end gap-3">
-          {days.map((d) => (
-            <Field key={d.id} label={`${d.label} · ${d.date.slice(5)}`}>
-              <input
-                className={inputCls}
-                type="number"
-                min="0"
-                max="99"
-                inputMode="numeric"
-                value={counts[d.id] ?? ''}
-                onChange={(e) => setCounts({ ...counts, [d.id]: e.target.value })}
-              />
-            </Field>
-          ))}
-        </div>
-        {proxy && (
-          <Field label="Note">
-            <input className={inputCls} value={note} onChange={(e) => setNote(e.target.value)} placeholder="e.g. via WhatsApp, will pay at the pandal" />
-          </Field>
+        {isFetching && !view && <LogoSpinner small />}
+        {error && <p className="text-sm text-destructive">{error.message}</p>}
+        {view && (!proxy || target) && (
+          <HeadcountEditor
+            key={view.household.key}
+            view={view}
+            atCounter={proxy}
+            save={(counts) =>
+              submitBhogCounts({
+                eventId: event.id,
+                counts,
+                householdKey: proxy && !byPerson ? householdKey : undefined,
+                personId: proxy && byPerson ? personId : undefined,
+                note: proxy ? note.trim() || null : undefined,
+              })
+            }
+            onSaved={() => {
+              void queryClient.invalidateQueries({ queryKey: ['bhog', season] })
+              void queryClient.invalidateQueries({ queryKey: ['bhog-counts', event.id] })
+              void queryClient.invalidateQueries({ queryKey: ['bhog-headcount', event.id] })
+            }}
+            onCancel={onClose}
+          >
+            {proxy && (
+              <Field label="Note">
+                <input
+                  className={inputCls}
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="e.g. via WhatsApp, will pay at the pandal"
+                />
+              </Field>
+            )}
+          </HeadcountEditor>
         )}
-        <div className="flex gap-2">
-          <Button size="sm" onClick={() => save.mutate()} disabled={save.isPending}>
-            {save.isPending ? <Loader2 className="animate-spin" /> : null} Save count
-          </Button>
-          <Button size="sm" variant="ghost" onClick={onClose}>
+        {proxy && !target && (
+          <Button variant="ghost" className="self-start" onClick={onClose}>
             Cancel
           </Button>
-        </div>
-        {save.error && <p className="text-sm text-destructive">{save.error.message}</p>}
+        )}
       </CardContent>
     </Card>
+  )
+}
+
+/** The ✕ at a panel's top right — the same as tapping its header button again. */
+function PanelClose({ onClose, what, className = '-mr-2 -mt-2' }: { onClose: () => void; what: string; className?: string }) {
+  return (
+    <Button size="icon" variant="ghost" className={cn('shrink-0', className)} onClick={onClose} aria-label={`Close ${what}`} title="Close">
+      <X />
+    </Button>
+  )
+}
+
+/**
+ * ↻ — fetch a panel's numbers again, now: only the data, never the page, so
+ * an open form keeps what is typed. Spins while the fetch is in flight. (The
+ * panels also refresh on their own when opened and when the tab comes back.)
+ * In উমা's neon — panna, the emerald off the pujo palette — so it is the same
+ * refresh wherever it appears, found at a glance.
+ */
+function RefreshButton({ onRefresh, fetching, what }: { onRefresh: () => void; fetching: boolean; what: string }) {
+  return (
+    <Button
+      size="icon"
+      variant="ghost"
+      className="neon-glow mx-1.5 size-8 shrink-0 self-center rounded-full bg-neon text-neon-foreground hover:bg-neon/85 hover:text-neon-foreground"
+      onClick={onRefresh}
+      disabled={fetching}
+      aria-label={`Refresh ${what}`}
+      title="Refresh"
+    >
+      <RefreshCw className={fetching ? 'animate-spin' : undefined} />
+    </Button>
+  )
+}
+
+/**
+ * The event's headcount link (admin / fin_admin): one code for everyone,
+ * shared on WhatsApp. Whoever opens it picks their household from the
+ * Responses list, so the code opens every household's counts — replace it
+ * if it travels further than the samiti.
+ */
+function LinkPanel({ event, onClose }: { event: PujoEvent; onClose: () => void }) {
+  const queryClient = useQueryClient()
+  const { data: link, isPending, error } = useBhogLink(event.id)
+  const [confirming, setConfirming] = useState(false)
+  const [copied, setCopied] = useState(false)
+  const issue = useMutation({
+    mutationFn: (replace: boolean) => issueBhogLink(event.id, replace),
+    onSuccess: (l) => {
+      queryClient.setQueryData(['bhog-link', event.id], l)
+      setConfirming(false)
+      setCopied(false)
+    },
+  })
+  const url = link ? bhogLinkUrl(link.code) : null
+  const message = url
+    ? `${event.nameEn} ${event.year} — bhog headcount. Open the link, find your household, and give the count for each day (everyone aged 5 and above). Each day closes four days before it.\n${url}`
+    : ''
+  const copy = async () => {
+    if (!url) return
+    try {
+      await navigator.clipboard.writeText(url)
+      setCopied(true)
+    } catch {
+      window.prompt('Copy the link', url)
+    }
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <Link2 className="size-5" /> Headcount link
+          </CardTitle>
+          <PanelClose onClose={onClose} what="headcount link" />
+        </div>
+        <CardDescription>
+          One link for everyone, no sign-in: whoever opens it picks their household from the Responses list and gives its
+          counts. It opens every household’s counts, so share it with the samiti only.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-3">
+        {isPending && <LogoSpinner small />}
+        {error && <p className="text-sm text-destructive">{error.message}</p>}
+        {!isPending && !link && (
+          <Button className="self-start" onClick={() => issue.mutate(false)} disabled={issue.isPending}>
+            {issue.isPending ? <Loader2 className="animate-spin" /> : <Link2 />} Create the link
+          </Button>
+        )}
+        {link && url && (
+          <>
+            <div className="flex flex-col gap-1 rounded-md bg-accent px-3 py-2">
+              <span className="font-mono text-lg font-semibold tracking-wider">{link.code}</span>
+              <a href={url} target="_blank" rel="noreferrer" className="break-all text-sm text-primary underline-offset-4 hover:underline">
+                {url}
+              </a>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" variant="outline" onClick={() => void copy()}>
+                {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy link'}
+              </Button>
+              <Button size="sm" variant="durba" asChild>
+                <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
+                  <Share2 /> Share on WhatsApp
+                </a>
+              </Button>
+              {!confirming ? (
+                <Button size="sm" variant="ghost" onClick={() => setConfirming(true)}>
+                  <RefreshCw /> Replace code
+                </Button>
+              ) : (
+                <span className="inline-flex flex-wrap items-center gap-2 text-sm">
+                  The old link stops working.
+                  <Button size="sm" variant="destructive" onClick={() => issue.mutate(true)} disabled={issue.isPending}>
+                    {issue.isPending ? <Loader2 className="animate-spin" /> : null} Replace
+                  </Button>
+                  {/* the safe choice, in durba green, so it reads as a button beside the red */}
+                  <Button size="sm" variant="durba" onClick={() => setConfirming(false)}>
+                    Keep it
+                  </Button>
+                </span>
+              )}
+            </div>
+          </>
+        )}
+        {issue.error && <p className="text-sm text-destructive">{issue.error.message}</p>}
+      </CardContent>
+    </Card>
+  )
+}
+
+/**
+ * Guest bhog (admin / fin_admin): the event's two settings — the Food & Bhog
+ * in-charge and the rate per head — and every household with guests or guest
+ * money: guests by day, due, received (read from the ledger), balance. "Mark
+ * received" writes the ledger entry (misc_income · Guest Bhog) into the
+ * wallet of whoever took the money — the in-charge unless another is picked.
+ * No refunds: an overpaid household shows a negative balance.
+ */
+function GuestPanel({ event, onClose }: { event: PujoEvent; onClose: () => void }) {
+  const { data: board, isPending, error, isFetching, refetch } = useGuestBoard(event.id)
+  const { data: people } = useMembersLite()
+  const [receiving, setReceiving] = useState<string | null>(null)
+  const coreOptions = (people ?? []).filter((p) => p.tier === 'core').map((p) => ({ value: p.id, label: p.name }))
+  const heading = (label: string) => label.replace(/\s+Bhog$/i, '')
+  const total = (f: (r: GuestBhogRow) => number) => (board?.rows ?? []).reduce((s, r) => s + f(r), 0)
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="size-5" /> Guest bhog
+          </CardTitle>
+          <span className="-mr-2 -mt-2 flex shrink-0">
+            <RefreshButton onRefresh={() => void refetch()} fetching={isFetching} what="guest bhog" />
+            <PanelClose onClose={onClose} what="guest bhog" className="" />
+          </span>
+        </div>
+        <CardDescription>
+          Office colleagues and friends that core households bring — up to {BHOG_GUEST_CAP} a day, paid per head to the
+          Food &amp; Bhog in-charge. Received money is read from the ledger (Misc income · Guest Bhog).
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-col gap-4">
+        {isPending && <LogoSpinner small />}
+        {error && <p className="text-sm text-destructive">{error.message}</p>}
+        {board && (
+          <>
+            <GuestSettings
+              key={`${board.setting.inchargePersonId}-${board.setting.guestRate}`}
+              eventId={event.id}
+              setting={board.setting}
+              coreOptions={coreOptions}
+            />
+            {board.setting.guestRate == null ? (
+              <p className="text-sm text-muted-foreground">Guest bhog is off — set a rate per head to open it on the forms.</p>
+            ) : board.rows.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No household has added guests yet.</p>
+            ) : (
+              <div className="overflow-x-auto rounded-md border">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b bg-accent/40 text-left">
+                      <th className="px-3 py-2 font-medium">Household</th>
+                      {board.days.map((d) => (
+                        <th key={d.menuId} className="px-2 py-2 text-right font-medium">{heading(d.label)}</th>
+                      ))}
+                      <th className="px-2 py-2 text-right font-medium">Guests</th>
+                      <th className="px-2 py-2 text-right font-medium">Due</th>
+                      <th className="px-2 py-2 text-right font-medium">Received</th>
+                      <th className="px-2 py-2 text-right font-medium">Balance</th>
+                      <th className="px-3 py-2" />
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {board.rows.map((r) => (
+                      <Fragment key={r.householdKey}>
+                        <tr className="border-b">
+                          <td className="px-3 py-1.5">{r.name}</td>
+                          {r.guestsByDay.map((g, i) => (
+                            <td key={board.days[i].menuId} className="px-2 py-1.5 text-right tabular-nums">{g || '—'}</td>
+                          ))}
+                          <td className="px-2 py-1.5 text-right font-medium tabular-nums">{r.heads}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums">{inr(r.due)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums">{r.received ? inr(r.received) : '—'}</td>
+                          <td
+                            className={cn(
+                              'px-2 py-1.5 text-right font-medium tabular-nums',
+                              r.balance > 0 ? 'text-destructive' : 'text-durba',
+                            )}
+                            title={r.balance < 0 ? 'Paid more than the guests now come to — no refunds' : undefined}
+                          >
+                            {r.balance > 0 ? inr(r.balance) : r.balance < 0 ? `−${inr(-r.balance)}` : 'paid'}
+                          </td>
+                          <td className="px-3 py-1.5 text-right">
+                            {r.balance > 0 && receiving !== r.householdKey && (
+                              <Button size="sm" variant="soft" onClick={() => setReceiving(r.householdKey)}>
+                                Mark received
+                              </Button>
+                            )}
+                          </td>
+                        </tr>
+                        {receiving === r.householdKey && (
+                          <tr className="border-b bg-accent/20">
+                            <td colSpan={board.days.length + 6} className="px-3 py-3">
+                              <ReceiveGuestForm
+                                eventId={event.id}
+                                row={r}
+                                inchargeId={board.setting.inchargePersonId}
+                                coreOptions={coreOptions}
+                                onClose={() => setReceiving(null)}
+                              />
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    ))}
+                    <tr className="bg-accent/40 font-medium">
+                      <td className="px-3 py-1.5">Total</td>
+                      {board.days.map((d, i) => (
+                        <td key={d.menuId} className="px-2 py-1.5 text-right tabular-nums">
+                          {board.rows.reduce((s, r) => s + r.guestsByDay[i], 0)}
+                        </td>
+                      ))}
+                      <td className="px-2 py-1.5 text-right tabular-nums">{total((r) => r.heads)}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{inr(total((r) => r.due))}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{inr(total((r) => r.received))}</td>
+                      <td className="px-2 py-1.5 text-right tabular-nums">{inr(total((r) => Math.max(0, r.balance)))}</td>
+                      <td />
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+/** The event's Food & Bhog in-charge and guest rate; a blank rate turns guest bhog off. */
+function GuestSettings({
+  eventId,
+  setting,
+  coreOptions,
+}: {
+  eventId: string
+  setting: BhogSettingInfo
+  coreOptions: { value: string; label: string }[]
+}) {
+  const queryClient = useQueryClient()
+  const [incharge, setIncharge] = useState<string | null>(setting.inchargePersonId)
+  const [rate, setRate] = useState(setting.guestRate != null ? String(setting.guestRate) : '')
+  const save = useMutation({
+    mutationFn: () => saveBhogSetting({ eventId, inchargePersonId: incharge, guestRate: rate.trim() ? Number(rate) : null }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['bhog-guests', eventId] })
+      void queryClient.invalidateQueries({ queryKey: ['bhog-headcount', eventId] })
+    },
+  })
+  const dirty = incharge !== setting.inchargePersonId || rate !== (setting.guestRate != null ? String(setting.guestRate) : '')
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="min-w-56 flex-1">
+        <Field label="Food & Bhog in-charge">
+          <SearchSelect
+            align="left"
+            fullWidth
+            options={coreOptions}
+            value={incharge}
+            onChange={setIncharge}
+            ariaLabel="Food & Bhog in-charge"
+            placeholder="Pick the in-charge…"
+          />
+        </Field>
+      </div>
+      <div className="w-32">
+        <Field label="₹ per guest">
+          <input
+            className={inputCls}
+            inputMode="numeric"
+            value={rate}
+            onChange={(e) => setRate(e.target.value.replace(/\D/g, ''))}
+            placeholder="off"
+          />
+        </Field>
+      </div>
+      <Button size="sm" className="h-10" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
+        {save.isPending ? <Loader2 className="animate-spin" /> : null} Save
+      </Button>
+      {save.error && <p className="basis-full text-sm text-destructive">{save.error.message}</p>}
+    </div>
+  )
+}
+
+/** Record one guest bhog payment: amount (the balance by default), date, and who took the money. */
+function ReceiveGuestForm({
+  eventId,
+  row,
+  inchargeId,
+  coreOptions,
+  onClose,
+}: {
+  eventId: string
+  row: GuestBhogRow
+  inchargeId: string | null
+  coreOptions: { value: string; label: string }[]
+  onClose: () => void
+}) {
+  const queryClient = useQueryClient()
+  const [amount, setAmount] = useState(String(Math.max(0, row.balance)))
+  const [date, setDate] = useState(todayIST())
+  const [wallet, setWallet] = useState<string | null>(inchargeId)
+  const receive = useMutation({
+    mutationFn: () =>
+      receiveGuestBhog({ eventId: eventId as GuestBhogReceiveInput['eventId'], householdKey: row.householdKey, amount: Number(amount), entryDate: date, walletPersonId: wallet! }),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['bhog-guests', eventId] })
+      void queryClient.invalidateQueries({ queryKey: ['ledger-entries'] })
+      void queryClient.invalidateQueries({ queryKey: ['ledger-summary'] })
+      onClose()
+    },
+  })
+  return (
+    <div className="flex flex-wrap items-end gap-3">
+      <div className="w-32">
+        <Field label="Amount ₹">
+          <input className={inputCls} inputMode="numeric" value={amount} onChange={(e) => setAmount(e.target.value.replace(/\D/g, ''))} />
+        </Field>
+      </div>
+      <div className="w-40">
+        <Field label="Date">
+          <input className={inputCls} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
+        </Field>
+      </div>
+      <div className="min-w-56 flex-1">
+        <Field label="Received by">
+          <SearchSelect align="left" fullWidth options={coreOptions} value={wallet} onChange={setWallet} ariaLabel="Received by" />
+        </Field>
+      </div>
+      <Button size="sm" variant="durba" className="h-10" onClick={() => receive.mutate()} disabled={receive.isPending || !wallet || !Number(amount)}>
+        {receive.isPending ? <Loader2 className="animate-spin" /> : <Check />} Received
+      </Button>
+      <Button size="sm" variant="ghost" className="h-10" onClick={onClose}>
+        Cancel
+      </Button>
+      {receive.error && <p className="basis-full text-sm text-destructive">{receive.error.message}</p>}
+    </div>
   )
 }
 
 const inr = (n: number) => `₹${n.toLocaleString('en-IN')}`
 
 /**
- * The household-by-household count sheet (core) — rows people, columns days,
- * with the sheet's money math (plates × per-plate ₹) and print/CSV export.
+ * The household-by-household count sheet (core) — every household that paid
+ * or pledged this season, answered or not, days across, with the money rows
+ * for those who price a plate. Downloads as Excel or PDF; before anyone
+ * answers it is the blank sheet for the counter. What it holds is defined
+ * once in lib/bhog-report. A household whose counts are over its allowance
+ * (a pledge cancelled after it answered) is flagged for an admin.
  */
 function ResponsesTable({
   event,
   days,
   showMoney,
+  onClose,
 }: {
   event: PujoEvent
   days: BhogMenuView[]
   /** Plate counts are everyone's business on this table; the ₹ rows are not. */
   showMoney: boolean
+  onClose: () => void
 }) {
-  const { data: rows, isPending } = useBhogCounts(event.id)
+  const queryClient = useQueryClient()
+  const { data: sheet, isPending, error: loadError, isFetching, refetch } = useBhogCounts(event.id)
+  // the sheet, and the day cards' "N plates so far" that come from the same answers
+  const refresh = () => {
+    void refetch()
+    void queryClient.invalidateQueries({ queryKey: ['bhog'] })
+  }
+  // A spreadsheet unless asked otherwise, as on the ledger.
+  const [format, setFormat] = useState<ReportFormat>('xlsx')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   if (isPending)
     return (
       <div className="flex justify-center py-4">
         <LogoSpinner small />
       </div>
     )
-  const people = new Map<string, { name: string; tier: string; counts: Record<string, number> }>()
-  for (const r of rows ?? []) {
-    const p = people.get(r.personId) ?? { name: r.name, tier: r.tier, counts: {} }
-    p.counts[r.menuId] = r.count
-    people.set(r.personId, p)
-  }
-  // The sheet's layout: core members as the top section, members below
-  const households = [...people.values()]
-    .map((p) => ({ ...p, total: days.reduce((s, d) => s + (p.counts[d.id] ?? 0), 0) }))
-    .sort((a, b) => (a.tier === b.tier ? a.name.localeCompare(b.name) : a.tier === 'core' ? -1 : 1))
-  const grandPlates = days.reduce((s, d) => s + d.totalCount, 0)
-  const money = days.map((d) => (d.perPlateCost != null ? d.totalCount * d.perPlateCost : null))
-  const grandMoney = money.some((m) => m != null) ? money.reduce<number>((s, m) => s + (m ?? 0), 0) : null
-  const dayLabel = new Map(days.map((d) => [d.id, d.label]))
-  const noted = (rows ?? []).filter((r) => r.notes)
+  if (loadError || !sheet) return <p className="text-sm text-destructive">{loadError?.message ?? 'could not load the sheet'}</p>
+  const input = { event, days, sheet, showMoney }
+  const r = bhogReport(input)
+  const noted = r.households.filter((h) => h.remarks)
+  const over = r.households.filter((h) => h.overAllowance).length
 
-  const title = `Headcount — ${event.nameEn} ${event.year}`
-  const toCsv = () => {
-    const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`
-    const lines = [
-      ['Household', 'Tier', ...days.map((d) => `${d.label} ${d.date}`), 'Total'].map(esc).join(','),
-      ...households.map((p) =>
-        [p.name, p.tier === 'core' ? 'Core' : 'Member', ...days.map((d) => p.counts[d.id] ?? ''), p.total].map(esc).join(','),
-      ),
-      ['Total plates', '', ...days.map((d) => d.totalCount), grandPlates].map(esc).join(','),
-      ...(showMoney ? [['Total INR', '', ...money.map((m) => m ?? ''), grandMoney ?? ''].map(esc).join(',')] : []),
-      ...(noted.length ? ['', ...noted.map((r) => [`${r.name} — ${dayLabel.get(r.menuId) ?? ''}`, r.notes!].map(esc).join(','))] : []),
-    ]
-    const blob = new Blob(['﻿' + lines.join('\n')], { type: 'text/csv;charset=utf-8' })
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(blob)
-    a.download = `headcount-${event.id}.csv`
-    a.click()
-    URL.revokeObjectURL(a.href)
-  }
-  const printSheet = () => {
-    const w = window.open('', '_blank', 'width=900,height=700')
-    if (!w) return
-    const cell = (v: string | number, right = true) => `<td style="${right ? 'text-align:right;' : ''}">${v}</td>`
-    w.document.write(`<!doctype html><html><head><title>${title}</title><style>
-      body{font-family:Georgia,serif;margin:24px;color:#2b1a10}
-      h1{font-size:18px;margin:0 0 12px}
-      table{border-collapse:collapse;width:100%;font-size:13px}
-      th,td{border:1px solid #b8ab98;padding:4px 8px}
-      th{background:#f3ede2;text-align:right} th:first-child{text-align:left}
-      tr.total td{background:#f3ede2;font-weight:bold}
-    </style></head><body><h1>${title}</h1><table>
-      <tr><th>Household</th>${days.map((d) => `<th>${d.label}<br>${d.date}</th>`).join('')}<th>Total</th></tr>
-      ${households
-        .map((p) => `<tr>${cell(`${p.name}${p.tier === 'core' ? ' <small>(Core)</small>' : ''}`, false)}${days.map((d) => cell(p.counts[d.id] ?? '—')).join('')}${cell(p.total)}</tr>`)
-        .join('')}
-      <tr class="total">${cell('Total plates', false)}${days.map((d) => cell(d.totalCount)).join('')}${cell(grandPlates)}</tr>
-      ${showMoney ? `<tr class="total">${cell('Total ₹', false)}${money.map((m) => cell(m != null ? inr(m) : '—')).join('')}${cell(grandMoney != null ? inr(grandMoney) : '—')}</tr>` : ''}
-    </table>${
-      noted.length
-        ? `<ul style="font-size:12px;margin-top:12px">${noted
-            .map((r) => `<li><b>${r.name}</b> — ${dayLabel.get(r.menuId) ?? ''}: ${r.notes}</li>`)
-            .join('')}</ul>`
-        : ''
-    }</body></html>`)
-    w.document.close()
-    w.focus()
-    w.print()
+  const download = async () => {
+    setBusy(true)
+    setError(null)
+    try {
+      if (format === 'xlsx') {
+        const { downloadBhogXlsx } = await import('@/lib/reports-xlsx')
+        await downloadBhogXlsx(input)
+      } else {
+        const { downloadBhogPdf } = await import('@/lib/reports-pdf')
+        await downloadBhogPdf(input)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : `could not build the ${FORMAT_LABEL[format]}`)
+    } finally {
+      setBusy(false)
+    }
   }
 
   return (
     <div className="flex flex-col gap-2">
-      <div className="flex gap-2">
-        <Button size="sm" variant="outline" onClick={printSheet}>
-          <Printer /> Print
-        </Button>
-        <Button size="sm" variant="outline" onClick={toCsv}>
-          <Download /> CSV
-        </Button>
+      <div className="flex flex-wrap items-center gap-2">
+        <FormatSwitch value={format} onChange={setFormat} disabled={busy} />
+        <DownloadPill label="Headcount" format={FORMAT_LABEL[format]} busy={busy} disabled={busy} onClick={() => void download()} />
+        {error && <span className="text-xs text-destructive">{error}</span>}
+        <span className="text-xs text-muted-foreground">
+          {r.answered} of {r.households.length} households answered
+        </span>
+        {over > 0 && (
+          <span className="text-xs font-medium text-destructive">
+            {over} over {over === 1 ? 'its' : 'their'} allowance
+          </span>
+        )}
+        <span className="ml-auto flex shrink-0">
+          <RefreshButton onRefresh={refresh} fetching={isFetching} what="responses" />
+          <PanelClose onClose={onClose} what="responses" className="" />
+        </span>
       </div>
       <div className="overflow-x-auto rounded-md border">
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b bg-accent/40 text-left">
               <th className="px-3 py-2 font-medium">Household</th>
-              {days.map((d) => (
+              {r.days.map((d) => (
                 <th key={d.id} className="px-3 py-2 text-right font-medium">{d.label}</th>
               ))}
+              {r.grandGuests > 0 && <th className="px-3 py-2 text-right font-medium">Guests</th>}
               <th className="px-3 py-2 text-right font-medium">Total</th>
             </tr>
           </thead>
           <tbody>
-            {households.map((p, i) => (
-              <Fragment key={p.name}>
-                {(i === 0 || households[i - 1].tier !== p.tier) && (
-                  <tr className="border-b bg-accent/20">
-                    <td colSpan={days.length + 2} className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {p.tier === 'core' ? 'Core members' : 'Members'}
+            {r.households.map((h, i) => (
+              <Fragment key={h.key}>
+                {/* Core rose, members blue lotus (TIER_PASTEL): a deeper wash on the
+                    group's heading row, a faint one down each household row */}
+                {(i === 0 || r.households[i - 1].tier !== h.tier) && (
+                  <tr style={tintRow(TIER_PASTEL[h.tier], '16%').style} className={cn(tintRow(TIER_PASTEL[h.tier]).className, 'border-b')}>
+                    <td colSpan={r.days.length + (r.grandGuests > 0 ? 3 : 2)} className="px-3 py-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                      {h.tier === 'core' ? 'Core members' : 'Members'}
                     </td>
                   </tr>
                 )}
-              <tr className="border-b last:border-0">
-                <td className="px-3 py-1.5">
-                  {p.name}{' '}
-                  <Badge variant={p.tier === 'core' ? 'durba' : 'outline'} className="ml-1">
-                    {p.tier === 'core' ? 'Core' : 'Member'}
-                  </Badge>
-                </td>
-                {days.map((d) => (
-                  <td key={d.id} className="px-3 py-1.5 text-right">{p.counts[d.id] ?? '—'}</td>
-                ))}
-                <td className="px-3 py-1.5 text-right font-medium">{p.total}</td>
-              </tr>
+                <tr style={tintRow(TIER_PASTEL[h.tier]).style} className={cn(tintRow(TIER_PASTEL[h.tier]).className, 'border-b last:border-0')}>
+                  <td className="px-3 py-1.5">
+                    {h.name}
+                    {h.overAllowance && (
+                      <span className="ml-2 text-xs font-medium text-destructive" title="Counts are above what this household's money now allows — a pledge was cancelled after they answered">
+                        over allowance
+                      </span>
+                    )}
+                  </td>
+                  {h.counts.map((c, j) => (
+                    <td key={r.days[j].id} className="px-3 py-1.5 text-right tabular-nums">
+                      {c ?? (h.guests[j] ? 0 : '—')}
+                      {h.guests[j] > 0 && <span className="ml-1 text-xs font-medium text-durba">+{h.guests[j]}</span>}
+                    </td>
+                  ))}
+                  {r.grandGuests > 0 && (
+                    <td className="px-3 py-1.5 text-right tabular-nums text-durba">{h.guestTotal || '—'}</td>
+                  )}
+                  <td className="px-3 py-1.5 text-right font-medium">{h.counts.some((c) => c != null) || h.guestTotal ? h.total : '—'}</td>
+                </tr>
               </Fragment>
             ))}
             <tr className="bg-accent/40 font-medium">
               <td className="px-3 py-1.5">Total plates</td>
-              {days.map((d) => (
-                <td key={d.id} className="px-3 py-1.5 text-right">{d.totalCount}</td>
+              {r.plates.map((n, i) => (
+                <td key={r.days[i].id} className="px-3 py-1.5 text-right">{n}</td>
               ))}
-              <td className="px-3 py-1.5 text-right">{grandPlates}</td>
+              {r.grandGuests > 0 && <td className="px-3 py-1.5 text-right text-durba">{r.grandGuests}</td>}
+              <td className="px-3 py-1.5 text-right">{r.grandPlates}</td>
             </tr>
-            {showMoney && (
+            {r.money && (
               <tr className="bg-accent/40 font-medium">
                 <td className="px-3 py-1.5">Total ₹</td>
-                {money.map((m, i) => (
-                  <td key={days[i].id} className="px-3 py-1.5 text-right">{m != null ? inr(m) : '—'}</td>
+                {r.money.map((m, i) => (
+                  <td key={r.days[i].id} className="px-3 py-1.5 text-right">{m != null ? inr(m) : '—'}</td>
                 ))}
-                <td className="px-3 py-1.5 text-right">{grandMoney != null ? inr(grandMoney) : '—'}</td>
+                {r.grandGuests > 0 && <td />}
+                <td className="px-3 py-1.5 text-right">{r.grandMoney != null ? inr(r.grandMoney) : '—'}</td>
               </tr>
             )}
           </tbody>
@@ -636,9 +1059,9 @@ function ResponsesTable({
       </div>
       {noted.length > 0 && (
         <ul className="flex flex-col gap-0.5 text-xs text-muted-foreground">
-          {noted.map((r) => (
-            <li key={`${r.personId}-${r.menuId}`}>
-              <span className="font-medium text-foreground">{r.name}</span> — {dayLabel.get(r.menuId)}: {r.notes}
+          {noted.map((h) => (
+            <li key={h.key}>
+              <span className="font-medium text-foreground">{h.name}</span> — {h.remarks}
             </li>
           ))}
         </ul>

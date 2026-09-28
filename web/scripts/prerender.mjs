@@ -190,6 +190,24 @@ const ROUTES = [
   },
 ]
 
+// ── The bhog headcount link, /bhog/count/?c=… ─────────────────────────────
+// Shared on WhatsApp, so it carries a card of its own: a bhog thali on a
+// banana leaf, 1200 × 790 WebP, ~110 KB (WhatsApp drops preview images much
+// over 300 KB). No sign-in, but kept out of search and the sitemap like the
+// members' pages. Title and description match the page's <Seo> in BhogCount.tsx.
+ROUTES.push({
+  path: '/bhog/count',
+  title: 'Durga Pujo bhog · Give your household’s headcount',
+  description:
+    'Find your household and tell the samiti how many will eat bhog each day, Saptami to Dashami — everyone aged 5 and above. Each day’s count closes four days before it. Magarpatta Pujo Samiti.',
+  image: `${ORIGIN}/bhog-share.webp`,
+  imageWidth: 1200,
+  imageHeight: 790,
+  imageType: 'image/webp',
+  imageAlt: 'Bengali bhog on a banana leaf — khichuri, labra, beguni, papad, chutney and payesh, with marigolds, on a red alpona cloth',
+  noindex: true,
+})
+
 // ── The Durga Puja book: one route per markdown chapter ─────────────────────
 // Frontmatter drives the tags: title (+suffix), oneLiner → description,
 // image → og:image (bare filenames resolve to /bookdurgapuja/<name>).
