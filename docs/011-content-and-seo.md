@@ -60,8 +60,11 @@ markdown: `![alt](/bookdurgapuja/file.webp)`.
 Two app pages carry share cards of their own, set in the page's `<Seo>` (with
 `bareTitle`) and in its `scripts/prerender.mjs` entry, kept word for word
 alike: `/uma` (`uma-share.webp`, 782 × 782) and the bhog headcount link
-`/bhog/count` (`bhog-share.webp`, 1200 × 790, ~110 KB — a bhog thali on a
-banana leaf; the link stays noindex and out of the sitemap).
+`/bhog/count` (`bhog-share-v2.webp`, 1200 × 790, 90 KB — a bhog thali on a
+banana leaf; the link stays noindex and out of the sitemap). Keep share
+images under 100 KB: WhatsApp showed no preview for this one at 113 KB,
+though Facebook did. A replaced image gets a new file name, since WhatsApp
+caches previews by URL.
 
 ### Linking and markdown features
 

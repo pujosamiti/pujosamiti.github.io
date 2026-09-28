@@ -57,7 +57,7 @@ export function BhogCount() {
         bareTitle
         description="Find your household and tell the samiti how many will eat bhog each day, Saptami to Dashami — everyone aged 5 and above. Each day’s count closes four days before it. Magarpatta Pujo Samiti."
         path="/bhog/count"
-        image="https://pujosamiti.github.io/bhog-share.webp"
+        image="https://pujosamiti.github.io/bhog-share-v2.webp"
         noindex
       />
       <div className="flex flex-col gap-1">
