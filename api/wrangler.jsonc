@@ -19,12 +19,14 @@
   // "r2_buckets": [{ "binding": "FILES", "bucket_name": "pujosamiti-files" }],
   // Public headcount links (/api/public/bhog/headcount): a per-IP cap, so the
   // ~24 million codes can't be walked by brute force. A family loading and
-  // saving its form uses a handful of requests.
+  // saving its form uses a handful of requests; 60 leaves room for the many
+  // phones behind one carrier IP (Jio/Airtel CGNAT) or a society's Wi-Fi
+  // opening the link in the same minute it lands in the WhatsApp group.
   "ratelimits": [
     {
       "name": "HEADCOUNT_LIMITER",
       "namespace_id": "4101",
-      "simple": { "limit": 20, "period": 60 }
+      "simple": { "limit": 60, "period": 60 }
     }
   ],
   "vars": {

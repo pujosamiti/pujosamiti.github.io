@@ -25,7 +25,7 @@ local `http://localhost:8787`.
 The three `/api/public/bhog/headcount` routes are the **headcount link**
 (`/bhog/count/?c=X481216`): one code per Durga Pujo, shared on WhatsApp, no
 sign-in. A wrong, revoked or past-season code gets a plain message; every
-call is capped per IP (`HEADCOUNT_LIMITER`, 20 a minute — see
+call is capped per IP (`HEADCOUNT_LIMITER`, 60 a minute — see
 [007](007-cloudflare.md)).
 
 | Route | Returns | Called by |
