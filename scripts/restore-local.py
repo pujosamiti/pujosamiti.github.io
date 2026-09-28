@@ -42,11 +42,31 @@ def run(sql_file: pathlib.Path):
         raise SystemExit(f'failed on {sql_file.name}:\n{tail}')
 
 
+def runnable_schema(text: str) -> str:
+    """00-schema.sql as D1 will take it. Backups before 28 Sep 2026 wrote the
+    statements without ";" and included D1's own tables (_cf_KV,
+    sqlite_sequence), which D1 refuses to create (SQLITE_AUTH) — so split on the
+    blank line before each CREATE, drop those, and terminate each statement."""
+    out = []
+    for chunk in re.split(r'\n\s*\n(?=CREATE\b)', text):
+        stmt = '\n'.join(l for l in chunk.strip().splitlines() if not l.startswith('--')).strip().rstrip(';')
+        if not stmt:
+            continue
+        m = re.match(r'CREATE TABLE\s+[`"]?(\w+)', stmt)
+        if m and (m.group(1).startswith(('_cf_', 'sqlite_'))):
+            continue
+        out.append(stmt + ';')
+    return '\n\n'.join(out) + '\n'
+
+
 if '--fresh' in flags:
     state = API / '.wrangler' / 'state' / 'v3' / 'd1'
     shutil.rmtree(state, ignore_errors=True)
     print(f'wiped {state}')
-    run(SRC / '00-schema.sql')
+    schema_file = SRC / '00-schema.runnable.sql'
+    schema_file.write_text(runnable_schema((SRC / '00-schema.sql').read_text()))
+    run(schema_file)
+    schema_file.unlink()
     print('00-schema.sql applied')
 
 # The manifest lists tables parents-first; fall back to filenames if it is absent.

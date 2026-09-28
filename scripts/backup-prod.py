@@ -83,8 +83,16 @@ master = q("SELECT name, sql, type FROM sqlite_master "
 tables = {r['name']: r['sql'] for r in master if r['type'] == 'table'}
 indexes = [r['sql'] for r in master if r['type'] == 'index']
 
+# Runnable as-is (restore-local.py --fresh): every statement ends in ";", and
+# D1's own tables (_cf_KV, sqlite_sequence) are left out — D1 refuses to
+# create them (SQLITE_AUTH) and makes them itself.
+internal = lambda name: name in SKIP or name.startswith(('_cf_', 'sqlite_'))
 (OUT / '00-schema.sql').write_text(
-    f'-- Prod schema, {today}\n\n' + '\n\n'.join(list(tables.values()) + indexes) + '\n')
+    f'-- Prod schema, {today}\n\n'
+    + '\n\n'.join(f'{sql.rstrip().rstrip(";")};' for name, sql in tables.items() if not internal(name))
+    + '\n\n'
+    + '\n\n'.join(f'{sql.rstrip().rstrip(";")};' for sql in indexes)
+    + '\n')
 
 order = [t for t in fk_order(tables) if t not in SKIP]
 lines = [f'Pujosamiti FULL prod backup — {today}',
