@@ -11,5 +11,10 @@ WHERE event_id = 'durga-pujo-2026' AND label = 'Ashtami · Day 2 Bhog';
 --    default "Received by" — and a core household's guests are ₹250 a head.
 --    Both can be changed on /bhog (Guest bhog panel).
 INSERT INTO bhog_setting (event_id, incharge_person_id, guest_rate, updated_by, updated_at)
-VALUES ('durga-pujo-2026', 'arc-suvadip-gupta', 250, 'p-prady', 1790589600000)
+VALUES ('durga-pujo-2026', 'arc-suvadip-gupta', 250, 'p-prady', 1790589600)
 ON CONFLICT (event_id) DO NOTHING;
+
+-- 3. updated_at is Unix seconds (Drizzle's timestamp mode). The first run of
+--    this script (28 Sep 2026) wrote milliseconds; this puts any such value
+--    right and does nothing once it is.
+UPDATE bhog_setting SET updated_at = updated_at / 1000 WHERE updated_at > 100000000000;
