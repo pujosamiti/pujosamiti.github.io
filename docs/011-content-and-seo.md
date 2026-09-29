@@ -57,11 +57,16 @@ makes WhatsApp show a rich card. Specs: 1200×630 (or ≥3:2, subject centred �
 WhatsApp crops square-ish), WebP, under ~300 KB. In-body images are normal
 markdown: `![alt](/bookdurgapuja/file.webp)`.
 
-Two app pages carry share cards of their own, set in the page's `<Seo>` (with
+Three app pages carry share cards of their own, set in the page's `<Seo>` (with
 `bareTitle`) and in its `scripts/prerender.mjs` entry, kept word for word
-alike: `/uma` (`uma-share.webp`, 782 × 782) and the bhog headcount link
+alike: `/uma` (`uma-share.webp`, 782 × 782), the bhog headcount link
 `/bhog/count` (`bhog-share-v2.webp`, 1200 × 790, 90 KB — a bhog thali on a
-banana leaf; the link stays noindex and out of the sitemap). Keep share
+banana leaf; the link stays noindex and out of the sitemap), and the cultural
+evening's flyer `/cultural/cultural-01` (`cultural-evening-share-2026.webp`,
+1200 × 630, 63 KB — the flyer centred on a blurred copy of itself; public, no
+sign-in, noindex and out of the sitemap; its words live in
+`web/src/lib/culturalEvening.ts`, and a cultural admin shares it from
+/cultural → Share link). A new year's flyer gets new file names. Keep share
 images under 100 KB: WhatsApp showed no preview for this one at 113 KB,
 though Facebook did. A replaced image gets a new file name, since WhatsApp
 caches previews by URL.

@@ -16,6 +16,7 @@ import { BrandColours } from '@/pages/BrandColours'
 import { Bhog } from '@/pages/Bhog'
 import { BhogCount } from '@/pages/BhogCount'
 import { Cultural, CulturalForm } from '@/pages/Cultural'
+import { CulturalEvening } from '@/pages/CulturalEvening'
 import { LedgerPage, ReimbursementsPage, SponsorshipPage, WalletsPage } from '@/pages/Ledger'
 import { Nirghanto } from '@/pages/Nirghanto'
 import { Procurement } from '@/pages/Procurement'
@@ -88,6 +89,8 @@ createRoot(document.getElementById('root')!).render(
               {/* The bhog headcount link (?c=<code>): no sign-in — the code is
                   the key. Outranks the members-only /bhog below. */}
               <Route path="bhog/count" element={<BhogCount />} />
+              {/* public, unlike the rest of /cultural: the flyer shared on WhatsApp and Facebook */}
+              <Route path="cultural/cultural-01" element={<CulturalEvening />} />
               {/* Everything below requires a signed-in, activated member: a
                   shared deep link shows the sign-in card and returns to the
                   same URL after Google. New member-only URLs go inside. */}
