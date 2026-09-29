@@ -162,14 +162,14 @@ export function Cultural() {
 }
 
 /**
- * The flyer's public page, /cultural/cultural-01, for an open audience: no
+ * The flyer's public page, /cultural/flyer/01, for an open audience: no
  * sign-in and no code — one address to share on WhatsApp and Facebook, where
  * it previews with the flyer's own card (as the bhog headcount link does).
  */
 function SharePanel({ onClose }: { onClose: () => void }) {
   const [copied, setCopied] = useState(false)
   const url = culturalEveningUrl()
-  const message = `${CULTURAL_EVENING.title} — Shashthi to Ashtami Day 2, 16–19 October, at the Amphitheatre, Aditi Garden, from 6:30 pm. All residents, friends and family welcome.\n${url}`
+  const message = `${CULTURAL_EVENING.title} — Shashthi to Ashtami Day 2, 16–19 October, at the Amphitheatre, Aditi Garden, from 6:30 pm. All Magarpatta citizens and Cybercity families welcome.\n${url}`
   const copy = async () => {
     try {
       await navigator.clipboard.writeText(url)

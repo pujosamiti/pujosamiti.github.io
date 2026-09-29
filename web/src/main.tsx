@@ -90,7 +90,7 @@ createRoot(document.getElementById('root')!).render(
                   the key. Outranks the members-only /bhog below. */}
               <Route path="bhog/count" element={<BhogCount />} />
               {/* public, unlike the rest of /cultural: the flyer shared on WhatsApp and Facebook */}
-              <Route path="cultural/cultural-01" element={<CulturalEvening />} />
+              <Route path="cultural/flyer/01" element={<CulturalEvening />} />
               {/* Everything below requires a signed-in, activated member: a
                   shared deep link shows the sign-in card and returns to the
                   same URL after Google. New member-only URLs go inside. */}

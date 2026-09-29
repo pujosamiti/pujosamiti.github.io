@@ -62,11 +62,19 @@ Three app pages carry share cards of their own, set in the page's `<Seo>` (with
 alike: `/uma` (`uma-share.webp`, 782 × 782), the bhog headcount link
 `/bhog/count` (`bhog-share-v2.webp`, 1200 × 790, 90 KB — a bhog thali on a
 banana leaf; the link stays noindex and out of the sitemap), and the cultural
-evening's flyer `/cultural/cultural-01` (`cultural-evening-share-2026.webp`,
-1200 × 630, 63 KB — the flyer centred on a blurred copy of itself; public, no
-sign-in, noindex and out of the sitemap; its words live in
-`web/src/lib/culturalEvening.ts`, and a cultural admin shares it from
-/cultural → Share link). A new year's flyer gets new file names. Keep share
+evening's flyer `/cultural/flyer/01` (`cultural-evenings-card-2026.webp`,
+1200 × 630, 88 KB — "Evening Itineraries" in the flyer's own alpona, drawn in
+HTML and photographed by a headless browser; public, no sign-in, noindex and
+out of the sitemap; a cultural admin shares it from /cultural → Share link).
+The page draws the flyer rather than showing it — all jaba red, white
+rice-paste alpona in a layered frame (a solid outer rule, the temple band with
+tara blocks at the corners, a line of dots, a solid quarter mandala in each
+corner), Maa's face from the samiti's mark in a chakra between two dhak, each
+evening in a card bordered by the leaf band, every line hand-drawn through
+the rice-paste filter (`hand` / `<HandDrawn />` in `components/Alpona.tsx`) —
+every word real text from
+`web/src/lib/culturalEvening.ts`, sized to the flyer's width (container
+units). A new year's flyer gets new file names. Keep share
 images under 100 KB: WhatsApp showed no preview for this one at 113 KB,
 though Facebook did. A replaced image gets a new file name, since WhatsApp
 caches previews by URL.

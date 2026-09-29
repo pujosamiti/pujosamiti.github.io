@@ -209,24 +209,25 @@ ROUTES.push({
   noindex: true,
 })
 
-// ── The cultural evening's flyer, /cultural/cultural-01 ───────────────────
+// ── The cultural evening's flyer, /cultural/flyer/01 ─────────────────────
 // For an open audience, no sign-in: a cultural admin shares it on WhatsApp and
-// Facebook from /cultural. Its card is the flyer centred on a blurred copy of
-// itself, 1200 × 630 WebP, 63 KB — under 100 KB for WhatsApp, the heading and
-// dates inside WhatsApp's square-ish crop. Kept out of search and the sitemap
+// Facebook from /cultural. Its card is "Evening Itineraries" drawn in the
+// flyer's alpona — Maa between two dhak, the layered frame — 1200 × 630 WebP,
+// 88 KB, under 100 KB for WhatsApp, the words in the middle, inside WhatsApp's
+// square-ish crop. Kept out of search and the sitemap
 // like the bhog link. Title and description match web/src/lib/culturalEvening.ts.
-ROUTES.push({
-  path: '/cultural/cultural-01',
-  title: 'Durga Pujo Cultural Evening · Magarpatta City',
+const culturalEvening = {
+  title: 'Durga Pujo Cultural Evenings · Magarpatta City',
   description:
-    'Shashthi to Ashtami Day 2, 16–19 October · Amphitheatre, Aditi Garden · 6:30 pm onwards. Musical Quiz, Chandalika dance drama and a live performance by Shreya Verma — all Magarpatta residents, friends and family welcome.',
-  image: `${ORIGIN}/cultural-evening-share-2026.webp`,
+    'Shashthi to Ashtami Day 2, 16–19 October · Amphitheatre, Aditi Garden · 6:30 pm onwards. Musical Quiz, Chandalika dance drama and a live performance by Shreya Verma — all Magarpatta citizens and Cybercity families welcome.',
+  image: `${ORIGIN}/cultural-evenings-card-2026.webp`,
   imageWidth: 1200,
   imageHeight: 630,
   imageType: 'image/webp',
-  imageAlt: 'The Magarpatta City Durga Pujo Cultural Evening flyer — four evenings, Shashthi to Ashtami Day 2, 16–19 October, at the Amphitheatre, Aditi Garden, from 6:30 pm',
+  imageAlt: "The Magarpatta City Durga Pujo Evening Itineraries card — Maa Durga's face in a mandala between two dhak, in white alpona on red; Shashthi to Ashtami, 16–19 October, Aditi Garden, 6:30 pm",
   noindex: true,
-})
+}
+ROUTES.push({ path: '/cultural/flyer/01', ...culturalEvening })
 
 // ── The Durga Puja book: one route per markdown chapter ─────────────────────
 // Frontmatter drives the tags: title (+suffix), oneLiner → description,
