@@ -88,8 +88,8 @@ newsignin   tier = 'non_member', open  — bhog + sponsorship views; headcount +
 ```
 
 On top of the role, one flag: **cultural_admin** (`person.is_cultural_admin`,
-ticked on the person's form in /membership) — a core member who runs the
-cultural programme. Admins hold it implicitly, as they do finance; the check
+ticked on the person's form in /membership) — a core member (a fin_admin
+too) who runs the cultural programme, and alone (with admins) sees it. Admins hold it implicitly, as they do finance; the check
 is `canRunCulture(me)` in shared, with `Me.isCulturalAdmin` carrying the flag.
 
 Gates in practice:

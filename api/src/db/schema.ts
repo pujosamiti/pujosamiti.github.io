@@ -127,7 +127,7 @@ export const pujaDay = sqliteTable('puja_day', {
   sourceLabel: text('source_label'), // "Maha Ashtami (Adhik Diba)"
   sortOrder: integer('sort_order').notNull().default(1000),
   notes: text('notes'),
-  /** The evening carries a cultural programme (Saptami and Ashtami in 2026) — an admin's switch. */
+  /** The evening carries a cultural programme (Shashthi, Saptami, Ashtami and Ashtami · Day 2 in 2026) — an admin's switch. */
   hasCulturalEvening: integer('has_cultural_evening', { mode: 'boolean' }).notNull().default(false),
 })
 
@@ -682,7 +682,7 @@ export const umaArticle = sqliteTable('uma_article', {
 })
 
 // ─────────────────────────────────────────────────────────────────────────────
-// 12 · Cultural function — the Saptami and Ashtami evening programmes
+// 12 · Cultural function — the pujo's evening programmes
 // One row per item on an evening's programme, in its running order
 // (`sort_order` — new items join at the end, core members move them up/down).
 // An evening is a Puja Day an admin has marked (puja_day.has_cultural_evening),

@@ -15,10 +15,10 @@ function ok<T>(data: T): ApiResult<T> {
  * Cultural function — the evening programmes. An evening is a Puja Day of the
  * active Durga Pujo that an admin has marked (puja_day.has_cultural_evening),
  * so its name and date come from the Days of the Pujo. Mounted under the
- * member gate (/api/members/cultural). Every member reads an evening's
- * schedule; only cultural admins (canRunCulture: core members with the flag,
- * and admins) add, edit, delete and arrange items — on the active pujo's
- * evenings only, past years being the record. New sign-ins see none of it.
+ * member gate (/api/members/cultural). The whole programme is the cultural
+ * admins' (canRunCulture: core members with the flag, and admins) — they
+ * read it, and add, edit, delete and arrange items, on the active pujo's
+ * evenings only, past years being the record. Other members see none of it.
  */
 export const culturalRoutes = new Hono<{ Bindings: Env; Variables: { me: Me } }>()
 
@@ -28,7 +28,7 @@ type Row = typeof schema.culturalProgram.$inferSelect
 const text = (v: string | null | undefined) => v?.trim() || null
 
 culturalRoutes.use('*', async (c, next) => {
-  if (c.get('me').role === 'newsignin') return c.json({ ok: false, error: 'members only' }, 403)
+  if (!canRunCulture(c.get('me'))) return c.json({ ok: false, error: 'cultural admins only' }, 403)
   await next()
 })
 
@@ -127,10 +127,9 @@ culturalRoutes.get('/:id', async (c) => {
   return c.json(ok(toView(r.item, r.name)))
 })
 
-/** Add an item to an evening (core members). */
+/** Add an item to an evening. */
 culturalRoutes.post('/', async (c) => {
   const me = c.get('me')
-  if (!canRunCulture(me)) return c.json({ ok: false, error: 'cultural admins only' }, 403)
   const b = (await c.req.json()) as CulturalItemInput
   const bad = invalid(b)
   if (bad) return c.json({ ok: false, error: bad }, 400)
@@ -161,13 +160,11 @@ culturalRoutes.post('/', async (c) => {
   return c.json(ok({ id }))
 })
 
-/** Edit an item (its creator or an admin). The evening stays as created. */
+/** Edit an item. The evening stays as created. */
 culturalRoutes.post('/:id', async (c) => {
-  const me = c.get('me')
   const db = drizzle(c.env.DB, { schema })
   const row = await loadItem(db, c.req.param('id'))
   if (!row) return c.json({ ok: false, error: 'item not found' }, 404)
-  if (!canRunCulture(me)) return c.json({ ok: false, error: 'cultural admins only' }, 403)
   if (!(await writableEvening(db, row.pujaDayId)))
     return c.json({ ok: false, error: 'past programmes are the record — they no longer change' }, 400)
   const b = { ...((await c.req.json()) as CulturalItemInput), pujaDayId: row.pujaDayId }
@@ -188,13 +185,11 @@ culturalRoutes.post('/:id', async (c) => {
   return c.json(ok({ id: row.id }))
 })
 
-/** Delete an item (its creator or an admin). */
+/** Delete an item. */
 culturalRoutes.post('/:id/delete', async (c) => {
-  const me = c.get('me')
   const db = drizzle(c.env.DB, { schema })
   const row = await loadItem(db, c.req.param('id'))
   if (!row) return c.json({ ok: false, error: 'item not found' }, 404)
-  if (!canRunCulture(me)) return c.json({ ok: false, error: 'cultural admins only' }, 403)
   if (!(await writableEvening(db, row.pujaDayId)))
     return c.json({ ok: false, error: 'past programmes are the record — they no longer change' }, 400)
   await db.delete(schema.culturalProgram).where(eq(schema.culturalProgram.id, row.id))
@@ -209,8 +204,6 @@ culturalRoutes.post('/:id/delete', async (c) => {
  * renumbered 10, 20, 30… in one batch, which also heals any tie.
  */
 culturalRoutes.post('/:id/move', async (c) => {
-  const me = c.get('me')
-  if (!canRunCulture(me)) return c.json({ ok: false, error: 'cultural admins only' }, 403)
   const { direction } = (await c.req.json()) as { direction: 'up' | 'down' }
   if (direction !== 'up' && direction !== 'down') return c.json({ ok: false, error: 'direction must be up or down' }, 400)
   const db = drizzle(c.env.DB, { schema })

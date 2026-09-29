@@ -2,7 +2,7 @@ ALTER TABLE `person` ADD `is_cultural_admin` integer DEFAULT false NOT NULL;
 --> statement-breakpoint
 ALTER TABLE `puja_day` ADD `has_cultural_evening` integer DEFAULT false NOT NULL;
 --> statement-breakpoint
-UPDATE `puja_day` SET `has_cultural_evening` = true WHERE `event_id` = 'durga-pujo-2026' AND `label_en` IN ('Saptami', 'Ashtami');
+UPDATE `puja_day` SET `has_cultural_evening` = true WHERE `event_id` = 'durga-pujo-2026' AND `label_en` IN ('Shashthi', 'Saptami', 'Ashtami', 'Ashtami · Day 2');
 --> statement-breakpoint
 CREATE TABLE `cultural_program` (
 	`id` text PRIMARY KEY NOT NULL,

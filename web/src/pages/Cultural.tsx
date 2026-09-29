@@ -4,7 +4,6 @@ import type {
   CulturalItemInput,
   CulturalItemType,
   CulturalPerformers,
-  Me,
 } from '@pujosamiti/shared'
 import { canRunCulture, CULTURAL_ITEM_TYPES, CULTURAL_PERFORMERS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
@@ -28,11 +27,11 @@ import { cn } from '@/lib/utils'
 /**
  * Cultural Function — the evening programmes of the pujo. The evenings are
  * the Days of the Pujo an admin has marked (on the Nirghanto page), so their
- * names and dates come from the database and follow the nirghanto. Every
- * member reads an evening's running order; only cultural admins
- * (canRunCulture: core members with the flag, and admins) add, edit, delete
- * and arrange items. New sign-ins don't see the page (no card, and the API
- * refuses them).
+ * names and dates come from the database and follow the nirghanto. The
+ * page is the cultural admins' alone (canRunCulture: core members with the
+ * flag, and admins) — they read each evening's running order and add, edit,
+ * delete and arrange its items. Other members don't see it (no card, and the
+ * API refuses them).
  */
 
 /** "Sat, 17 Oct" */
@@ -43,8 +42,17 @@ const shortDate = (iso: string) =>
 const longDate = (iso: string) =>
   new Date(`${iso}T00:00:00`).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
 
-/** "Saptami Sondhya" */
-const sondhya = (e: CulturalEvening) => `${e.labelEn} Sondhya`
+/**
+ * A tithi that spans two dates is a second Puja Day, "Ashtami · Day 2" — its
+ * evening is that tithi's second: "Ashtami Sondhya 2", "Ashtami Evening 2".
+ */
+const eveningName = (e: CulturalEvening, word: 'Sondhya' | 'Evening') => {
+  const [, tithi, n] = e.labelEn.match(/^(.+) · Day (\d+)$/) ?? []
+  return tithi ? `${tithi} ${word} ${n}` : `${e.labelEn} ${word}`
+}
+
+/** "Saptami Sondhya", "Ashtami Sondhya 2" */
+const sondhya = (e: CulturalEvening) => eveningName(e, 'Sondhya')
 
 /** Back to an evening's schedule. */
 const eveningHref = (pujaDayId: string) => `/cultural/?day=${pujaDayId}`
@@ -79,19 +87,19 @@ const useTopOnOpen = () =>
     window.scrollTo(0, 0)
   }, [])
 
-/** The page's gate: members read, new sign-ins don't. */
+/** The page's gate: cultural admins only (canRunCulture). */
 function useMe() {
   const { memberState, memberPending, sessionPending } = useMemberState()
   const me = memberState?.status === 'member' ? memberState.me : null
   return { me, pending: sessionPending || memberPending }
 }
 
-function MembersOnlyCard() {
+function CulturalAdminsOnlyCard() {
   return (
     <Card className="mx-auto max-w-md">
       <CardHeader>
-        <CardTitle>Members only</CardTitle>
-        <CardDescription>The cultural programme opens once an admin activates your membership.</CardDescription>
+        <CardTitle>Cultural admins only</CardTitle>
+        <CardDescription>The cultural programme is run by the admins and the cultural admins.</CardDescription>
       </CardHeader>
     </Card>
   )
@@ -109,15 +117,14 @@ export function Cultural() {
   const { me, pending } = useMe()
   useTopOnOpen()
   const [params, setParams] = useSearchParams()
-  const allowed = !!me && me.role !== 'newsignin'
+  const allowed = !!me && canRunCulture(me)
   const evenings = useEvenings(allowed)
   // the evening in the address, else the first of the pujo
   const evening = evenings.data?.find((e) => e.pujaDayId === params.get('day')) ?? evenings.data?.[0] ?? null
   const items = useEvening(allowed && evening ? evening.pujaDayId : null)
 
   if (pending) return <Spinner />
-  if (!allowed) return <MembersOnlyCard />
-  const canAdd = canRunCulture(me)
+  if (!allowed) return <CulturalAdminsOnlyCard />
 
   return (
     <div className="flex flex-col gap-4">
@@ -141,7 +148,7 @@ export function Cultural() {
             onChange={(id) => setParams({ day: id }, { replace: true })}
           />
           {items.error && <p className="text-sm text-destructive">Failed to load: {items.error.message}</p>}
-          {items.isPending ? <Spinner /> : items.data && <Schedule evening={evening} items={items.data} me={me} canAdd={canAdd} />}
+          {items.isPending ? <Spinner /> : items.data && <Schedule evening={evening} items={items.data} />}
         </>
       )}
     </div>
@@ -151,15 +158,20 @@ export function Cultural() {
 /**
  * The evenings side by side: one tap between them, all always in view. The
  * chosen one is filled in sharat blue — a choice, like the Excel | PDF
- * switch — so it reads apart from the crimson Add entry, the action.
+ * switch — so it reads apart from the crimson Add entry, the action. Up to
+ * three sit in one row; four or more go two to a row on a phone, and the
+ * switch widens from tablet width so the row still fits.
  */
 function EveningSwitch({ evenings, value, onChange }: { evenings: CulturalEvening[]; value: string; onChange: (pujaDayId: string) => void }) {
   return (
     <div
       role="radiogroup"
       aria-label="Evening"
-      className="grid rounded-xl border bg-card p-1 sm:max-w-md"
-      style={{ gridTemplateColumns: `repeat(${evenings.length}, minmax(0, 1fr))` }}
+      className={cn(
+        'grid grid-cols-[repeat(var(--cols),minmax(0,1fr))] rounded-xl border bg-card p-1 sm:grid-cols-[repeat(var(--cols-sm),minmax(0,1fr))]',
+        evenings.length > 2 ? 'sm:max-w-2xl' : 'sm:max-w-md',
+      )}
+      style={{ '--cols': evenings.length > 3 ? 2 : evenings.length, '--cols-sm': evenings.length } as React.CSSProperties}
     >
       {evenings.map((e) => (
         <button
@@ -188,7 +200,7 @@ type View = 'table' | 'rows'
 /** Performers, short enough for a table cell or a phone row (the form keeps the full words). */
 const PERFORMERS_SHORT: Record<CulturalItem['performers'], string> = { kids: 'Kids', adults: 'Adults', both: 'Kids + Adults' }
 
-function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; items: CulturalItem[]; me: Me; canAdd: boolean }) {
+function Schedule({ evening, items }: { evening: CulturalEvening; items: CulturalItem[] }) {
   const queryClient = useQueryClient()
   const key = ['cultural', evening.pujaDayId]
   const [error, setError] = useState<string | null>(null)
@@ -251,9 +263,7 @@ function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; it
       remove.mutate(item.id)
     }
   }
-  // cultural admins run the programme: add, edit, delete and arrange; everyone else reads
-  const canEdit = canRunCulture(me)
-  const canReorder = canEdit && items.length > 1
+  const canReorder = items.length > 1
   // duration is optional: total what is known, and say when it is not everything
   const timed = items.filter((i) => i.durationMin != null)
   const total = timed.reduce((sum, i) => sum + (i.durationMin ?? 0), 0)
@@ -279,7 +289,7 @@ function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; it
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <h2 className="text-lg font-semibold">
           {evening.labelBn && <span className="text-shiuli">{evening.labelBn} · </span>}
-          {evening.labelEn} Evening
+          {eveningName(evening, 'Evening')}
         </h2>
         <p className="text-sm text-matir">{longDate(evening.date)}</p>
       </div>
@@ -304,14 +314,12 @@ function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; it
               {arranging ? <Check /> : <ArrowUpDown />} {arranging ? 'Done' : 'Arrange'}
             </Button>
           )}
-          {canAdd && (
-            // the page's one action: adds to the evening on screen
-            <Button asChild>
-              <Link to={`/cultural/new/${evening.pujaDayId}/`} aria-label={`Add entry for ${sondhya(evening)}`}>
-                <Plus /> Add entry
-              </Link>
-            </Button>
-          )}
+          {/* the page's one action: adds to the evening on screen */}
+          <Button asChild>
+            <Link to={`/cultural/new/${evening.pujaDayId}/`} aria-label={`Add entry for ${sondhya(evening)}`}>
+              <Plus /> Add entry
+            </Link>
+          </Button>
         </div>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}
@@ -349,18 +357,14 @@ function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; it
                   <td className="whitespace-nowrap py-1 pl-2 pr-2 text-right">
                     <div className="inline-flex items-center gap-1">
                       {canReorder && arrows(i, n, 'table')}
-                      {canEdit && (
-                        <>
-                          <Button size="icon" variant="ghost" asChild>
-                            <Link to={`/cultural/${i.id}/edit/`} aria-label={`Edit ${i.itemName}`}>
-                              <Pencil />
-                            </Link>
-                          </Button>
-                          <Button size="icon" variant="ghost" aria-label={`Delete ${i.itemName}`} disabled={remove.isPending} onClick={() => onDelete(i)}>
-                            <Trash2 className="text-destructive" />
-                          </Button>
-                        </>
-                      )}
+                      <Button size="icon" variant="ghost" asChild>
+                        <Link to={`/cultural/${i.id}/edit/`} aria-label={`Edit ${i.itemName}`}>
+                          <Pencil />
+                        </Link>
+                      </Button>
+                      <Button size="icon" variant="ghost" aria-label={`Delete ${i.itemName}`} disabled={remove.isPending} onClick={() => onDelete(i)}>
+                        <Trash2 className="text-destructive" />
+                      </Button>
                     </div>
                   </td>
                 </tr>
@@ -371,7 +375,7 @@ function Schedule({ evening, items, me, canAdd }: { evening: CulturalEvening; it
           {/* a phone: the running order as rows, two lines each; tap a row to edit it */}
           <ol className="divide-y md:hidden">
             {items.map((i, n) => {
-              const editable = canEdit && !arranging
+              const editable = !arranging
               const body = (
                 <>
                   <span className="flex items-baseline gap-2">
@@ -490,16 +494,7 @@ export function CulturalForm() {
   })
 
   if (pending) return <Spinner />
-  if (!me || me.role === 'newsignin') return <MembersOnlyCard />
-  if (!canRunCulture(me))
-    return (
-      <Card className="mx-auto max-w-md">
-        <CardHeader>
-          <CardTitle>Cultural admins only</CardTitle>
-          <CardDescription>Cultural admins add and change the programme's items; every member can read it.</CardDescription>
-        </CardHeader>
-      </Card>
-    )
+  if (!core) return <CulturalAdminsOnlyCard />
   if (evenings.error) return <p className="text-sm text-destructive">Failed to load: {evenings.error.message}</p>
   if (!evenings.data) return <Spinner />
   // only the active pujo's evenings take entries; past programmes are the record

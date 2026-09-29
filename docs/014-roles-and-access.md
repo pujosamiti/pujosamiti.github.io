@@ -36,8 +36,9 @@ included, gets those controls.
 
 **The cultural admin** — a flag, not a role: `person.is_cultural_admin`,
 ticked by an admin on the person's form in /membership (a "cultural" badge
-on their card). A core member with it runs the cultural programme; admins
-hold it implicitly. The check is `canRunCulture(me)` in `shared`.
+on their card). A core member with it — a fin_admin too, being core — runs
+the cultural programme, and with admins (who hold it implicitly) is the only
+one to see it at all. The check is `canRunCulture(me)` in `shared`.
 
 (A further axis, **the Uma seat** on the magazine masthead, retired with the
 magazine on 26 Sep 2026 — see [015](015-uma-magazine.md). `/uma` is now the
@@ -56,7 +57,7 @@ public daily quiz and puzzle, open to everyone with no sign-in.)
 | Puja Planning | — | R | **W** + volunteer | **W** + volunteer | **W** + volunteer |
 | Procurement | — | — | **W** | **W** | **W** |
 | Bhog & Food Menu | R + headcount | R + headcount | R + headcount + responses | + ₹ + proxy count | **W** |
-| Cultural Function | — | R | R (**W** if cultural admin) | R (**W** if cultural admin) | **W** |
+| Cultural Function | — | — | — (**W** if cultural admin) | — (**W** if cultural admin) | **W** |
 | Membership | — | — | R | R | **W** |
 | Nirghanto | — | — | R | R | **W** |
 | Events | — | — | R | R | **W** |
@@ -108,14 +109,16 @@ fin_admin (the Guest bhog panel on /bhog, or the ledger form's "Guest bhog
 payment" toggle); both write the same ledger entry. Recording a count never changes that household's tier.
 Only `admin` adds, edits, publishes, unpublishes or deletes a menu day.
 
-**The cultural programme belongs to the cultural admins.** Every member
-reads each evening's running order; only cultural admins — core members with
-the flag, and every admin — add, edit and delete items and arrange the
-running order with the ↑ / ↓ arrows, whoever added the item. Other core
-members, fin_admins included, read. Which evenings have a programme is the
-admin's call — a mark on each day in the Days of the Pujo. New sign-ins see
-nothing of it — no card, and the API refuses them. All of this is enforced
-in the API as well as the UI.
+**The cultural programme belongs to the cultural admins.** Only cultural
+admins — core members with the flag (fin_admins included), and every
+admin — see it: they read each
+evening's running order, add, edit and delete items and arrange the running
+order with the ↑ / ↓ arrows, whoever added the item. Everyone else — members,
+other core members, fin_admins without the flag, new sign-ins — sees nothing
+of it: no card on Members Only, a "Cultural admins only" card at /cultural,
+and the API refuses them, reads included. Which evenings have a programme is
+the admin's call — a mark on each day in the Days of the Pujo. All of this is
+enforced in the API as well as the UI.
 
 **Archival seasons are read-only for everyone**, admins included. Past
 sponsorship boards take no pledges; past bhog seasons take no edits; a past
@@ -133,7 +136,7 @@ reader should know which is which.
 | Pledge for another household → proxy | ✅ | ✅ |
 | Release a pledge → proxy | ✅ | ✅ (also removed from `MEMBER_OPEN` and the new-signin allowlist) |
 | Per-plate cost → proxy | ✅ | ✅ (a core member's menu edit carries the stored price through) |
-| Cultural programme writes → cultural admin | ✅ | ✅ |
+| Cultural programme (read and write) → cultural admin | ✅ | ✅ |
 | Bhog day add/edit/publish/delete → admin | ✅ | ❌ still `isCoreRole` |
 | Sponsorship page closed until 25 Sep | ✅ | ❌ endpoints answer |
 | Offer/skip a slot → webmaster | ✅ | ❌ route admits finance too |

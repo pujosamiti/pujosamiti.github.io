@@ -134,7 +134,7 @@ One menu per calendar date per event — five occasions a season
 | `POST /guests/receive` | **admin/fin_admin**: record a guest bhog payment — writes the ledger entry `misc_income · Guest Bhog`, event-tagged, payer = the household's contact, wallet = the receiver. Optional `{menuId, guests}` adds guests paid for at the counter to that day's count first (20-a-day cap, cut-off waived), so due and money agree; the ledger form's "Core Member Guest Bhog" toggle posts here for any eligible core household |
 | `GET /link?eventId=` · `POST /link` | **admin/fin_admin**: the event's one headcount link (`{code, createdAt}` or null); `POST {eventId, replace?}` issues it — Durga Pujo, current season — and with `replace` revokes the live one first |
 
-### Cultural function (`/api/members/cultural` — members read; cultural admins add, edit, delete and arrange; new sign-ins refused)
+### Cultural function (`/api/members/cultural` — cultural admins only, reads included; everyone else refused)
 
 The pujo's evening programmes ([004](004-database.md) §2 "Cultural function"). An evening is a marked Puja Day of the active Durga Pujo; writes go only to those.
 

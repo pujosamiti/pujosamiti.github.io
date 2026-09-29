@@ -91,7 +91,7 @@ nirghanto → no seeding; features wait. Later nirghanto edits surface as an
 out-of-sync warning with an admin re-sync.
 
 `has_cultural_evening` (migration 0013) marks the days whose evening carries a
-cultural programme — Saptami and Ashtami in 2026. Admins switch it per day in
+cultural programme — Shashthi, Saptami, Ashtami and Ashtami · Day 2 in 2026. Admins switch it per day in
 the Days of the Pujo on /nirghanto; re-sync updates rows in place, so the mark
 survives it.
 
@@ -301,7 +301,7 @@ deliberate design — schema changes are too destructive to auto-apply on push.
 | 0010 | `0010_sponsorship-tagline.sql` | `sponsorship_item.tagline` / `tagline_bn` — each slot's bilingual appeal |
 | 0011 | `0011_uma-section-editors.sql` | `uma_section_editor` — one editor per Uma section; retires `uma_role = 'editor'` |
 | 0012 | `0012_bhog-headcount.sql` | `bhog_link` — the headcount link, one live code per event (partial unique index), revoked codes kept; `bhog_rsvp.guests`; `bhog_setting` — per-event Food & Bhog in-charge and guest rate |
-| 0013 | `0013_cultural-program.sql` | `person.is_cultural_admin` (cultural_admin) + `puja_day.has_cultural_evening` (set for 2026's Saptami and Ashtami) + `cultural_program`, the evening programmes |
+| 0013 | `0013_cultural-program.sql` | `person.is_cultural_admin` (cultural_admin) + `puja_day.has_cultural_evening` (set for 2026's Shashthi, Saptami, Ashtami and Ashtami · Day 2) + `cultural_program`, the evening programmes |
 
 ## 6. ⚠️ Why `npm run db:migrate:*` is broken (and what to use instead)
 

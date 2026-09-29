@@ -1,4 +1,4 @@
-import { isCoreRole, sponsorshipOpen } from '@pujosamiti/shared'
+import { canRunCulture, isCoreRole, sponsorshipOpen } from '@pujosamiti/shared'
 import { useQueryClient } from '@tanstack/react-query'
 import { BookOpen, CalendarDays, Clock, Gift, LogIn, LogOut, Music, NotebookText, Palette, ReceiptText, RefreshCw, ShoppingBasket, Users, UtensilsCrossed, Wallet } from 'lucide-react'
 import { Link } from 'react-router'
@@ -26,7 +26,7 @@ const memberSections = [
   { icon: BookOpen, title: 'Puja Planning', desc: 'Task distribution', gate: 'Members only', to: '/tasks/', tone: PAGE_TINT.tasks },
   { icon: ShoppingBasket, title: 'Procurement', desc: 'Day-wise shopping lists and order sheets', gate: 'Core members only', to: '/procurement/', coreOnly: true, tone: PAGE_TINT.procurement },
   { icon: UtensilsCrossed, title: 'Bhog & Food Menu', desc: 'Menus and per-plate cost, occasion by occasion', gate: 'Members only', to: '/bhog/', newSignInOk: true, tone: PAGE_TINT.bhog },
-  { icon: Music, title: 'Cultural Function', desc: 'The pujo\'s evening programmes', gate: 'Members only', to: '/cultural/', tone: PAGE_TINT.cultural },
+  { icon: Music, title: 'Cultural Function', desc: 'The pujo\'s evening programmes', gate: 'Cultural admins only', to: '/cultural/', culturalOnly: true, tone: PAGE_TINT.cultural },
   { icon: Users, title: 'Membership', desc: 'Members, pending activation, families', gate: 'Core members only', to: '/membership/', coreOnly: true, tone: PAGE_TINT.membership },
   { icon: Clock, title: 'Nirghanto', desc: 'Durga Pujo time table workspace', gate: 'Core members only', to: '/nirghanto/', coreOnly: true, tone: PAGE_TINT.nirghanto },
   { icon: CalendarDays, title: 'Events', desc: 'The samiti events calendar', gate: 'Core members only', to: '/events/', coreOnly: true, tone: PAGE_TINT.events },
@@ -51,6 +51,8 @@ export function MembersOnly() {
   const sections = memberSections.filter((s) => {
     // The sponsorship board is the admin's alone until it opens (see shared).
     if (s.adminUntilOpen && me && !sponsorshipOpen() && me.role !== 'admin') return false
+    // The cultural programme is its admins' alone (admins, and core members with the flag).
+    if (s.culturalOnly && me && !canRunCulture(me)) return false
     return me?.role === 'newsignin' ? s.newSignInOk : !(s.coreOnly && me && !isCoreRole(me.role))
   })
 
