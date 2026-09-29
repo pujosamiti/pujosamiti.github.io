@@ -85,8 +85,10 @@ indexes = [r['sql'] for r in master if r['type'] == 'index']
 
 # Runnable as-is (restore-local.py --fresh): every statement ends in ";", and
 # D1's own tables (_cf_KV, sqlite_sequence) are left out — D1 refuses to
-# create them (SQLITE_AUTH) and makes them itself.
-internal = lambda name: name in SKIP or name.startswith(('_cf_', 'sqlite_'))
+# create them (SQLITE_AUTH) and makes them itself. session and verification
+# stay in the schema — sign-in needs the tables, and their indexes follow —
+# only their rows are skipped.
+internal = lambda name: name.startswith(('_cf_', 'sqlite_'))
 (OUT / '00-schema.sql').write_text(
     f'-- Prod schema, {today}\n\n'
     + '\n\n'.join(f'{sql.rstrip().rstrip(";")};' for name, sql in tables.items() if not internal(name))
