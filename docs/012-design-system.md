@@ -94,6 +94,16 @@ something where it stands:
 - **The book**: the chapter's masthead ends in an `AlponaDivider` with the
   chapter's motif (same reading, `chapterMotif` in `DurgaPuja.tsx`), and a
   small shatadal marks the chapter's end.
+- **The cultural evenings' flyer** (`/cultural/flyer/01`): the fuller set —
+  filled petals and leaves where the paste lies thick (`konaMandala`,
+  `chakra`, `taraKona`), `dhak`, `kona`, `shiuli`, and layered bands (the
+  temple band, leaf band, tara row, dot line and chevron chain —
+  `TempleBorder`, `LeafBorder`, `TaraBorder`, `DotBorder`, `ChevronBorder`).
+  Anything can be drawn as rice paste — `hand` on a motif or band, with one
+  `<HandDrawn />` on the page — so its lines waver a little and their edges
+  roughen, as a finger-drawn alpona does. `/brandcolours` shows these too:
+  its "flyer's alpona" block is generated from these components by
+  `scripts/brand-alpona.mts` — rerun it after changing one, never hand-edit.
 
 - **The header on the pujo days**: from Panchami to Dashami the header's
   scallops become a kuri mala of lotus buds — Sandhi puja's 108 lotuses

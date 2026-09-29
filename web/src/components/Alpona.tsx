@@ -709,41 +709,31 @@ export function DotBorder({
 
 /**
  * A chain of the footer's chevron, a bindu between each — a border for a
- * frame's edge, pointing in. Fixed-size tiles, like the other borders.
- * `vertical` stands it upright, pointing right (mirror it for the right side).
+ * frame's edge, pointing in (down, along a top edge). Fixed-size tiles, like
+ * the other bands; `vertical` runs it down a side (PatternBand's convention).
  */
 export function ChevronBorder({
   className,
+  style,
   vertical = false,
   hand = false,
 }: {
   className?: string
+  style?: React.CSSProperties
   vertical?: boolean
   /** Draw as rice paste — needs <HandDrawn /> on the page. */
   hand?: boolean
 }) {
-  const id = useId()
   return (
-    <svg className={cn(vertical ? 'block h-full w-5' : 'block h-5 w-full', className)} aria-hidden="true">
-      <defs>
-        <pattern
-          id={id}
-          width="26"
-          height="20"
-          patternUnits="userSpaceOnUse"
-          patternTransform={vertical ? 'translate(0 26) rotate(-90)' : undefined}
-        >
-          <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M6.5 4 L13 12.5 L19.5 4" />
-            <path d="M9.5 4 L13 8.5 L16.5 4" opacity={0.7} />
-          </g>
-          <circle cx="13" cy="16.5" r="1.3" fill="currentColor" />
-          <circle cx="0" cy="8" r="1.5" fill="currentColor" />
-          <circle cx="26" cy="8" r="1.5" fill="currentColor" />
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill={`url(#${id})`} filter={handFilter(hand)} />
-    </svg>
+    <PatternBand w={26} h={20} vertical={vertical} hand={hand} className={className} style={style}>
+      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M6.5 4 L13 12.5 L19.5 4" />
+        <path d="M9.5 4 L13 8.5 L16.5 4" opacity={0.7} />
+      </g>
+      <circle cx="13" cy="16.5" r="1.3" fill="currentColor" />
+      <circle cx="0" cy="8" r="1.5" fill="currentColor" />
+      <circle cx="26" cy="8" r="1.5" fill="currentColor" />
+    </PatternBand>
   )
 }
 
