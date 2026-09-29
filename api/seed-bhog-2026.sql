@@ -40,7 +40,7 @@ INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '40
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'f688446a-f03d-50d1-9e84-53e0745b6872', id, 'Paneer Gravy', 'পনির', 20 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '5a657df3-a85a-506c-9a33-e19905c415d7', id, 'Dal', 'ডাল', 30 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'b0228b00-7d71-55ac-917a-527e193fd59e', id, 'Mixed Fruit Chatni', 'ফলের চাটনি', 40 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
-INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '5397cf6c-146c-515e-ac06-c4a9c86f82ac', id, 'Appalam Papad', NULL, 50 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
+INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '5397cf6c-146c-515e-ac06-c4a9c86f82ac', id, 'Appalam Papad', 'আপ্পালাম পাঁপড়', 50 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT '9e49875c-769a-593e-9a79-6c9cce2caf36', id, 'Komola Bhog', 'কমলাভোগ', 60 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 INSERT INTO bhog_menu_item (id, menu_id, title, title_bn, sort_order) SELECT 'cad093a5-a6a1-57fe-8168-24efd5842086', id, 'Water Bottle', 'জলের বোতল', 70 FROM bhog_menu WHERE event_id='durga-pujo-2026' AND label='Nabami Bhog';
 
