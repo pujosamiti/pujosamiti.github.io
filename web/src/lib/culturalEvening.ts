@@ -16,12 +16,14 @@ export const CULTURAL_EVENING = {
   description:
     'Shashthi to Ashtami Day 2, 16–19 October · Amphitheatre, Aditi Garden · 6:30 pm onwards. Musical Quiz, Chandalika dance drama and a live performance by Shreya Verma — all Magarpatta citizens and Cybercity families welcome.',
   /**
-   * The share card, 1200 × 630, 88 KB — under 100 KB, as WhatsApp drops heavier
-   * images: "Evening Itineraries" in the flyer's own alpona, drawn in HTML and
-   * photographed by a headless browser. A new image gets a new name: WhatsApp
-   * caches by URL.
+   * The share card, 1200 × 630, under 100 KB (WhatsApp drops heavier images):
+   * the print card's own art — Maa in the chakra, the evenings, Warli dancers —
+   * drawn by scripts/cultural-share-card.mts. A new image gets a new name:
+   * WhatsApp caches by URL (v2 replaced the first, "Evening Itineraries").
    */
-  shareImage: 'https://pujosamiti.github.io/cultural-evenings-card-2026.webp',
+  shareImage: 'https://pujosamiti.github.io/cultural-evenings-card-2026-v2.webp',
+  /** what the share card says under the heading: the run of evenings, and what's on */
+  shareLines: ['Shashthi to Ashtami · 16–19 October', 'Musical Quiz · Chandalika · Shreya Verma live'],
 
   // ── The flyer's words, as the page draws them ──────────────────────────
   invite: 'Inviting all Magarpatta citizens and Cybercity families to the Magarpatta City Durga Pujo Cultural Evenings',

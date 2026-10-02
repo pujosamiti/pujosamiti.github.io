@@ -62,10 +62,12 @@ Three app pages carry share cards of their own, set in the page's `<Seo>` (with
 alike: `/uma` (`uma-share.webp`, 782 × 782), the bhog headcount link
 `/bhog/count` (`bhog-share-v2.webp`, 1200 × 790, 90 KB — a bhog thali on a
 banana leaf; the link stays noindex and out of the sitemap), and the cultural
-evening's flyer `/cultural/flyer/01` (`cultural-evenings-card-2026.webp`,
-1200 × 630, 88 KB — "Evening Itineraries" in the flyer's own alpona, drawn in
-HTML and photographed by a headless browser; public, no sign-in, noindex and
-out of the sitemap; a cultural admin shares it from /cultural → Share link).
+evening's flyer `/cultural/flyer/01` (`cultural-evenings-card-2026-v2.webp`,
+1200 × 630, 92 KB — the print card's own art, Maa in the chakra beside
+"Cultural Evenings", drawn by `npx tsx --tsconfig web/tsconfig.app.json
+scripts/cultural-share-card.mts`; v1 was "Evening Itineraries"; public, no
+sign-in, noindex and out of the sitemap; a cultural admin shares it from
+/cultural → Share link).
 Since 2 Oct 2026 the page *is* a print card, one-sided, the size of the
 invitation card's pages (1360 × 1800, 4.53 × 6 in at 300 dpi), drawn the same
 way (`components/CardArt.tsx` art on a canvas, words as canvas text,
@@ -90,7 +92,8 @@ sitemap, shared from its own page → Share link). Its words live in
 `INVITATION` in `web/src/lib/invitationCard.ts`, matched by the `/invitation`
 entry in `prerender.mjs`; the share image is drawn from the card's own art by
 `npx tsx --tsconfig web/tsconfig.app.json scripts/invitation-share-card.mts`
-(headless Chrome + `cwebp -size`, so it lands under 100 KB by itself). The
+(headless Chrome + `cwebp -size`, so it lands under 100 KB by itself — the
+shared part is `scripts/lib/share-card.mts`). The
 page is the card: a folded greetings card of four pages, each 1360 × 1800 like
 the 2024 card (34 : 45, 4.53 × 6 in at 300 dpi) — the cover (Joydeb Biswas's
 photograph of Maa, Pexels, in the chakra between two dhak), the nirghanto
