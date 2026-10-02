@@ -1029,6 +1029,12 @@ export interface ReimbursementClaim {
 }
 
 export interface ReimbursementClaimInput {
+  /**
+   * Who paid and is owed — the claimant. Omitted (or the filer's own id): a
+   * claim for yourself. Anyone else: admin/fin_admin only (isProxyRole), for
+   * an active core member who doesn't sign in.
+   */
+  personId?: string | null;
   bookId: BookId;
   eventId: string | null;
   expenseDate: string;

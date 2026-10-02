@@ -1079,9 +1079,11 @@ function PersonSelect({
         pinnedId={pinnedId}
       />
     )
-  const options = (people ?? [])
-    .filter((p) => (!coreOnly || p.tier === 'core') && !exclude.includes(p.id))
-    .map((p) => ({ value: p.id, label: p.name }))
+  // the pinned person (the viewer) stays on the list even outside the core tier
+  const roll = (people ?? []).filter((p) => (!coreOnly || p.tier === 'core' || p.id === pinnedId) && !exclude.includes(p.id))
+  // sort is stable: the pinned person first, everyone else in the roster's order
+  const ordered = pinnedId ? [...roll].sort((a, b) => (a.id === pinnedId ? -1 : b.id === pinnedId ? 1 : 0)) : roll
+  const options = ordered.map((p) => ({ value: p.id, label: p.name, hint: p.id === pinnedId ? 'You' : undefined }))
   return <SearchSelect align="left" fullWidth options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />
 }
 
@@ -2068,7 +2070,7 @@ function ClaimsTab({ myPersonId, isFinAdmin }: { myPersonId: string; isFinAdmin:
         </div>
       </div>
       {act.isError && <p className="text-sm text-destructive">{(act.error as Error).message}</p>}
-      {adding && <ClaimForm onClose={() => setAdding(false)} />}
+      {adding && <ClaimForm myPersonId={myPersonId} canProxy={isFinAdmin} onClose={() => setAdding(false)} />}
       {isPending ? (
         <LogoSpinner small />
       ) : shown.length === 0 ? (
@@ -2188,8 +2190,18 @@ function RejectInline({ onConfirm, onClose }: { onConfirm: (notes: string) => vo
   )
 }
 
-function ClaimForm({ onClose }: { onClose: () => void }) {
+/**
+ * A new claim. It is your own by default; an admin or finance admin may
+ * switch "Requested by" to any core member — many never sign in, so an
+ * admin raises their claims for them (as with counter entries and proxy
+ * headcounts). The Worker holds the same line.
+ */
+function ClaimForm({ myPersonId, canProxy, onClose }: { myPersonId: string; canProxy: boolean; onClose: () => void }) {
   const invalidate = useLedgerInvalidate()
+  const { data: people } = useMembersLite()
+  const [personId, setPersonId] = useState(myPersonId)
+  const forSelf = personId === myPersonId
+  const claimantName = people?.find((p) => p.id === personId)?.name
   const [bookId, setBookId] = useState<BookId>('pujo-ledger')
   const [expenseDate, setExpenseDate] = useState(todayIST())
   const [amount, setAmount] = useState('')
@@ -2208,10 +2220,21 @@ function ClaimForm({ onClose }: { onClose: () => void }) {
     <Card>
       <CardHeader>
         <CardTitle className="text-base">New reimbursement claim</CardTitle>
-        <CardDescription>You paid a vendor from your own pocket; a wallet holder will pay you back.</CardDescription>
+        <CardDescription>
+          {forSelf
+            ? 'You paid a vendor from your own pocket; a wallet holder will pay you back.'
+            : `${claimantName ?? 'They'} paid a vendor from their own pocket; a wallet holder will pay them back.`}
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <div className="grid gap-3 sm:grid-cols-2">
+          <Field label="Requested by">
+            {canProxy ? (
+              <PersonSelect value={personId} onChange={setPersonId} ariaLabel="Requested by" coreOnly pinnedId={myPersonId} />
+            ) : (
+              <input className={inputCls} value={claimantName ?? ''} readOnly aria-readonly="true" />
+            )}
+          </Field>
           <Field label="Book">
             <SearchSelect
               ariaLabel="Book"
@@ -2229,7 +2252,7 @@ function ClaimForm({ onClose }: { onClose: () => void }) {
             <input type="number" min="1" className={inputCls} value={amount} onChange={(e) => setAmount(e.target.value)} />
           </Field>
           <CategoryFields kind="expense" {...{ category, setCategory, subCategory, setSubCategory }} />
-          <Field label="Vendor (who you paid)">
+          <Field label={forSelf ? 'Vendor (who you paid)' : 'Vendor (who they paid)'}>
             <input className={inputCls} value={counterparty} onChange={(e) => setCounterparty(e.target.value)} placeholder="Hadapsar market" />
           </Field>
           <Field label="Details">
@@ -2243,6 +2266,7 @@ function ClaimForm({ onClose }: { onClose: () => void }) {
             disabled={save.isPending || !amount || !category || !counterparty}
             onClick={() =>
               save.mutate({
+                personId,
                 bookId,
                 eventId: null,
                 expenseDate,

@@ -749,12 +749,22 @@ ledgerRoutes.post('/claims', async (c) => {
   if (!Number.isInteger(body.amount) || body.amount <= 0) return c.json({ ok: false, error: 'amount must be a positive whole number' }, 400)
   if (!body.category?.trim() || !body.counterparty?.trim()) return c.json({ ok: false, error: 'category and vendor required' }, 400)
   const db = drizzle(c.env.DB, { schema })
+  // A claim is your own — unless an admin raises it for a core member who
+  // doesn't sign in, as they record counter entries and headcounts on others' behalf.
+  const me = c.get('me')
+  const claimant = body.personId || me.personId!
+  if (claimant !== me.personId) {
+    if (!isProxyRole(me.role)) return c.json({ ok: false, error: 'only an admin can raise a claim for someone else' }, 403)
+    const [who] = await db.select().from(schema.person).where(eq(schema.person.id, claimant)).limit(1)
+    if (!who || !who.isActive || who.tier !== 'core')
+      return c.json({ ok: false, error: 'the claimant must be an active core member' }, 400)
+  }
   const id = crypto.randomUUID()
   await db.insert(schema.expenseReimbursement).values({
     id,
     bookId: body.bookId,
     eventId: body.eventId || null,
-    personId: c.get('me').personId!, // always a claim for YOURSELF
+    personId: claimant,
     expenseDate: body.expenseDate,
     amount: body.amount,
     category: body.category.trim(),
