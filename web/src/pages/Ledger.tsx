@@ -14,7 +14,7 @@ import type {
   SponsorshipItemView,
   SpendRow,
 } from '@pujosamiti/shared'
-import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, GUEST_BHOG_SUBCATEGORY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
+import { BOOKS, CONTRIBUTION_CATEGORIES, CONTRIBUTION_SUBCATS, EXPENSE_TAXONOMY, expenseSubcats, GUEST_BHOG_SUBCATEGORY, LEDGER_PDF_FROM_SEASON, SUBSCRIPTION_SUBCATS, isCoreRole, isProxyRole, isWebmaster, sponsorshipOpen, SPONSORSHIP_OPENS_ON } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowDownLeft,
@@ -53,6 +53,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Dialog, DialogActions, DialogDescription, DialogTitle } from '@/components/ui/dialog'
 import { api } from '@/lib/api'
 import { useMemberState } from '@/lib/member'
+import { PUJO_YEAR } from '@/lib/pujoCalendar'
 import { useEvents, useMembersLite } from '@/lib/tasks'
 
 const post = <T,>(path: string, body?: unknown) =>
@@ -1087,6 +1088,12 @@ function PersonSelect({
   return <SearchSelect align="left" fullWidth options={options} value={value} onChange={onChange} ariaLabel={ariaLabel} />
 }
 
+/**
+ * Category and sub-category, picked from the lists only — never typed (since
+ * 2 Oct 2026; the Worker holds the same line, see ledgerCategoryError). A
+ * remark goes in Notes. An older entry whose value is off the lists keeps it
+ * on offer, marked, so it can still be edited — but nothing new can be coined.
+ */
 function CategoryFields({
   kind,
   category,
@@ -1100,46 +1107,38 @@ function CategoryFields({
   subCategory: string
   setSubCategory: (v: string) => void
 }) {
+  // a sponsorship's sub-category is one of the catalog's own categories
+  const { data: catalog } = useSponsorship(kind === 'contribution' && category === 'sponsorship' ? PUJO_YEAR : null)
   if (kind === 'transfer') return null
-  const cats = kind === 'contribution' ? CONTRIBUTION_CATEGORIES : [...Object.keys(EXPENSE_TAXONOMY)]
+  const cats = kind === 'contribution' ? [...CONTRIBUTION_CATEGORIES] : Object.keys(EXPENSE_TAXONOMY)
   const subs =
-    kind === 'contribution'
-      ? (CONTRIBUTION_SUBCATS[category as keyof typeof CONTRIBUTION_SUBCATS] ?? [])
-      : [...new Set([...(EXPENSE_TAXONOMY[category] ?? []), 'Misc'])]
+    kind === 'expense'
+      ? expenseSubcats(category)
+      : category === 'sponsorship'
+        ? [...new Set((catalog ?? []).map((i) => i.category))].sort()
+        : CONTRIBUTION_SUBCATS[category as keyof typeof CONTRIBUTION_SUBCATS] ?? []
+  /** The list, plus the entry's own value when an older row has one off it. */
+  const withCurrent = (list: string[], current: string) =>
+    [
+      ...list.map((x) => ({ value: x, label: x })),
+      ...(current && !list.includes(current) ? [{ value: current, label: current, hint: 'old value · not on the list' }] : []),
+    ]
+  const fixedSub = kind === 'contribution' && category === 'subscription'
   return (
     <>
       <Field label="Category">
-        {kind === 'contribution' ? (
-          <SearchSelect
-            ariaLabel="Category"
-            align="left"
-            fullWidth
-            value={category}
-            options={cats.map((x) => ({ value: x, label: x }))}
-            onChange={setCategory}
-          />
-        ) : (
-          <>
-<TextPicker ariaLabel="Category" value={category} onChange={setCategory} suggestions={cats} />
-          </>
-        )}
+        <SearchSelect ariaLabel="Category" align="left" fullWidth value={category} options={withCurrent(cats, category)} onChange={setCategory} />
       </Field>
       <Field label="Sub-category">
-        {kind === 'contribution' && category === 'subscription' ? (
-          // Fixed choice: the API rejects any other value for a subscription.
-          <SearchSelect
-            ariaLabel="Sub-category"
-            align="left"
-            fullWidth
-            value={subCategory}
-            options={SUBSCRIPTION_SUBCATS.map((x) => ({ value: x, label: x }))}
-            onChange={setSubCategory}
-          />
-        ) : (
-          <>
-<TextPicker ariaLabel="Sub-category" value={subCategory} onChange={setSubCategory} suggestions={subs} empty="—" />
-          </>
-        )}
+        <SearchSelect
+          ariaLabel="Sub-category"
+          align="left"
+          fullWidth
+          value={subCategory}
+          // a subscription's is required (core / non-core); any other may be left empty
+          options={[...(fixedSub ? [] : [{ value: '', label: '—' }]), ...withCurrent(fixedSub ? [...SUBSCRIPTION_SUBCATS] : subs, subCategory)]}
+          onChange={setSubCategory}
+        />
       </Field>
     </>
   )
@@ -1172,9 +1171,9 @@ function EntryForm({ initial, onClose }: { initial?: LedgerEntry; onClose: () =>
   const setCategory = (next: string) => {
     if (next === category) return
     setCategoryRaw(next)
-    if (kind !== 'contribution') return
-    if (next === 'subscription') setSubCategory(subscriptionSub(subCategory))
-    else if (category === 'subscription') setSubCategory('')
+    // a sub-category belongs to its category: a new category starts it afresh
+    if (kind === 'contribution' && next === 'subscription') setSubCategory(subscriptionSub(subCategory))
+    else setSubCategory('')
   }
   const [amount, setAmount] = useState(initial ? String(initial.amount) : '')
   const [personId, setPersonId] = useState<string | null>(initial?.personId ?? null)
@@ -2205,8 +2204,14 @@ function ClaimForm({ myPersonId, canProxy, onClose }: { myPersonId: string; canP
   const [bookId, setBookId] = useState<BookId>('pujo-ledger')
   const [expenseDate, setExpenseDate] = useState(todayIST())
   const [amount, setAmount] = useState('')
-  const [category, setCategory] = useState('')
+  const [category, setCategoryRaw] = useState('')
   const [subCategory, setSubCategory] = useState('')
+  // a sub-category belongs to its category: a new category starts it afresh
+  const setCategory = (next: string) => {
+    if (next === category) return
+    setCategoryRaw(next)
+    setSubCategory('')
+  }
   const [counterparty, setCounterparty] = useState('')
   const [details, setDetails] = useState('')
   const save = useMutation({

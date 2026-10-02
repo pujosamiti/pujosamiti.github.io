@@ -897,13 +897,15 @@ export const CONTRIBUTION_SUBCATS: Record<ContributionCategory, string[]> = {
 
 /**
  * Expense category → sub-categories, seeded from the 2024 workbook Expenses
- * tab. Every category always also offers "Misc" (appended by the UI); both
- * levels stay free text so a year can coin new ones.
+ * tab. Every category also offers "Misc". Both levels are fixed lists (since
+ * 2 Oct 2026): an entry picks from them — a remark belongs in Notes, not in
+ * the sub-category — and the Worker rejects anything else. A year that needs
+ * a new heading adds it here.
  */
 export const EXPENSE_TAXONOMY: Record<string, string[]> = {
   Cultural: ['Badges', 'External Artists', 'Games Props/Artifacts', 'Prize/Awards', 'Rentals', 'Sound System', 'Stationery'],
   Flowers: ['Flowers'],
-  Food: ['Bhog', 'Mishti Doi', 'Prasad Pack/Sandesh/Sweet', 'Tea Coffee Snacks'],
+  Food: ['Bhog', 'Mishti Doi', 'Prasad Pack/Sandesh/Sweet', 'Tea Coffee Snacks', 'Food Transport'],
   Labour: ['Daily Fee', 'Fooding', 'Lodging'],
   Murti: [
     'Pratima',
@@ -930,6 +932,41 @@ export const EXPENSE_TAXONOMY: Record<string, string[]> = {
   'Bijoy Sammelani': [],
   Misc: [],
 };
+
+/** An expense category's sub-categories as offered: its own, then "Misc". */
+export const expenseSubcats = (category: string): string[] => [
+  ...new Set([...(EXPENSE_TAXONOMY[category] ?? []), 'Misc']),
+];
+
+/**
+ * Why a category and sub-category are not on the ledger's lists, or null
+ * when they are. Expense: a category of EXPENSE_TAXONOMY and one of its
+ * sub-categories. Contribution: a sub-category from CONTRIBUTION_SUBCATS — for
+ * a sponsorship, one of the sponsorship catalog's own categories, passed in.
+ * A sub-category may be left empty, except a subscription's. Transfers carry
+ * neither.
+ */
+export function ledgerCategoryError(
+  kind: LedgerKind,
+  category: string | null | undefined,
+  subCategory: string | null | undefined,
+  sponsorshipCategories: readonly string[] = [],
+): string | null {
+  if (kind === 'transfer') return null
+  const cat = category?.trim() ?? ''
+  const sub = subCategory?.trim() ?? ''
+  if (kind === 'expense') {
+    if (!(cat in EXPENSE_TAXONOMY)) return `"${cat}" is not an expense category — pick one from the list`
+    if (sub && !expenseSubcats(cat).includes(sub))
+      return `"${sub}" is not a sub-category of ${cat} — pick one from the list, and put any remark in Notes`
+    return null
+  }
+  if (!CONTRIBUTION_CATEGORIES.includes(cat as ContributionCategory)) return 'invalid contribution category'
+  if (!sub) return cat === 'subscription' ? 'subscription sub-category must be core or non-core' : null
+  const allowed = cat === 'sponsorship' ? sponsorshipCategories : CONTRIBUTION_SUBCATS[cat as ContributionCategory]
+  if (!allowed.includes(sub)) return `"${sub}" is not a ${cat} sub-category — pick one from the list, and put any remark in Notes`
+  return null
+}
 
 export interface LedgerEntry {
   id: string;

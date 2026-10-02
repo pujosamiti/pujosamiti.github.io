@@ -15,7 +15,7 @@ import type {
   SpendRow,
   WalletBalance,
 } from '@pujosamiti/shared'
-import { isCoreRole, isProxyRole, isWebmaster, CONTRIBUTION_CATEGORIES, SUBSCRIPTION_SUBCATS } from '@pujosamiti/shared'
+import { isCoreRole, isProxyRole, isWebmaster, ledgerCategoryError, CONTRIBUTION_CATEGORIES, SUBSCRIPTION_SUBCATS } from '@pujosamiti/shared'
 import { qualifiesForCore } from '../lib/roll'
 import { and, eq, inArray } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/d1'
@@ -163,12 +163,38 @@ function validateEntry(body: LedgerEntryInput): string | null {
   return null
 }
 
+/**
+ * Category and sub-category from the lists (ledgerCategoryError) — a
+ * sponsorship's sub-category is one of the catalog's own categories. An
+ * edit that leaves an older row's off-list pair as it was is let through, so
+ * history stays editable; nothing new goes in off the lists.
+ */
+async function categoryError(
+  db: ReturnType<typeof drizzle>,
+  body: Pick<LedgerEntryInput, 'kind' | 'category' | 'subCategory'>,
+  existing?: { category: string | null; subCategory: string | null },
+) {
+  if (
+    existing &&
+    (existing.category ?? '') === (body.category?.trim() ?? '') &&
+    (existing.subCategory ?? '') === (body.subCategory?.trim() ?? '')
+  )
+    return null
+  const sponsorshipCategories =
+    body.kind === 'contribution' && body.category === 'sponsorship'
+      ? (await db.selectDistinct({ category: schema.sponsorshipItem.category }).from(schema.sponsorshipItem)).map((r) => r.category)
+      : []
+  return ledgerCategoryError(body.kind, body.category, body.subCategory, sponsorshipCategories)
+}
+
 ledgerRoutes.post('/entries', async (c) => {
   if (!canFinance(c)) return c.json({ ok: false, error: 'finance admins only' }, 403)
   const body = await c.req.json<LedgerEntryInput>()
   const err = validateEntry(body)
   if (err) return c.json({ ok: false, error: err }, 400)
   const db = drizzle(c.env.DB, { schema })
+  const catErr = await categoryError(db, body)
+  if (catErr) return c.json({ ok: false, error: catErr }, 400)
   const transfer = body.kind === 'transfer'
   const id = crypto.randomUUID()
   await db.insert(schema.ledgerEntry).values({
@@ -212,6 +238,8 @@ ledgerRoutes.post('/entries/:id/update', async (c) => {
     return c.json({ ok: false, error: 'kind cannot be changed — void the entry and add a new one' }, 400)
   const err = validateEntry(body)
   if (err) return c.json({ ok: false, error: err }, 400)
+  const catErr = await categoryError(db, body, existing)
+  if (catErr) return c.json({ ok: false, error: catErr }, 400)
   const transfer = body.kind === 'transfer'
   await db
     .update(schema.ledgerEntry)
@@ -748,6 +776,9 @@ ledgerRoutes.post('/claims', async (c) => {
   if (!DATE_RE.test(body.expenseDate)) return c.json({ ok: false, error: 'expense_date must be YYYY-MM-DD' }, 400)
   if (!Number.isInteger(body.amount) || body.amount <= 0) return c.json({ ok: false, error: 'amount must be a positive whole number' }, 400)
   if (!body.category?.trim() || !body.counterparty?.trim()) return c.json({ ok: false, error: 'category and vendor required' }, 400)
+  // a claim settles into an expense entry, so it takes the expense lists too
+  const catErr = ledgerCategoryError('expense', body.category, body.subCategory)
+  if (catErr) return c.json({ ok: false, error: catErr }, 400)
   const db = drizzle(c.env.DB, { schema })
   // A claim is your own — unless an admin raises it for a core member who
   // doesn't sign in, as they record counter entries and headcounts on others' behalf.
