@@ -70,7 +70,7 @@ SELECT 'tt26-197', event_id, day_date, day_label_bn, day_label_en,
   'পুষ্পাঞ্জলি', 'Pushpanjali', '10:10', NULL,
   'Per purohit v3: অধিক পূজার সময়ে পুষ্পাঞ্জলী হইবে; timed to his ১০|১০ anjali convention.', 65, NULL
 FROM timetable_entry WHERE id='tt26-193';
-UPDATE timetable_entry SET title_en='Chandipaath', title_bn='চন্ডীপাঠ', time_from='11:00', sort_order=66,
+UPDATE timetable_entry SET title_en='Chandipaath', title_bn='চণ্ডীপাঠ', time_from='11:00', sort_order=66,
   comments='Per purohit v3: বেলা ১১টায় চণ্ডীপাঠ.'
 WHERE id='tt26-194';
 UPDATE timetable_entry SET sort_order=67 WHERE id='tt26-195';
