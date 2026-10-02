@@ -11,3 +11,8 @@ WHERE id = 'a33a83d8-60da-4cb1-a60c-31e8cc63ae18' AND category = 'Food';
 
 UPDATE ledger_entry SET category = 'Food', sub_category = 'Food Transport'
 WHERE id = 'd6bd53f5-8212-40b8-bbfd-69ff67fc48c3' AND category = 'Porter';
+
+-- The porter's note says what the ₹100 paid for (2 Oct 2026, at the samiti's
+-- word; applied to production after backup-02-oct-2026-v7).
+UPDATE ledger_entry SET notes = 'Porter charges for Singada on Puja meeting on 9th Aug. Pradyumna sent 100/- via UPI to Mousum as reimbursement.'
+WHERE id = 'd6bd53f5-8212-40b8-bbfd-69ff67fc48c3';
