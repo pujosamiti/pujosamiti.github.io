@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { StrictMode } from 'react'
+import { StrictMode, Suspense, lazy } from 'react'
 import { createRoot } from 'react-dom/client'
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router'
 
@@ -25,6 +25,10 @@ import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
 import { Tasks } from '@/pages/Tasks'
 import { Uma } from '@/pages/Uma'
+
+// The invitation card carries its photograph, the traced face and a canvas
+// renderer that no other page needs — loaded only when it is opened.
+const InvitationCard = lazy(() => import('@/pages/InvitationCard'))
 
 import { captureTokenFromUrl } from '@/lib/auth'
 
@@ -91,6 +95,14 @@ createRoot(document.getElementById('root')!).render(
               <Route path="bhog/count" element={<BhogCount />} />
               {/* public, unlike the rest of /cultural: the flyer shared on WhatsApp and Facebook */}
               <Route path="cultural/flyer/01" element={<CulturalEvening />} />
+              <Route
+                path="invitation"
+                element={
+                  <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+                    <InvitationCard />
+                  </Suspense>
+                }
+              />
               {/* Everything below requires a signed-in, activated member: a
                   shared deep link shows the sign-in card and returns to the
                   same URL after Google. New member-only URLs go inside. */}

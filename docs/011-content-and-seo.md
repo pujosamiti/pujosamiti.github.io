@@ -79,6 +79,30 @@ images under 100 KB: WhatsApp showed no preview for this one at 113 KB,
 though Facebook did. A replaced image gets a new file name, since WhatsApp
 caches previews by URL.
 
+A fourth is the year's **invitation card**, `/invitation` (`invitation-card-2026.webp`,
+1200 × 630, 92 KB — Maa in the alpona chakra beside শুভ শারদীয়া, the dates
+and the venue, Warli dhakis below; public, no sign-in, noindex, out of the
+sitemap, shared from its own page → Share link). Its words live in
+`INVITATION` in `web/src/lib/invitationCard.ts`, matched by the `/invitation`
+entry in `prerender.mjs`; the share image is drawn from the card's own art by
+`npx tsx --tsconfig web/tsconfig.app.json scripts/invitation-share-card.mts`
+(headless Chrome + `cwebp -size`, so it lands under 100 KB by itself). The
+page is the card: a folded greetings card of four pages, each 1360 × 1800 like
+the 2024 card (34 : 45, 4.53 × 6 in at 300 dpi) — the cover (Joydeb Biswas's
+photograph of Maa, Pexels, in the chakra between two dhak), the nirghanto
+across the two inside pages, the back (the welcome, a Warli ring round the
+samiti's mark, Kojagari Lakshmi Puja, the cultural evenings). Each page is SVG
+art (`components/CardArt.tsx`, `components/Warli.tsx`, Maa's face traced to a
+vector in `components/durgaFace.ts`) painted on a canvas with the words as
+canvas text (`lib/cardCanvas.ts`), and downloads as PNG at 1× or 2× (2720 ×
+3600, tagged 600 dpi so it prints at the same 4.53 × 6 in) — one page at a time
+(`01-…` to `04-…`) or as the two printed sheets, outside (back · cover) and
+inside. The timings are the public nirghanto's own, read live: a correction in
+the workspace reaches the card. The inside pages split the days where the two
+come out most even and shrink their type together until both fit. Each year:
+the photograph, the words in `CARD`/`INVITATION`, the year in the share
+image's name (and its prerender entry), then rerun the script.
+
 ### Linking and markdown features
 
 Link siblings by filename — `[Mahalaya](04-mahalaya.md)` → `/durga-puja/

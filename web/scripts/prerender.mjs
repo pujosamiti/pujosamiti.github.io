@@ -229,6 +229,26 @@ const culturalEvening = {
 }
 ROUTES.push({ path: '/cultural/flyer/01', ...culturalEvening })
 
+// ── The year's invitation card, /invitation ───────────────────────────────
+// Shared on WhatsApp and Facebook, so it carries its own card: Maa in the
+// alpona chakra beside the year, the dates and the venue, Warli dhakis below —
+// 1200 × 630 WebP, 92 KB (under WhatsApp's ~100 KB), drawn by
+// scripts/invitation-share-card.mts. No sign-in, but kept out of search and
+// the sitemap like the flyer. Title, description and image match INVITATION
+// in web/src/lib/invitationCard.ts — keep the two in step.
+ROUTES.push({
+  path: '/invitation',
+  title: 'Shri Shri Durga Puja 2026 · Invitation · Magarpatta City',
+  description:
+    'Shashthi to Bijaya Dashami, 16–21 October 2026, at the Amphitheatre, Aditi Garden, Magarpatta City, Pune. The samiti’s invitation card with the full nirghanto — every puja timing, day by day. All Magarpatta citizens and Cybercity families welcome.',
+  image: `${ORIGIN}/invitation-card-2026.webp`,
+  imageWidth: 1200,
+  imageHeight: 630,
+  imageType: 'image/webp',
+  imageAlt: "The Magarpatta City Durga Puja 2026 invitation — Maa Durga in a white alpona chakra on red, শুভ শারদীয়া, 16–21 October 2026, Amphitheatre, Aditi Garden, with Warli dhakis and dhunuchi dancers",
+  noindex: true,
+})
+
 // ── The Durga Puja book: one route per markdown chapter ─────────────────────
 // Frontmatter drives the tags: title (+suffix), oneLiner → description,
 // image → og:image (bare filenames resolve to /bookdurgapuja/<name>).

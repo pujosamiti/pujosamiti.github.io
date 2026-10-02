@@ -64,7 +64,9 @@ page (and the doc it points at).
    and the Schedule's `Event` structured data; উমা's season (`UMA_LAUNCH`,
    `UMA_SEASON_DAYS` in `umaDaily.ts`) likewise. Before next year's pujo,
    copy the dates from the finalised nirghanto (Days of the Pujo) — static
-   on purpose, so no page waits on the API.
+   on purpose, so no page waits on the API. The invitation card (`/invitation`)
+   follows the calendar for its year and dates, but its photograph, words and
+   share image are yearly too — see [011](011-content-and-seo.md) §Images.
 
 ## Deliberately deferred (not bugs)
 

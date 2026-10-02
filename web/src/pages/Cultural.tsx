@@ -7,7 +7,7 @@ import type {
 } from '@pujosamiti/shared'
 import { canRunCulture, CULTURAL_ITEM_TYPES, CULTURAL_PERFORMERS } from '@pujosamiti/shared'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronLeft, ChevronRight, Clock, Copy, Link2, Loader2, Pencil, Plus, Share2, Trash2, X } from 'lucide-react'
+import { ArrowDown, ArrowUp, ArrowUpDown, Check, ChevronLeft, ChevronRight, Clock, Link2, Loader2, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router'
 
@@ -16,6 +16,7 @@ import { Field, inputCls } from '@/components/form'
 import { LogoSpinner } from '@/components/LogoSpinner'
 import { PageTitle } from '@/components/PageTitle'
 import { SearchSelect } from '@/components/SearchSelect'
+import { SharePanel } from '@/components/SharePanel'
 import { Seo } from '@/components/Seo'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -136,7 +137,17 @@ export function Cultural() {
       <Button size="sm" variant="outline" className="self-start" onClick={() => setShowShare(!showShare)}>
         <Link2 /> {showShare ? 'Hide link' : 'Share link'}
       </Button>
-      {showShare && <SharePanel onClose={() => setShowShare(false)} />}
+      {/* the flyer's public page, /cultural/flyer/01: no sign-in, no code — one
+          address to share, previewing with the flyer's own card */}
+      {showShare && (
+        <SharePanel
+          title="Cultural evening link"
+          description="The flyer's own page, open to everyone — no sign-in. Share it on WhatsApp or Facebook; it previews with the flyer."
+          url={culturalEveningUrl()}
+          message={`${CULTURAL_EVENING.title} — Shashthi to Ashtami Day 2, 16–19 October, at the Amphitheatre, Aditi Garden, from 6:30 pm. All Magarpatta citizens and Cybercity families welcome.`}
+          onClose={() => setShowShare(false)}
+        />
+      )}
 
       {evenings.error && <p className="text-sm text-destructive">Failed to load: {evenings.error.message}</p>}
       {evenings.isPending ? (
@@ -158,66 +169,6 @@ export function Cultural() {
         </>
       )}
     </div>
-  )
-}
-
-/**
- * The flyer's public page, /cultural/flyer/01, for an open audience: no
- * sign-in and no code — one address to share on WhatsApp and Facebook, where
- * it previews with the flyer's own card (as the bhog headcount link does).
- */
-function SharePanel({ onClose }: { onClose: () => void }) {
-  const [copied, setCopied] = useState(false)
-  const url = culturalEveningUrl()
-  const message = `${CULTURAL_EVENING.title} — Shashthi to Ashtami Day 2, 16–19 October, at the Amphitheatre, Aditi Garden, from 6:30 pm. All Magarpatta citizens and Cybercity families welcome.\n${url}`
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(url)
-      setCopied(true)
-    } catch {
-      window.prompt('Copy the link', url)
-    }
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-start justify-between gap-2">
-          <CardTitle className="flex items-center gap-2">
-            <Link2 className="size-5" /> Cultural evening link
-          </CardTitle>
-          <Button size="icon" variant="ghost" className="-mr-2 -mt-2 shrink-0" onClick={onClose} aria-label="Close cultural evening link" title="Close">
-            <X />
-          </Button>
-        </div>
-        <CardDescription>
-          The flyer's own page, open to everyone — no sign-in. Share it on WhatsApp or Facebook; it previews with the
-          flyer.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        <div className="rounded-md bg-accent px-3 py-2">
-          <a href={url} target="_blank" rel="noreferrer" className="break-all text-sm text-primary underline-offset-4 hover:underline">
-            {url}
-          </a>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <Button size="sm" variant="outline" onClick={() => void copy()}>
-            {copied ? <Check /> : <Copy />} {copied ? 'Copied' : 'Copy link'}
-          </Button>
-          <Button size="sm" variant="durba" asChild>
-            <a href={`https://wa.me/?text=${encodeURIComponent(message)}`} target="_blank" rel="noreferrer">
-              <Share2 /> Share on WhatsApp
-            </a>
-          </Button>
-          <Button size="sm" variant="outline" asChild>
-            <a href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`} target="_blank" rel="noreferrer">
-              <Share2 /> Share on Facebook
-            </a>
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 

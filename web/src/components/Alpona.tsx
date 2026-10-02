@@ -55,7 +55,12 @@ const scallops = (r: number, h: number, n: number) =>
     return `M${x0} ${y0} Q ${cx} ${cy} ${x1} ${y1}`
   }).join(' ')
 
-const MOTIFS = {
+/**
+ * The motifs' geometry: a viewBox and a body of line-work in currentColor (the
+ * stroke and fill set by whoever draws it). Exported for drawings that place
+ * motifs themselves — the invitation card lays them out on its own SVG page.
+ */
+export const ALPONA_MOTIFS = {
   /** podmo — the lotus */
   podmo: {
     vb: '-42 -40 84 50',
@@ -408,7 +413,7 @@ const MOTIFS = {
   },
 } as const
 
-export type AlponaName = keyof typeof MOTIFS
+export type AlponaName = keyof typeof ALPONA_MOTIFS
 
 /**
  * A pujo day's alpona, from its name ("Maha Ashtami", "Ashtami · Day 2",
@@ -432,7 +437,24 @@ export function motifForDay(label: string): AlponaName | null {
 }
 
 /** The id HandDrawn's filter answers to; `hand` on a motif or border draws through it. */
-const HAND_FILTER_ID = 'alpona-hand'
+export const HAND_FILTER_ID = 'alpona-hand'
+
+/**
+ * The rice-paste filter itself, for a drawing that carries its own <defs>
+ * (an SVG page painted to a canvas can't reach the document's).
+ */
+export function HandFilter() {
+  return (
+    <filter id={HAND_FILTER_ID} x="-10%" y="-10%" width="120%" height="120%">
+      {/* the slow waver along a stroke */}
+      <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="waver" />
+      <feDisplacementMap in="SourceGraphic" in2="waver" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="wavered" />
+      {/* the paste's uneven edge */}
+      <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="grain" />
+      <feDisplacementMap in="wavered" in2="grain" scale="0.9" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  )
+}
 
 /**
  * Rice paste, not a pen: a filter that lets a line waver a little along its
@@ -444,14 +466,7 @@ export function HandDrawn() {
   return (
     <svg aria-hidden="true" width="0" height="0" className="absolute">
       <defs>
-        <filter id={HAND_FILTER_ID} x="-10%" y="-10%" width="120%" height="120%">
-          {/* the slow waver along a stroke */}
-          <feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="7" result="waver" />
-          <feDisplacementMap in="SourceGraphic" in2="waver" scale="2.4" xChannelSelector="R" yChannelSelector="G" result="wavered" />
-          {/* the paste's uneven edge */}
-          <feTurbulence type="fractalNoise" baseFrequency="0.9" numOctaves="1" seed="3" result="grain" />
-          <feDisplacementMap in="wavered" in2="grain" scale="0.9" xChannelSelector="R" yChannelSelector="G" />
-        </filter>
+        <HandFilter />
       </defs>
     </svg>
   )
@@ -476,7 +491,7 @@ export function Alpona({
   hand?: boolean
   style?: React.CSSProperties
 }) {
-  const m = MOTIFS[name]
+  const m = ALPONA_MOTIFS[name]
   return (
     <svg
       viewBox={m.vb}
@@ -512,6 +527,124 @@ export function AlponaDivider({ name, className }: { name: AlponaName; className
   )
 }
 
+type BandTile = { w: number; h: number; tile: React.ReactNode }
+
+/**
+ * The borders' tiles: one repeat of each band, `w` along the edge by `h`
+ * across it, drawn in currentColor. The band components below repeat them in
+ * an SVG pattern; exported for drawings that lay out their own bands (the
+ * invitation card).
+ */
+export const BAND_TILES = {
+  /** the temple band — triangles holding filled leaves, fat bindus between, ruled both sides */
+  temple: {
+    w: 26,
+    h: 30,
+    tile: (
+      <>
+        <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M0 2 H26 M0 28 H26" strokeWidth="2.2" />
+          <path d="M1.5 5.5 L24.5 5.5 L13 24.5 Z" />
+        </g>
+        <path d="M13 8.5 C 17 11.5 16.6 16.5 13 20 C 9.4 16.5 9 11.5 13 8.5 Z" fill="currentColor" />
+        <circle cx="0" cy="21" r="2.1" fill="currentColor" />
+        <circle cx="26" cy="21" r="2.1" fill="currentColor" />
+        <circle cx="0" cy="13.5" r="1.1" fill="currentColor" />
+        <circle cx="26" cy="13.5" r="1.1" fill="currentColor" />
+      </>
+    ),
+  },
+  /** tara — the star flower, eight spokes tipped with bindus */
+  tara: {
+    w: 30,
+    h: 24,
+    tile: (
+      <>
+        <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          {[0, 45, 90, 135].map((a) => (
+            <path key={a} d="M15 4 V20" transform={`rotate(${a} 15 12)`} />
+          ))}
+        </g>
+        <circle cx="15" cy="12" r="2.6" fill="currentColor" />
+        {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
+          <circle key={a} cx="15" cy="2.6" r="1.7" fill="currentColor" transform={`rotate(${a} 15 12)`} />
+        ))}
+        <circle cx="0" cy="12" r="1.3" fill="currentColor" />
+        <circle cx="30" cy="12" r="1.3" fill="currentColor" />
+      </>
+    ),
+  },
+  /** a rule hung with filled leaves, a bindu between */
+  leaf: {
+    w: 16,
+    h: 15,
+    tile: (
+      <>
+        <path d="M0 2.2 H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+        <path d="M8 4.6 C 10.8 6.8 10.5 10.2 8 12.6 C 5.5 10.2 5.2 6.8 8 4.6 Z" fill="currentColor" />
+        <circle cx="0" cy="8.5" r="1.3" fill="currentColor" />
+        <circle cx="16" cy="8.5" r="1.3" fill="currentColor" />
+      </>
+    ),
+  },
+  /** a line of rice-paste dots */
+  dot: {
+    w: 9,
+    h: 6,
+    tile: <circle cx="4.5" cy="3" r="1.6" fill="currentColor" />,
+  },
+  /** the footer's chevron, a bindu between */
+  chevron: {
+    w: 26,
+    h: 20,
+    tile: (
+      <>
+        <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M6.5 4 L13 12.5 L19.5 4" />
+          <path d="M9.5 4 L13 8.5 L16.5 4" opacity={0.7} />
+        </g>
+        <circle cx="13" cy="16.5" r="1.3" fill="currentColor" />
+        <circle cx="0" cy="8" r="1.5" fill="currentColor" />
+        <circle cx="26" cy="8" r="1.5" fill="currentColor" />
+      </>
+    ),
+  },
+  /** the kuri mala — lotus buds on a line */
+  kuri: {
+    w: 30,
+    h: 24,
+    tile: (
+      <>
+        <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M15 20 Q 10.5 13 15 4.5 Q 19.5 13 15 20 Z" />
+          <path d="M15 20 Q 8.5 18.5 6.5 12.5 M15 20 Q 21.5 18.5 23.5 12.5" />
+          <path d="M0 22.5 H30" />
+        </g>
+        <circle cx="0" cy="15" r="1.4" fill="currentColor" />
+        <circle cx="30" cy="15" r="1.4" fill="currentColor" />
+      </>
+    ),
+  },
+  /** the lata — the creeper that runs round a floor alpona */
+  lata: {
+    w: 120,
+    h: 40,
+    tile: (
+      <>
+        <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M0 20 C20 6 40 6 60 20 C80 34 100 34 120 20" />
+          <path d="M34 9.5 C40 1 49 3 47 10 C46 13.5 41.5 12.5 42.5 9.5" />
+          <path d="M94 30.5 C100 39 109 37 107 30 C106 26.5 101.5 27.5 102.5 30.5" />
+          <path d="M17 11.5 C13 4 6 2 1 4 C5 10 11 13 17 11.5 Z" />
+          <path d="M77 28.5 C73 36 66 38 61 36 C65 30 71 27 77 28.5 Z" />
+        </g>
+        <circle cx="30" cy="25" r="1.6" fill="currentColor" />
+        <circle cx="90" cy="15" r="1.6" fill="currentColor" />
+      </>
+    ),
+  },
+} satisfies Record<string, BandTile>
+
 /**
  * The lata — the creeper that runs round a floor alpona — as a repeating
  * border, fixed-size tiles so it stays delicate at any width (like AlponaBand).
@@ -539,15 +672,7 @@ export function LataBorder({
           patternUnits="userSpaceOnUse"
           patternTransform={vertical ? 'translate(40 0) rotate(90)' : undefined}
         >
-          <g fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M0 20 C20 6 40 6 60 20 C80 34 100 34 120 20" />
-            <path d="M34 9.5 C40 1 49 3 47 10 C46 13.5 41.5 12.5 42.5 9.5" />
-            <path d="M94 30.5 C100 39 109 37 107 30 C106 26.5 101.5 27.5 102.5 30.5" />
-            <path d="M17 11.5 C13 4 6 2 1 4 C5 10 11 13 17 11.5 Z" />
-            <path d="M77 28.5 C73 36 66 38 61 36 C65 30 71 27 77 28.5 Z" />
-          </g>
-          <circle cx="30" cy="25" r="1.6" fill="currentColor" />
-          <circle cx="90" cy="15" r="1.6" fill="currentColor" />
+          {BAND_TILES.lata.tile}
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} filter={handFilter(hand)} />
@@ -568,15 +693,12 @@ function PatternBand({
   hand,
   className,
   style,
-  children,
-}: {
-  w: number
-  h: number
+  tile,
+}: BandTile & {
   vertical: boolean
   hand: boolean
   className?: string
   style?: React.CSSProperties
-  children: React.ReactNode
 }) {
   const id = useId()
   return (
@@ -594,7 +716,7 @@ function PatternBand({
           patternUnits="userSpaceOnUse"
           patternTransform={vertical ? `translate(${h} 0) rotate(90)` : undefined}
         >
-          {children}
+          {tile}
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} filter={handFilter(hand)} />
@@ -619,17 +741,7 @@ export function TempleBorder({
   hand?: boolean
 }) {
   return (
-    <PatternBand w={26} h={30} vertical={vertical} hand={hand} className={className} style={style}>
-      <g fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M0 2 H26 M0 28 H26" strokeWidth="2.2" />
-        <path d="M1.5 5.5 L24.5 5.5 L13 24.5 Z" />
-      </g>
-      <path d="M13 8.5 C 17 11.5 16.6 16.5 13 20 C 9.4 16.5 9 11.5 13 8.5 Z" fill="currentColor" />
-      <circle cx="0" cy="21" r="2.1" fill="currentColor" />
-      <circle cx="26" cy="21" r="2.1" fill="currentColor" />
-      <circle cx="0" cy="13.5" r="1.1" fill="currentColor" />
-      <circle cx="26" cy="13.5" r="1.1" fill="currentColor" />
-    </PatternBand>
+    <PatternBand {...BAND_TILES.temple} vertical={vertical} hand={hand} className={className} style={style} />
   )
 }
 
@@ -646,19 +758,7 @@ export function TaraBorder({
   hand?: boolean
 }) {
   return (
-    <PatternBand w={30} h={24} vertical={vertical} hand={hand} className={className} style={style}>
-      <g stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
-        {[0, 45, 90, 135].map((a) => (
-          <path key={a} d="M15 4 V20" transform={`rotate(${a} 15 12)`} />
-        ))}
-      </g>
-      <circle cx="15" cy="12" r="2.6" fill="currentColor" />
-      {[0, 45, 90, 135, 180, 225, 270, 315].map((a) => (
-        <circle key={a} cx="15" cy="2.6" r="1.7" fill="currentColor" transform={`rotate(${a} 15 12)`} />
-      ))}
-      <circle cx="0" cy="12" r="1.3" fill="currentColor" />
-      <circle cx="30" cy="12" r="1.3" fill="currentColor" />
-    </PatternBand>
+    <PatternBand {...BAND_TILES.tara} vertical={vertical} hand={hand} className={className} style={style} />
   )
 }
 
@@ -679,12 +779,7 @@ export function LeafBorder({
   hand?: boolean
 }) {
   return (
-    <PatternBand w={16} h={15} vertical={vertical} hand={hand} className={className} style={style}>
-      <path d="M0 2.2 H16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-      <path d="M8 4.6 C 10.8 6.8 10.5 10.2 8 12.6 C 5.5 10.2 5.2 6.8 8 4.6 Z" fill="currentColor" />
-      <circle cx="0" cy="8.5" r="1.3" fill="currentColor" />
-      <circle cx="16" cy="8.5" r="1.3" fill="currentColor" />
-    </PatternBand>
+    <PatternBand {...BAND_TILES.leaf} vertical={vertical} hand={hand} className={className} style={style} />
   )
 }
 
@@ -701,9 +796,7 @@ export function DotBorder({
   hand?: boolean
 }) {
   return (
-    <PatternBand w={9} h={6} vertical={vertical} hand={hand} className={className} style={style}>
-      <circle cx="4.5" cy="3" r="1.6" fill="currentColor" />
-    </PatternBand>
+    <PatternBand {...BAND_TILES.dot} vertical={vertical} hand={hand} className={className} style={style} />
   )
 }
 
@@ -725,15 +818,7 @@ export function ChevronBorder({
   hand?: boolean
 }) {
   return (
-    <PatternBand w={26} h={20} vertical={vertical} hand={hand} className={className} style={style}>
-      <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M6.5 4 L13 12.5 L19.5 4" />
-        <path d="M9.5 4 L13 8.5 L16.5 4" opacity={0.7} />
-      </g>
-      <circle cx="13" cy="16.5" r="1.3" fill="currentColor" />
-      <circle cx="0" cy="8" r="1.5" fill="currentColor" />
-      <circle cx="26" cy="8" r="1.5" fill="currentColor" />
-    </PatternBand>
+    <PatternBand {...BAND_TILES.chevron} vertical={vertical} hand={hand} className={className} style={style} />
   )
 }
 
@@ -746,14 +831,8 @@ export function KuriBorder({ className, hand = false }: { className?: string; ha
   return (
     <svg className={cn('block h-6 w-full', className)} aria-hidden="true">
       <defs>
-        <pattern id={id} width="30" height="24" patternUnits="userSpaceOnUse">
-          <g fill="none" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M15 20 Q 10.5 13 15 4.5 Q 19.5 13 15 20 Z" />
-            <path d="M15 20 Q 8.5 18.5 6.5 12.5 M15 20 Q 21.5 18.5 23.5 12.5" />
-            <path d="M0 22.5 H30" />
-          </g>
-          <circle cx="0" cy="15" r="1.4" fill="currentColor" />
-          <circle cx="30" cy="15" r="1.4" fill="currentColor" />
+        <pattern id={id} width={BAND_TILES.kuri.w} height={BAND_TILES.kuri.h} patternUnits="userSpaceOnUse">
+          {BAND_TILES.kuri.tile}
         </pattern>
       </defs>
       <rect width="100%" height="100%" fill={`url(#${id})`} filter={handFilter(hand)} />
