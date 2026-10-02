@@ -306,6 +306,19 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
       .reduce((s, x) => s + (now.sub.get(`${l.category}|${x.subCategory}`)?.total ?? 0), 0)
     return Math.max(0, (now.cat.get(l.category) ?? 0) - claimed)
   }
+  /**
+   * Spend in a budgeted category under a sub-category with no line of its
+   * own — and no General line to take it in. Without a row it would count in
+   * the category's total yet show nowhere; it gets one, marked not budgeted.
+   */
+  const unlined = (category: string, ls: BudgetLine[]) => {
+    if (ls.some((l) => !l.subCategory)) return []
+    const lined = new Set(ls.map((l) => l.subCategory))
+    return [...now.sub.entries()]
+      .filter(([k]) => k.startsWith(`${category}|`) && !lined.has(k.slice(category.length + 1)))
+      .map(([k, v]) => ({ subCategory: k.slice(category.length + 1), total: v.total, prev: prev.sub.get(k)?.total ?? 0 }))
+      .sort((a, b) => b.total - a.total)
+  }
   const linePrev = (l: BudgetLine) =>
     l.subCategory ? (prev.sub.get(`${l.category}|${l.subCategory}`)?.total ?? 0) : (prev.cat.get(l.category) ?? 0)
 
@@ -451,6 +464,18 @@ function SeasonSpending({ year: y, isFinAdmin }: { year: number; isFinAdmin: boo
                           </tr>
                         )
                       })}
+                    {unlined(category, ls).map((u) => (
+                      <tr key={`unlined-${u.subCategory}`} className="border-b last:border-0">
+                        <td className="py-1.5 pr-2">
+                          {u.subCategory} <span className="text-xs text-muted-foreground">· not budgeted</span>
+                        </td>
+                        <td className="py-1.5 pr-2 text-right text-muted-foreground">{rupees(u.prev)}</td>
+                        <td className="py-1.5 pr-2 text-right text-muted-foreground">—</td>
+                        <td className="py-1.5 pr-2 text-right">{rupees(u.total)}</td>
+                        <td className="py-1.5 text-right font-medium text-destructive">−{rupees(u.total)}</td>
+                        {isFinAdmin && !readOnly && <td />}
+                      </tr>
+                    ))}
                   </tbody>
                 </table>
                 {isFinAdmin && !readOnly &&
