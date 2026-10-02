@@ -1,7 +1,7 @@
 import type { TimeTableEntry } from '@pujosamiti/shared'
 import { useQuery } from '@tanstack/react-query'
 import { Download, Link2 } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 import { BAND_TILES, HAND_FILTER_ID } from '@/components/Alpona'
 import { AlponaFrame, ArtSvg, Band, Divider, Face, type FrameSpec, Motif, frameGeometry } from '@/components/CardArt'
@@ -17,11 +17,11 @@ import {
   drawText,
   loadCardFonts,
   loadImage,
-  svgToImage,
   balancedLines,
   wrapText,
 } from '@/lib/cardCanvas'
 import { CULTURAL_EVENING } from '@/lib/culturalEvening'
+import { useCardPages } from '@/lib/useCardPages'
 import {
   CARD,
   CARD_DPI,
@@ -400,6 +400,8 @@ const PAGES: { key: PageKey; label: string; file: string }[] = [
   { key: 'back', label: 'Back', file: '4-back' },
 ]
 
+const PAGE_KEYS = PAGES.map((p) => p.key)
+
 const DRAW: Record<PageKey, (ctx: CanvasRenderingContext2D, input: DrawInput) => void> = {
   cover: drawCover,
   inside1: (ctx, input) => drawInside(ctx, input.inside[0], 1),
@@ -427,12 +429,12 @@ export default function InvitationCard() {
     queryFn: () => api<TimeTableEntry[]>(`/api/public/timetable?event=${CARD.eventId}`),
   })
   const [assets, setAssets] = useState<Assets | null>(null)
-  const [error, setError] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   useEffect(() => {
     let live = true
     Promise.all([loadCardFonts(), loadImage(CARD.logo), loadImage(CARD.photo)])
       .then(([, logo, photo]) => live && setAssets({ logo, photo }))
-      .catch((e: Error) => live && setError(e.message))
+      .catch((e: Error) => live && setLoadError(e.message))
     return () => {
       live = false
     }
@@ -446,48 +448,12 @@ export default function InvitationCard() {
     return { inside: planInside(ctx, inside), after }
   }, [assets, timetable.data])
 
-  const svgs = useRef<Partial<Record<PageKey, SVGSVGElement | null>>>({})
-  const refFor = (key: PageKey) => (el: SVGSVGElement | null) => {
-    svgs.current[key] = el
-  }
-
-  const render = useCallback(
-    async (key: PageKey, scale: number) => {
-      const svg = svgs.current[key]
-      if (!svg || !plan || !assets) throw new Error('The card is not ready yet')
-      const art = await svgToImage(svg, W, H, scale)
-      const canvas = document.createElement('canvas')
-      canvas.width = W * scale
-      canvas.height = H * scale
-      const ctx = canvas.getContext('2d')!
-      ctx.drawImage(art, 0, 0)
-      ctx.scale(scale, scale)
-      DRAW[key](ctx, { assets, ...plan })
-      return canvas
-    },
-    [plan, assets],
+  const draw = useMemo(
+    () => (assets && plan ? (key: PageKey, ctx: CanvasRenderingContext2D) => DRAW[key](ctx, { assets, ...plan }) : null),
+    [assets, plan],
   )
-
-  const [previews, setPreviews] = useState<Partial<Record<PageKey, string>>>({})
-  useEffect(() => {
-    if (!plan) return
-    let live = true
-    const urls: string[] = []
-    ;(async () => {
-      for (const p of PAGES) {
-        const canvas = await render(p.key, 1)
-        const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'))
-        if (!blob || !live) return
-        const url = URL.createObjectURL(blob)
-        urls.push(url)
-        setPreviews((prev) => ({ ...prev, [p.key]: url }))
-      }
-    })().catch((e: Error) => live && setError(e.message))
-    return () => {
-      live = false
-      urls.forEach((u) => URL.revokeObjectURL(u))
-    }
-  }, [plan, render])
+  const { refFor, render, previews, ready: drawn, error: drawError, setError } = useCardPages(PAGE_KEYS, { w: W, h: H }, draw)
+  const error = loadError ?? drawError
 
   const [showShare, setShowShare] = useState(false)
   const [scale, setScale] = useState(2)
@@ -516,7 +482,7 @@ export default function InvitationCard() {
       download(await canvasToPng(sheet, CARD_DPI * scale), fileName(s.file, scale, PAGES.length + SPREADS.indexOf(s) + 1))
     })
 
-  const ready = !!plan && Object.keys(previews).length === PAGES.length
+  const ready = drawn
 
   return (
     <div className="mx-auto flex w-full max-w-5xl flex-col gap-4">

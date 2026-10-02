@@ -202,3 +202,40 @@ export function download(blob: Blob, name: string) {
   a.remove()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+
+/**
+ * Print one card at its true size (`widthIn` × `heightIn` inches), centred on
+ * whatever paper the printer holds: a hidden frame with the image alone, the
+ * page's margins taken away, the browser's print dialog opened on it.
+ */
+export function printImage(blob: Blob, widthIn: number, heightIn: number) {
+  // a browser that never says printing is over (afterprint) leaves its frame: clear it now
+  document.querySelectorAll('iframe[data-card-print]').forEach((f) => f.remove())
+  const url = URL.createObjectURL(blob)
+  const frame = document.createElement('iframe')
+  frame.dataset.cardPrint = ''
+  frame.setAttribute('aria-hidden', 'true')
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden'
+  document.body.append(frame)
+  const doc = frame.contentDocument!
+  doc.open()
+  doc.write(
+    `<!doctype html><html><head><title>Print</title><style>@page{margin:0}html,body{margin:0;height:100%}` +
+      `body{display:flex;align-items:center;justify-content:center}` +
+      `img{display:block;width:${widthIn}in;height:${heightIn}in}</style></head><body><img src="${url}" alt=""></body></html>`,
+  )
+  doc.close()
+  const cleanup = () => {
+    frame.remove()
+    URL.revokeObjectURL(url)
+  }
+  const img = doc.querySelector('img')!
+  const go = () => {
+    const win = frame.contentWindow!
+    win.addEventListener('afterprint', () => setTimeout(cleanup, 0))
+    win.focus()
+    win.print()
+  }
+  if (img.complete) go()
+  else img.addEventListener('load', go)
+}

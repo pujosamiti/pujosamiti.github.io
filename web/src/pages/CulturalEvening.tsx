@@ -1,247 +1,240 @@
-import { Alpona, DotBorder, HandDrawn, KuriBorder, LataBorder, LeafBorder, TaraBorder, TempleBorder } from '@/components/Alpona'
-import { AlponaBand } from '@/components/AlponaBand'
+import { Download, Printer } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+
+import { BAND_TILES } from '@/components/Alpona'
+import { AlponaFrame, ArtSvg, Band, Divider, type FrameSpec, Motif } from '@/components/CardArt'
 import { Seo } from '@/components/Seo'
+import { Button } from '@/components/ui/button'
+import { WarliFigure } from '@/components/Warli'
+import { type TextStyle, balancedLines, canvasToPng, download, drawText, loadCardFonts, loadImage, printImage, wrapText } from '@/lib/cardCanvas'
 import { CULTURAL_EVENING } from '@/lib/culturalEvening'
-import { cn } from '@/lib/utils'
+import { CARD_DPI, CARD_H, CARD_W, INK } from '@/lib/invitationCard'
+import { useCardPages } from '@/lib/useCardPages'
+
+const W = CARD_W
+const H = CARD_H
+const CX = W / 2
 
 /**
- * The cultural evening's flyer, for everyone — no sign-in. Not a picture:
- * the flyer drawn as a floor alpona is, white rice-paste line-work on the
- * jaba red — a double frame with a kona in each corner and the lata down its
- * sides, Maa's face (from the samiti's own mark) in a chakra between two
- * dhak, and each evening in a double-lined card under its day's motif. Every
- * word is real text, sharp and readable on any phone; sizes follow the
- * flyer's own width (container units), so it keeps its proportions from a
- * phone to a desktop. A cultural admin shares the link from /cultural (Share
- * link); the share card comes from the prerendered HTML (scripts/prerender.mjs).
+ * The cultural evening's flyer, for everyone — no sign-in: a one-sided print
+ * card the size of the invitation's pages (1360 × 1800, 4.53 × 6 in at
+ * 300 dpi), drawn as a floor alpona is — white rice-paste line-work on the
+ * jaba red, the layered frame with a mandala in each corner, Maa (from Souvik
+ * Laha's photograph) in a chakra between two dhak, each evening in a card
+ * under its day's motif, Warli dancers hand in hand between two dhakis below.
+ * The art is SVG and the words canvas text (lib/cardCanvas.ts); it downloads
+ * as PNG at 1× or 2× (tagged 600 dpi, the same print size) and prints at its
+ * true size. Every word comes from lib/culturalEvening.ts. A cultural admin
+ * shares the link from /cultural (Share link); the share card comes from the
+ * prerendered HTML (scripts/prerender.mjs).
  */
+
+/** The frame: the invitation's, with smaller corner mandalas so the evenings have the width. */
+const FRAME: FrameSpec = { w: W, h: H, edge: 18, k: 1.5, dotK: 1.4, mandala: 200, mandalaGap: 16 }
+
+const L = {
+  inviteY: 132,
+  inviteLH: 40,
+  kuriY: 252,
+  chakra: { cy: 512, r: 230 },
+  greetingY: 832,
+  dividerY: 876,
+  headingY: [948, 1012],
+  cards: { top: 1044, h: 232, gap: 16, w: 556, colGap: 28 },
+  venueY: 1566,
+  timeY: 1610,
+  warliY: 1714,
+} as const
+
+const PHOTO_R = L.chakra.r * 0.58 - 5
+const cardX = (col: number) => CX + (col === 0 ? -L.cards.colGap / 2 - L.cards.w : L.cards.colGap / 2)
+const cardY = (row: number) => L.cards.top + row * (L.cards.h + L.cards.gap)
+
+/** An evening's card, as a panel inside a floor alpona: a leaf band round it, a tara block at each corner. */
+function CardFrame({ x, y, w, h }: { x: number; y: number; w: number; h: number }) {
+  const k = 1.3
+  const c = 24
+  const thick = BAND_TILES.leaf.h * k
+  return (
+    <g opacity={0.92}>
+      <Band tile="leaf" k={k} side="top" x={x + c} y={y} len={w - 2 * c} />
+      <Band tile="leaf" k={k} side="bottom" x={x + c} y={y + h - thick} len={w - 2 * c} />
+      <Band tile="leaf" k={k} side="left" x={x} y={y + c} len={h - 2 * c} />
+      <Band tile="leaf" k={k} side="right" x={x + w - thick} y={y + c} len={h - 2 * c} />
+      {[
+        [x, y],
+        [x + w - c, y],
+        [x, y + h - c],
+        [x + w - c, y + h - c],
+      ].map(([cx, cy]) => (
+        <Motif key={`${cx},${cy}`} name="taraKona" x={cx} y={cy} w={c} stroke={1.8} />
+      ))}
+    </g>
+  )
+}
+
+function FlyerArt({ svgRef }: { svgRef: (el: SVGSVGElement | null) => void }) {
+  const e = CULTURAL_EVENING
+  const { cy, r } = L.chakra
+  // the chain: dancers hand in hand, a dhaki at each end facing in
+  const chain = [-3, -2, -1, 0, 1, 2, 3]
+  return (
+    <ArtSvg w={W} h={H} svgRef={svgRef}>
+      <rect width={W} height={H} fill={INK.jaba} />
+      <g color={INK.white}>
+        <AlponaFrame {...FRAME} />
+        <Band tile="kuri" k={1} side="top" x={CX - 250} y={L.kuriY} len={500} opacity={0.8} />
+        <Motif name="chakra" x={CX - r} y={cy - r} w={2 * r} stroke={2.2} />
+        <Motif name="dhak" x={128} y={cy - 30} w={190} stroke={2.6} />
+        <Motif name="dhak" x={W - 128 - 190} y={cy - 30} w={190} stroke={2.6} mirror="x" />
+        <Divider cx={CX} y={L.dividerY} />
+        {e.evenings.map((ev, i) => {
+          const x = cardX(i % 2)
+          const y = cardY(Math.floor(i / 2))
+          return (
+            <g key={ev.day}>
+              <CardFrame x={x} y={y} w={L.cards.w} h={L.cards.h} />
+              <Motif name={ev.motif} x={x + L.cards.w / 2 - 22} y={y + 24} w={44} h={44} stroke={2} />
+            </g>
+          )
+        })}
+        {chain.map((n) => (
+          <WarliFigure key={n} pose="hold" woman={n % 2 === 0} x={CX + n * 50} y={L.warliY} scale={0.8} strokeWidth={3.4} hand />
+        ))}
+        <WarliFigure pose="dhaki" x={CX - 250} y={L.warliY} scale={0.8} strokeWidth={3.4} hand />
+        <WarliFigure pose="dhaki" x={CX + 250} y={L.warliY} scale={0.8} strokeWidth={3.4} flip hand />
+      </g>
+    </ArtSvg>
+  )
+}
+
+function drawFlyer(ctx: CanvasRenderingContext2D, photo: HTMLImageElement) {
+  const e = CULTURAL_EVENING
+  const white: TextStyle = { size: 26, weight: 500, family: 'sans', color: INK.white, align: 'center' }
+  const cream: TextStyle = { ...white, color: INK.shankha }
+
+  let y = L.inviteY
+  for (const line of balancedLines(ctx, e.invite, { ...cream, size: 30 }, 620)) {
+    drawText(ctx, line, CX, y, { ...cream, size: 30 })
+    y += L.inviteLH
+  }
+
+  // Maa, in the chakra's open centre
+  ctx.save()
+  ctx.beginPath()
+  ctx.arc(CX, L.chakra.cy, PHOTO_R, 0, Math.PI * 2)
+  ctx.clip()
+  ctx.drawImage(photo, CX - PHOTO_R, L.chakra.cy - PHOTO_R, PHOTO_R * 2, PHOTO_R * 2)
+  ctx.restore()
+
+  drawText(ctx, e.greetingBn, CX, L.greetingY, { size: 88, weight: 600, family: 'serif', color: INK.white, align: 'center' })
+  drawText(ctx, e.heading[0], CX, L.headingY[0], { size: 54, weight: 600, family: 'serif', color: INK.white, align: 'center', maxWidth: 1000 })
+  drawText(ctx, e.heading[1], CX, L.headingY[1], { size: 62, weight: 600, family: 'serif', color: INK.shankha, align: 'center' })
+
+  e.evenings.forEach((ev, i) => {
+    const x = cardX(i % 2) + L.cards.w / 2
+    const top = cardY(Math.floor(i / 2))
+    const inner = L.cards.w - 70
+    drawText(ctx, ev.day, x, top + 106, { size: 36, weight: 600, family: 'serif', color: INK.white, align: 'center', maxWidth: inner })
+    drawText(ctx, ev.date, x, top + 136, { ...cream, size: 22 })
+    // each item on its own line, a long one broken at its comma where it has one
+    const lines = ev.items.flatMap((item) => wrapText(ctx, item, { ...white, size: 24 }, inner))
+    let ly = top + 168
+    for (const line of lines) {
+      drawText(ctx, line, x, ly, { ...white, size: 24, maxWidth: inner })
+      ly += 28
+    }
+    if (ly - 28 > top + L.cards.h - 34) console.warn(`[flyer] ${ev.day}'s card overruns`)
+  })
+
+  drawText(ctx, `Venue: ${e.venue}`, CX, L.venueY, { ...white, size: 36, weight: 600 })
+  drawText(ctx, `Time: ${e.time}`, CX, L.timeY, { ...white, size: 36, weight: 600 })
+}
+
+const KEYS = ['flyer'] as const
+
 export function CulturalEvening() {
   const e = CULTURAL_EVENING
+  const [photo, setPhoto] = useState<HTMLImageElement | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  useEffect(() => {
+    let live = true
+    Promise.all([loadCardFonts(), loadImage(e.photo)])
+      .then(([, img]) => live && setPhoto(img))
+      .catch((err: Error) => live && setLoadError(err.message))
+    return () => {
+      live = false
+    }
+  }, [e.photo])
+
+  const draw = useMemo(() => (photo ? (_: 'flyer', ctx: CanvasRenderingContext2D) => drawFlyer(ctx, photo) : null), [photo])
+  const { refFor, render, previews, ready, error: drawError, setError } = useCardPages(KEYS, { w: W, h: H }, draw)
+  const error = loadError ?? drawError
+
+  const [scale, setScale] = useState(2)
+  const [busy, setBusy] = useState<'save' | 'print' | null>(null)
+  const run = async (what: 'save' | 'print', job: () => Promise<void>) => {
+    setBusy(what)
+    try {
+      await job()
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setBusy(null)
+    }
+  }
+  const save = () =>
+    run('save', async () => download(await canvasToPng(await render('flyer', scale), CARD_DPI * scale), `${e.file}${scale > 1 ? `-${scale}x` : ''}.png`))
+  // always at print resolution, whatever size is chosen for the download
+  const print = () => run('print', async () => printImage(await canvasToPng(await render('flyer', 2), CARD_DPI * 2), W / CARD_DPI, H / CARD_DPI))
+
+  const alt = `${e.greetingBn} — ${e.heading.join(' ')}. ${e.invite}. ${e.evenings
+    .map((ev) => `${ev.day}, ${ev.date}: ${ev.items.join('; ')}`)
+    .join('. ')}. Venue: ${e.venue}. Time: ${e.time}.`
+
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-4">
       {/* the share card: keep in step with the /cultural/flyer/01 entry in scripts/prerender.mjs */}
       <Seo title={e.title} bareTitle description={e.description} path={e.path} image={e.shareImage} noindex />
+      <h1 className="sr-only">{e.heading.join(' ')}</h1>
 
-      <article
-        aria-labelledby="flyer-title"
-        className="@container relative overflow-hidden bg-band text-band-foreground shadow-lg max-sm:-mx-4 sm:rounded-2xl"
-      >
-        <HandDrawn />
-        <Frame />
+      <figure className="flex flex-col gap-2">
+        {previews.flyer ? (
+          <img src={previews.flyer} alt={alt} width={W} height={H} className="h-auto w-full rounded-md shadow-lg max-sm:rounded-none" />
+        ) : (
+          <div className="aspect-[34/45] w-full animate-pulse rounded-md bg-band/80" aria-label="Drawing the flyer…" />
+        )}
+        <figcaption className="text-center text-xs text-muted-foreground">{e.photoCredit}</figcaption>
+      </figure>
 
-        <div className="relative flex flex-col items-center gap-[3.2cqw] px-[calc(58px+1.5cqw)] pb-[calc(56px+21cqw)] pt-[calc(56px+22cqw)] text-center @md:px-[calc(60px+4cqw)] @md:pb-[calc(56px+16cqw)] @md:pt-[calc(56px+16cqw)]">
-          <p className="max-w-[62cqw] text-[clamp(0.8rem,2.7cqw,1rem)] font-medium leading-snug text-band-foreground/90">
-            {e.invite}
-          </p>
-          <KuriBorder hand className="w-[70%] text-band-foreground/80" />
+      {error && <p className="text-sm font-medium text-jaba">{error}</p>}
 
-          {/* Maa, in the chakra, between the two dhak */}
-          <div className="flex w-full items-center justify-center gap-[1.5cqw]">
-            <Alpona hand name="dhak" className="w-[21cqw] shrink h-auto text-band-foreground/90" strokeWidth={1.4} />
-            <div className="relative aspect-square w-[42cqw] shrink-0">
-              <Alpona hand name="chakra" className="absolute inset-0 size-full text-band-foreground/85" strokeWidth={1.1} />
-              <img
-                src="/brand/durga-face-white.webp"
-                alt="Maa Durga"
-                width={380}
-                height={348}
-                className="absolute left-1/2 top-1/2 w-[54%] -translate-x-1/2 -translate-y-1/2"
-              />
-            </div>
-            <Alpona hand name="dhak" className="w-[21cqw] shrink h-auto -scale-x-100 text-band-foreground/90" strokeWidth={1.4} />
-          </div>
-
-          <p lang="bn" className="font-serif text-[clamp(2.1rem,11cqw,3.8rem)] font-semibold leading-none">
-            {e.greetingBn}
-          </p>
-          <Divider />
-          <h1 id="flyer-title" className="font-serif text-[clamp(1.35rem,6cqw,2.4rem)] font-semibold leading-tight @md:text-[clamp(1.35rem,5.2cqw,2.2rem)]">
-            {e.heading[0]}
-            <br />
-            <span className="text-shankha">{e.heading[1]}</span>
-          </h1>
-          <div aria-hidden="true" className="flex items-center gap-[3cqw] text-band-foreground/75">
-            <Alpona hand name="shiuli" className="h-[clamp(1.4rem,5cqw,2rem)] w-auto" />
-            <Alpona hand name="podmo" className="h-[clamp(1.6rem,6cqw,2.4rem)] w-auto" />
-            <Alpona hand name="shiuli" className="h-[clamp(1.4rem,5cqw,2rem)] w-auto" />
-          </div>
-
-          <div className="grid w-full gap-[5.5cqw] @md:grid-cols-2 @md:gap-[3.2cqw]">
-            {e.evenings.map((ev) => (
-              <section
-                key={ev.day}
-                aria-label={`${ev.day}, ${ev.date}`}
-                className="relative flex flex-col items-center gap-1.5 px-[calc(16px+4cqw)] py-[calc(16px+3cqw)] @md:px-[calc(16px+1.5cqw)] @md:py-[calc(16px+2cqw)]"
-              >
-                <CardFrame />
-                <Alpona hand
-                  name={ev.motif}
-                  className="h-[clamp(2rem,8cqw,2.6rem)] w-auto text-band-foreground/85 @md:h-[clamp(1.8rem,5cqw,2.4rem)]"
-                />
-                <h2 className="font-serif text-[clamp(1.15rem,5cqw,1.45rem)] font-semibold leading-tight @md:text-[clamp(1.05rem,3.2cqw,1.3rem)]">
-                  {ev.day}
-                </h2>
-                <p className="-mt-1 text-[clamp(0.85rem,3.6cqw,1rem)] font-medium text-shankha/90 @md:text-[clamp(0.8rem,2.4cqw,0.95rem)]">
-                  {ev.date}
-                </p>
-                <ul className="mt-1 flex flex-col items-center gap-1 text-[clamp(0.9rem,3.8cqw,1.05rem)] leading-snug @md:text-[clamp(0.85rem,2.5cqw,1rem)]">
-                  {ev.items.map((item, i) => (
-                    <li key={item} className="flex flex-col items-center gap-1">
-                      {i > 0 && <span aria-hidden="true" className="size-1 rounded-full bg-band-foreground/60" />}
-                      <span>{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-
-          {/* the evening's lamps, a shiuli between each */}
-          <div aria-hidden="true" className="flex items-end justify-center gap-[2.5cqw] text-band-foreground/85">
-            {['prodip', 'shiuli', 'prodip', 'shiuli', 'prodip'].map((m, i) => (
-              <Alpona hand
-                key={i}
-                name={m as 'prodip' | 'shiuli'}
-                className={cn(
-                  'w-auto',
-                  m === 'shiuli' ? 'h-[clamp(1.1rem,4cqw,1.6rem)] opacity-75' : i === 2 ? 'h-[clamp(2.2rem,9cqw,3.2rem)]' : 'h-[clamp(1.7rem,6.5cqw,2.4rem)]',
-                )}
-              />
-            ))}
-          </div>
-          <LataBorder hand className="text-band-foreground/75" />
-          {/* one line with room for it, venue over time on a phone */}
-          {/* between the lower rosettes: venue over time */}
-          <p className="flex max-w-[80cqw] flex-col items-center gap-y-0.5 text-[clamp(1rem,3.6cqw,1.25rem)] font-semibold leading-snug">
-            {/* a place name never splits across lines: "Aditi / Garden" */}
-            <span>Venue: {e.venue.replace(/ (?=\S+$)/, '\u00a0')}</span>
-            <span>Time: {e.time}</span>
-          </p>
+      <div className="flex flex-col items-center gap-3 pb-2">
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          <span className="text-sm font-medium">Size</span>
+          {[1, 2].map((s) => (
+            <Button key={s} size="sm" variant={scale === s ? 'default' : 'outline'} aria-pressed={scale === s} onClick={() => setScale(s)}>
+              {s === 1 ? `${W} × ${H}` : `${W * 2} × ${H * 2} (print)`}
+            </Button>
+          ))}
         </div>
-        <AlponaBand className="absolute inset-x-0 bottom-0 opacity-70" />
-      </article>
-    </div>
-  )
-}
+        <div className="flex flex-wrap justify-center gap-2">
+          <Button disabled={!ready || !!busy} onClick={() => void save()}>
+            <Download aria-hidden="true" /> {busy === 'save' ? 'Saving…' : 'Download PNG'}
+          </Button>
+          <Button variant="outline" disabled={!ready || !!busy} onClick={() => void print()}>
+            <Printer aria-hidden="true" /> {busy === 'print' ? 'Preparing…' : 'Print'}
+          </Button>
+        </div>
+        <p className="text-center text-xs text-muted-foreground">
+          One side, {(W / CARD_DPI).toFixed(2)} × {(H / CARD_DPI).toFixed(0)} in at {CARD_DPI} dpi — the size of the invitation card's pages.
+        </p>
+      </div>
 
-/**
- * The frame, in layers as round a Bengali alpona's field: a solid outer rule;
- * the temple band — triangles holding filled leaves, bindus between — down
- * every side, meeting in square corner blocks that each hold a tara; a line of
- * rice-paste dots inside it; then a solid quarter mandala grown out of each
- * inner corner, and a row of tara along the top and bottom between them where
- * there is room. The bands repeat at a fixed size, so the frame is measured in
- * pixels; the mandalas grow with the flyer.
- */
-function Frame() {
-  const band = 30 // TempleBorder's thickness
-  const edge = 12 // where the band starts
-  const inner = edge + band // its inner edge
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-band-foreground">
-      <div className="absolute inset-[6px] border-2 border-band-foreground/90 sm:rounded-xl" />
-      {/* the temple band, top and bottom pointing in, the sides likewise */}
-      <div className="absolute" style={{ left: inner, right: inner, top: edge }}>
-        <TempleBorder hand />
+      {/* the flyer's art, drawn here and painted onto the canvas */}
+      <div aria-hidden="true" className="pointer-events-none fixed -left-[10000px] top-0 h-0 w-0 overflow-hidden">
+        <FlyerArt svgRef={refFor('flyer')} />
       </div>
-      <div className="absolute" style={{ left: inner, right: inner, bottom: edge }}>
-        <TempleBorder hand className="-scale-y-100" />
-      </div>
-      <div className="absolute" style={{ top: inner, bottom: inner, left: edge }}>
-        <TempleBorder hand vertical className="-scale-x-100" />
-      </div>
-      <div className="absolute" style={{ top: inner, bottom: inner, right: edge }}>
-        <TempleBorder hand vertical />
-      </div>
-      {(
-        [
-          { left: edge, top: edge },
-          { right: edge, top: edge },
-          { left: edge, bottom: edge },
-          { right: edge, bottom: edge },
-        ] as const
-      ).map((at, i) => (
-        <Alpona hand key={i} name="taraKona" className="absolute" style={{ ...at, width: band, height: band }} strokeWidth={1.8} />
-      ))}
-      {/* the line of dots inside the band */}
-      <div className="absolute opacity-90" style={{ left: inner + 4, right: inner + 4, top: inner + 4 }}>
-        <DotBorder hand />
-      </div>
-      <div className="absolute opacity-90" style={{ left: inner + 4, right: inner + 4, bottom: inner + 4 }}>
-        <DotBorder hand />
-      </div>
-      <div className="absolute opacity-90" style={{ top: inner + 4, bottom: inner + 4, left: inner + 4 }}>
-        <DotBorder hand vertical />
-      </div>
-      <div className="absolute opacity-90" style={{ top: inner + 4, bottom: inner + 4, right: inner + 4 }}>
-        <DotBorder hand vertical />
-      </div>
-      {/* a solid quarter mandala out of each inner corner */}
-      {(
-        [
-          { cls: '', at: { left: inner + 12, top: inner + 12 } },
-          { cls: '-scale-x-100', at: { right: inner + 12, top: inner + 12 } },
-          { cls: '-scale-y-100', at: { left: inner + 12, bottom: inner + 12 } },
-          { cls: '-scale-100', at: { right: inner + 12, bottom: inner + 12 } },
-        ] as const
-      ).map(({ cls, at }, i) => (
-        <Alpona hand key={i} name="konaMandala" className={cn('absolute size-[24cqw]', cls)} style={at} strokeWidth={1.3} />
-      ))}
-      {/* a row of tara along the top and bottom, between the mandalas, where there is room */}
-      <div className="absolute hidden opacity-90 @md:block" style={{ left: 'calc(58px + 25cqw)', right: 'calc(58px + 25cqw)', top: inner + 18 }}>
-        <TaraBorder hand />
-      </div>
-      <div className="absolute hidden opacity-90 @md:block" style={{ left: 'calc(58px + 25cqw)', right: 'calc(58px + 25cqw)', bottom: inner + 18 }}>
-        <TaraBorder hand />
-      </div>
-    </div>
-  )
-}
-
-/**
- * An evening's card, bordered as a panel inside a floor alpona: a hand-drawn
- * rule hung with filled leaves pointing in, a bindu between each, down every
- * side, and a tara block in each corner.
- */
-function CardFrame() {
-  const corner = 18 // a little more than LeafBorder's 15 px, so the corner blocks close the band
-  return (
-    <div aria-hidden="true" className="pointer-events-none absolute inset-0 text-band-foreground/90">
-      <div className="absolute" style={{ left: corner, right: corner, top: 0 }}>
-        <LeafBorder hand />
-      </div>
-      <div className="absolute" style={{ left: corner, right: corner, bottom: 0 }}>
-        <LeafBorder hand className="-scale-y-100" />
-      </div>
-      <div className="absolute" style={{ top: corner, bottom: corner, left: 0 }}>
-        <LeafBorder hand vertical className="-scale-x-100" />
-      </div>
-      <div className="absolute" style={{ top: corner, bottom: corner, right: 0 }}>
-        <LeafBorder hand vertical />
-      </div>
-      {(
-        [
-          { left: 0, top: 0 },
-          { right: 0, top: 0 },
-          { left: 0, bottom: 0 },
-          { right: 0, bottom: 0 },
-        ] as const
-      ).map((at, i) => (
-        <Alpona hand key={i} name="taraKona" className="absolute" style={{ ...at, width: corner, height: corner }} strokeWidth={1.6} />
-      ))}
-    </div>
-  )
-}
-
-/** A line, a bindu, the kalka, a bindu, a line — white, for the red. */
-function Divider() {
-  return (
-    <div aria-hidden="true" className="flex w-full max-w-[64cqw] items-center gap-2 text-band-foreground/80">
-      <span className="h-px flex-1 bg-current opacity-60" />
-      <span className="size-1.5 rounded-full bg-current" />
-      <Alpona hand name="shatadal" className="h-[clamp(1.8rem,6cqw,2.4rem)] w-auto" />
-      <span className="size-1.5 rounded-full bg-current" />
-      <span className="h-px flex-1 bg-current opacity-60" />
     </div>
   )
 }

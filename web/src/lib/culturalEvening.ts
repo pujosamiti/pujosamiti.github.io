@@ -2,9 +2,10 @@ import type { AlponaName } from '@/components/Alpona'
 
 /**
  * The cultural evening's public page, /cultural/flyer/01 — the year's flyer
- * for an open audience, no sign-in, drawn in the site's own laal-paar and
- * alpona rather than shown as a picture, so it reads crisply on any phone. A
- * cultural admin shares its link from /cultural. Title, description and the
+ * for an open audience, no sign-in: a one-sided print card the size of the
+ * invitation's pages (1360 × 1800), drawn in the site's own laal-paar, alpona
+ * and Warli, to view, download and print. A cultural admin shares its link
+ * from /cultural. Title, description and the
  * share card here must stay in step with the /cultural/flyer/01 entry in
  * web/scripts/prerender.mjs: WhatsApp and Facebook read only that
  * prerendered HTML.
@@ -44,6 +45,13 @@ export const CULTURAL_EVENING = {
   ] satisfies { day: string; date: string; motif: AlponaName; items: string[] }[],
   venue: 'Amphitheatre, Aditi Garden',
   time: '6:30 pm onwards',
+
+  // ── The printed flyer ──────────────────────────────────────────────────
+  /** Maa in the chakra: Souvik Laha's photograph (Pexels licence), cropped square round the face. */
+  photo: '/cultural/durga-2026-flyer.webp',
+  photoCredit: 'Photograph of Maa: Souvik Laha · Pexels',
+  /** the PNG's name, before "-2x" and ".png" */
+  file: 'durga-puja-2026-cultural-evenings',
 } as const
 
 /** The address to share — served with its trailing slash, as Pages serves it. */

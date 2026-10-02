@@ -66,15 +66,19 @@ evening's flyer `/cultural/flyer/01` (`cultural-evenings-card-2026.webp`,
 1200 × 630, 88 KB — "Evening Itineraries" in the flyer's own alpona, drawn in
 HTML and photographed by a headless browser; public, no sign-in, noindex and
 out of the sitemap; a cultural admin shares it from /cultural → Share link).
-The page draws the flyer rather than showing it — all jaba red, white
-rice-paste alpona in a layered frame (a solid outer rule, the temple band with
-tara blocks at the corners, a line of dots, a solid quarter mandala in each
-corner), Maa's face from the samiti's mark in a chakra between two dhak, each
-evening in a card bordered by the leaf band, every line hand-drawn through
-the rice-paste filter (`hand` / `<HandDrawn />` in `components/Alpona.tsx`) —
-every word real text from
-`web/src/lib/culturalEvening.ts`, sized to the flyer's width (container
-units). A new year's flyer gets new file names. Keep share
+Since 2 Oct 2026 the page *is* a print card, one-sided, the size of the
+invitation card's pages (1360 × 1800, 4.53 × 6 in at 300 dpi), drawn the same
+way (`components/CardArt.tsx` art on a canvas, words as canvas text,
+`lib/useCardPages.ts`): all jaba red, white rice-paste alpona in the layered
+frame (outer rule, temple band with tara corner blocks, a line of dots, a
+quarter mandala in each corner), Maa (Souvik Laha's photograph, Pexels,
+`web/public/cultural/durga-2026-flyer.webp`) in a chakra between two dhak,
+each evening in a card bordered by the leaf band under its day's motif, Warli
+dancers hand in hand between two dhakis at the foot, every line through the
+rice-paste filter. At the bottom: Download PNG (1× or 2×, 600 dpi at 2×) and
+Print (the 2× image at its true size, centred on the paper). Every word comes
+from `web/src/lib/culturalEvening.ts`; the image's alt text carries all of it.
+A new year's flyer gets new file names. Keep share
 images under 100 KB: WhatsApp showed no preview for this one at 113 KB,
 though Facebook did. A replaced image gets a new file name, since WhatsApp
 caches previews by URL.
