@@ -208,11 +208,17 @@ function EventSection({
   initialCountFor?: string | null
 }) {
   const queryClient = useQueryClient()
-  const [adding, setAdding] = useState(false)
-  const [counting, setCounting] = useState(!!initialCountFor)
-  const [showResponses, setShowResponses] = useState(false)
-  const [showLink, setShowLink] = useState(false)
-  const [showGuests, setShowGuests] = useState(false)
+  // The heading's buttons work as tabs: one panel open at a time — opening
+  // another closes it, and its own button closes it again.
+  const [open, setOpen] = useState<Panel | null>(initialCountFor ? 'count' : null)
+  const toggle = (panel: Panel) => setOpen(open === panel ? null : panel)
+  const close = () => setOpen(null)
+  /** The open panel's button is filled, the rest outlined; with none open the headcount stays the lead. */
+  const tab = (panel: Panel, idle: 'default' | 'outline' | 'ghost' = 'outline') => ({
+    variant: open === panel ? ('default' as const) : idle,
+    'aria-pressed': open === panel,
+    onClick: () => toggle(panel),
+  })
   const kindLabel = menuKindLabel(event.kind)
   const isDurga = event.kind === 'durga-pujo'
   const publishedDays = days.filter((d) => d.isPublished)
@@ -232,28 +238,28 @@ function EventSection({
         <Badge variant="outline">{kindLabel}</Badge>
         <span className="ml-auto flex flex-wrap gap-2">
           {canRsvp && publishedDays.length > 0 && (
-            <Button size="sm" onClick={() => setCounting(!counting)}>
+            <Button size="sm" {...tab('count', open === null ? 'default' : 'outline')}>
               <Users />{' '}
-              {counting ? 'Hide headcount' : publishedDays.some((d) => d.myCount != null) ? 'Update headcount' : 'Give headcount'}
+              {open === 'count' ? 'Hide headcount' : publishedDays.some((d) => d.myCount != null) ? 'Update headcount' : 'Give headcount'}
             </Button>
           )}
           {isCore && days.length > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setShowResponses(!showResponses)}>
-              {showResponses ? 'Hide responses' : 'Responses'}
+            <Button size="sm" {...tab('responses')}>
+              {open === 'responses' ? 'Hide responses' : 'Responses'}
             </Button>
           )}
           {isDurga && showMoney && canRsvp && publishedDays.length > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}>
-              <Link2 /> {showLink ? 'Hide link' : 'Headcount link'}
+            <Button size="sm" {...tab('link')}>
+              <Link2 /> {open === 'link' ? 'Hide link' : 'Headcount link'}
             </Button>
           )}
           {isDurga && showMoney && canRsvp && publishedDays.length > 0 && (
-            <Button size="sm" variant="outline" onClick={() => setShowGuests(!showGuests)}>
-              <UserPlus /> {showGuests ? 'Hide guest bhog' : 'Guest bhog'}
+            <Button size="sm" {...tab('guests')}>
+              <UserPlus /> {open === 'guests' ? 'Hide guest bhog' : 'Guest bhog'}
             </Button>
           )}
           {canEdit && days.length === 0 && !isDurga && (
-            <Button size="sm" variant="outline" onClick={() => setAdding(!adding)}>
+            <Button size="sm" {...tab('adding')}>
               <Plus /> Add the {kindLabel.toLowerCase()}
             </Button>
           )}
@@ -264,26 +270,26 @@ function EventSection({
                   {seed.isPending ? <Loader2 className="animate-spin" /> : <CalendarCog />} Seed bhog days (Saptami → Dashami)
                 </Button>
               )}
-              <Button size="sm" variant="ghost" onClick={() => setAdding(!adding)}>
+              <Button size="sm" {...tab('adding', 'ghost')}>
                 <Plus /> Add a day
               </Button>
             </>
           )}
         </span>
       </div>
-      {counting && canRsvp && publishedDays.length > 0 && (
+      {open === 'count' && canRsvp && publishedDays.length > 0 && (
         <HeadcountForm
           event={event}
           season={season}
           me={me}
           initialPersonId={initialCountFor}
-          onClose={() => setCounting(false)}
+          onClose={close}
         />
       )}
-      {showLink && isDurga && showMoney && canRsvp && <LinkPanel event={event} onClose={() => setShowLink(false)} />}
-      {showGuests && isDurga && showMoney && canRsvp && <GuestPanel event={event} onClose={() => setShowGuests(false)} />}
-      {showResponses && isCore && days.length > 0 && (
-        <ResponsesTable event={event} days={days} showMoney={showMoney} onClose={() => setShowResponses(false)} />
+      {open === 'link' && isDurga && showMoney && canRsvp && <LinkPanel event={event} onClose={close} />}
+      {open === 'guests' && isDurga && showMoney && canRsvp && <GuestPanel event={event} onClose={close} />}
+      {open === 'responses' && isCore && days.length > 0 && (
+        <ResponsesTable event={event} days={days} showMoney={showMoney} onClose={close} />
       )}
       {isDurga && canEdit && days.length === 0 && (pujaDays?.days.length ?? 0) === 0 && (
         <p className="text-sm text-muted-foreground">
@@ -291,13 +297,13 @@ function EventSection({
         </p>
       )}
       {seed.error && <p className="text-sm text-destructive">{seed.error.message}</p>}
-      {adding && canEdit && (
+      {open === 'adding' && canEdit && (
         <DayForm
           season={season}
           eventId={event.id}
           defaults={{ label: kindLabel, date: event.startsOn }}
           showMoney={showMoney}
-          onClose={() => setAdding(false)}
+          onClose={close}
         />
       )}
       <div className="grid gap-4 sm:grid-cols-2">
@@ -308,6 +314,9 @@ function EventSection({
     </section>
   )
 }
+
+/** The panels an occasion's heading opens, one at a time. */
+type Panel = 'count' | 'responses' | 'link' | 'guests' | 'adding'
 
 function DayCard({
   season,
