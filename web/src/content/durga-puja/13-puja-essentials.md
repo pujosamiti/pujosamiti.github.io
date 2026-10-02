@@ -427,7 +427,7 @@ Every working fordo ends with a catch-all, and ours is no exception: the repeate
 | নবপত্রিকার পরিধেয় শাড়ী Nabopatrikar Paridhey saree | Saree for Kala Bou / Nabopatrika | 1 | Purohit |  |
 | নবপত্রিকা পূজার শাড়ী ৯ বা ১ Nabopatrika Pujar Saree | Saree for Kala Bou / Nabopatrika | 9 or 1 | Purohit |  |
 | মূলপূজার শাড়ী Mool Pujar Saree | Saree | 1 | Purohit |  |
-| লক্ষ্মী, সরস্বতী, চণ্ডী, কার্ত্তিকেয়, গণেশ, শিব, বিষ্নু, নবগ্রহ ৯ বা ১, ময়ূর, মূষিক, সিংহ, অসুর, মহিষ, বৃষ, সর্প, জয়া, বিজয়া, বিষ্নু, শিব ও রাম প্রত্যেকের বস্ত্র | Clothes for Lakshmi, Saraswati, Chandi, Kartik, Ganesh, Shiva, Vishnu, 9 planets or 1 single planet, peacock, mouse, lion, demon/asur, buffalo, ox, snake, Jaya, Bijoya, Vishnu, Shiv, Ram |  | Purohit |  |
+| লক্ষ্মী, সরস্বতী, চণ্ডী, কার্ত্তিকেয়, গণেশ, শিব, বিষ্ণু, নবগ্রহ ৯ বা ১, ময়ূর, মূষিক, সিংহ, অসুর, মহিষ, বৃষ, সর্প, জয়া, বিজয়া, বিষ্ণু, শিব ও রাম প্রত্যেকের বস্ত্র | Clothes for Lakshmi, Saraswati, Chandi, Kartik, Ganesh, Shiva, Vishnu, 9 planets or 1 single planet, peacock, mouse, lion, demon/asur, buffalo, ox, snake, Jaya, Bijoya, Vishnu, Shiv, Ram |  | Purohit |  |
 | অর্ঘ্য Arghya | libation of water |  | Purohit |  |
 | চন্দ্রমালা Chandramala | Bengali style puja dangler with circular sponge decorations |  | Purohit |  |
 | থালা ১ thala | plate (is it steel plate???) | 1 | Purohit |  |
