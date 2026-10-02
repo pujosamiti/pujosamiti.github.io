@@ -409,13 +409,14 @@ const DRAW: Record<PageKey, (ctx: CanvasRenderingContext2D, input: DrawInput) =>
 
 /** The printed sheets: the outside (back | cover) and the inside spread. */
 const SPREADS: { label: string; file: string; pages: [PageKey, PageKey] }[] = [
-  { label: 'Outside sheet (back · cover)', file: 'outside', pages: ['back', 'cover'] },
-  { label: 'Inside sheet (nirghanto)', file: 'inside', pages: ['inside1', 'inside2'] },
+  { label: 'Outside sheet (back · cover)', file: '5-outside', pages: ['back', 'cover'] },
+  { label: 'Inside sheet (nirghanto)', file: '6-inside', pages: ['inside1', 'inside2'] },
 ]
 
 /**
- * "durga-puja-2026-1-cover-2x.png"; a page's own file leads with its place in
- * the card ("01-…"), so a folder of them sorts in reading order.
+ * "01-durga-puja-2026-1-cover-2x.png": every file leads with its place — the
+ * four pages 01–04, then the two printed sheets 05–06 — so a folder of them
+ * sorts in reading order.
  */
 const fileName = (part: string, scale: number, order?: number) =>
   `${order ? `${String(order).padStart(2, '0')}-` : ''}durga-puja-${CARD.year}-${part}${scale > 1 ? `-${scale}x` : ''}.png`
@@ -512,7 +513,7 @@ export default function InvitationCard() {
       const ctx = sheet.getContext('2d')!
       ctx.drawImage(a, 0, 0)
       ctx.drawImage(b, a.width, 0)
-      download(await canvasToPng(sheet, CARD_DPI * scale), fileName(s.file, scale))
+      download(await canvasToPng(sheet, CARD_DPI * scale), fileName(s.file, scale, PAGES.length + SPREADS.indexOf(s) + 1))
     })
 
   const ready = !!plan && Object.keys(previews).length === PAGES.length

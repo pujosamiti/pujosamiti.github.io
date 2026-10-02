@@ -96,8 +96,8 @@ art (`components/CardArt.tsx`, `components/Warli.tsx`, Maa's face traced to a
 vector in `components/durgaFace.ts`) painted on a canvas with the words as
 canvas text (`lib/cardCanvas.ts`), and downloads as PNG at 1× or 2× (2720 ×
 3600, tagged 600 dpi so it prints at the same 4.53 × 6 in) — one page at a time
-(`01-…` to `04-…`) or as the two printed sheets, outside (back · cover) and
-inside. The timings are the public nirghanto's own, read live: a correction in
+(`01-…` to `04-…`) or as the two printed sheets, outside (back · cover) `05-…`
+and inside `06-…`. The timings are the public nirghanto's own, read live: a correction in
 the workspace reaches the card. The inside pages split the days where the two
 come out most even and shrink their type together until both fit. Each year:
 the photograph, the words in `CARD`/`INVITATION`, the year in the share
