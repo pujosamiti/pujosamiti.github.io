@@ -29,6 +29,7 @@ import { Uma } from '@/pages/Uma'
 // The invitation card carries its photograph, the traced face and a canvas
 // renderer that no other page needs — loaded only when it is opened.
 const InvitationCard = lazy(() => import('@/pages/InvitationCard'))
+const BhogCoupons = lazy(() => import('@/pages/BhogCoupons'))
 
 import { captureTokenFromUrl } from '@/lib/auth'
 
@@ -93,6 +94,14 @@ createRoot(document.getElementById('root')!).render(
               {/* The bhog headcount link (?c=<code>): no sign-in — the code is
                   the key. Outranks the members-only /bhog below. */}
               <Route path="bhog/count" element={<BhogCount />} />
+              <Route
+                path="bhog/coupons"
+                element={
+                  <Suspense fallback={<p className="text-sm text-muted-foreground">Loading…</p>}>
+                    <BhogCoupons />
+                  </Suspense>
+                }
+              />
               {/* public, unlike the rest of /cultural: the flyer shared on WhatsApp and Facebook */}
               <Route path="cultural/flyer/01" element={<CulturalEvening />} />
               <Route

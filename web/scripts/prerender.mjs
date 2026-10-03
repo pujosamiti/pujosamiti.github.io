@@ -209,6 +209,26 @@ ROUTES.push({
   noindex: true,
 })
 
+// ── The bhog coupons, /bhog/coupons ───────────────────────────────────────
+// For the print shop: A4 pages of 24 coupons, a colour for each bhog day,
+// drawn and turned into PDFs in the browser (web/src/lib/bhogCoupons.ts).
+// Its card: one coupon of each day fanned out in its colour beside the
+// page's name, 1200 × 630 WebP, 92 KB (under WhatsApp's ~100 KB), drawn by
+// scripts/bhog-coupons-share-card.mts. No sign-in; kept out of search and
+// the sitemap. Title, description and image match BHOG_COUPONS in that file.
+ROUTES.push({
+  path: '/bhog/coupons',
+  title: 'Durga Puja 2026 Bhog Coupons · Magarpatta City',
+  description:
+    'Bhog coupons for Durga Puja 2026, Saptami to Dashami — A4 pages of 24, a colour for each day, ready to download and print.',
+  image: `${ORIGIN}/bhog-coupons-card-2026.webp`,
+  imageWidth: 1200,
+  imageHeight: 630,
+  imageType: 'image/webp',
+  imageAlt: 'Magarpatta City Durga Puja 2026 bhog coupons — one coupon for each day, Saptami red, Ashtami blue, Ashtami Day 2 green, Nabami orange, Dashami purple, beside the words Bhog Coupons',
+  noindex: true,
+})
+
 // ── The cultural evening's flyer, /cultural/flyer/01 ─────────────────────
 // For an open audience, no sign-in: a cultural admin shares it on WhatsApp and
 // Facebook from /cultural. Its card is the print card's own art — Maa in the
