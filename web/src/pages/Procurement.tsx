@@ -7,7 +7,7 @@ import type {
 } from '@pujosamiti/shared'
 import { isCoreRole, PROCUREMENT_SLOTS, PUJA_TITHIS } from '@pujosamiti/shared'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { CalendarCog, Check, ChevronDown, ListChecks, Loader2, Minus, Pencil, Plus, Printer, Trash2, X } from 'lucide-react'
+import { CalendarCog, Check, ChevronDown, Download, Image as ImageIcon, ListChecks, Loader2, Minus, Pencil, Plus, Printer, Share2, Trash2, X } from 'lucide-react'
 import { Link } from 'react-router'
 import { useEffect, useMemo, useState } from 'react'
 
@@ -37,6 +37,8 @@ import {
   useProcurement,
 } from '@/lib/procurement'
 import { usePujaDays } from '@/lib/pujaDays'
+import { drawOrderSheet, loadOrderFonts, orderSheet, sheetFileName } from '@/lib/procurementOrderImage'
+import { download } from '@/lib/cardCanvas'
 import { useEvents } from '@/lib/tasks'
 
 const SLOT_LABEL: Record<ProcurementSlot, string> = { morning: 'Morning', evening: 'Evening' }
@@ -59,6 +61,7 @@ export function Procurement() {
   const [dayId, setDayId] = useState<string>('all')
   const [adding, setAdding] = useState(false)
   const [managingDays, setManagingDays] = useState(false)
+  const [showImages, setShowImages] = useState(false)
   // Print wants every accordion open; flip, print, flip back.
   const [printAll, setPrintAll] = useState(false)
   const onPrint = () => {
@@ -137,6 +140,9 @@ export function Procurement() {
           <Button size="sm" variant="outline" onClick={onPrint}>
             <Printer /> Print
           </Button>
+          <Button size="sm" variant={showImages ? 'default' : 'outline'} onClick={() => setShowImages(!showImages)} aria-pressed={showImages}>
+            <ImageIcon /> Order images
+          </Button>
           <SearchSelect
             options={years.map((y) => ({
               value: String(y),
@@ -180,6 +186,10 @@ export function Procurement() {
       </div>
 
       {managingDays && canEdit && year && <DayManager year={year} days={days} isAdmin={me.role === 'admin'} />}
+
+      {showImages && year && data && (
+        <OrderImages year={year} days={days} items={all} day={selectedDay} onClose={() => setShowImages(false)} />
+      )}
 
       {canEdit &&
         year &&
@@ -230,6 +240,113 @@ export function Procurement() {
         })
       )}
     </div>
+  )
+}
+
+/**
+ * Each category as an order image — the table the samiti sends the vendor and
+ * the volunteers on WhatsApp (lib/procurementOrderImage.ts): every delivery
+ * column, or only the day picked above. Download as PNG, or Share — on a
+ * phone that opens the share sheet, straight into a WhatsApp chat.
+ */
+function OrderImages({
+  year,
+  days,
+  items,
+  day,
+  onClose,
+}: {
+  year: number
+  days: ProcurementDay[]
+  items: ProcurementItemView[]
+  day: ProcurementDay | null
+  onClose: () => void
+}) {
+  const [fontsReady, setFontsReady] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  // a vendor's own delivery rule (the phoolwala's day-before 7 pm) dates columns from their puja days
+  const { data: pujaDays } = usePujaDays(year)
+  const pujaDates = useMemo(() => new Map((pujaDays?.days ?? []).map((p) => [p.id, p.date])), [pujaDays])
+  useEffect(() => {
+    let live = true
+    loadOrderFonts()
+      .then(() => live && setFontsReady(true))
+      .catch((e: Error) => live && setError(e.message))
+    return () => {
+      live = false
+    }
+  }, [])
+
+  const sheets = useMemo(() => {
+    if (!fontsReady) return []
+    const cats = [...new Set(items.filter((i) => i.isActive).map((i) => i.category))]
+    return cats.flatMap((cat) => {
+      const sheet = orderSheet(cat, items, days, year, day, pujaDates)
+      if (!sheet) return []
+      const canvas = drawOrderSheet(sheet)
+      return [{ sheet, canvas, url: canvas.toDataURL('image/png') }]
+    })
+  }, [fontsReady, items, days, year, day, pujaDates])
+
+  const blobOf = (canvas: HTMLCanvasElement) =>
+    new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not make the image'))), 'image/png'))
+  const save = async (s: (typeof sheets)[number]) => download(await blobOf(s.canvas), sheetFileName(s.sheet, year, day))
+  const share = async (s: (typeof sheets)[number]) => {
+    const file = new File([await blobOf(s.canvas)], sheetFileName(s.sheet, year, day), { type: 'image/png' })
+    if (navigator.canShare?.({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: `${s.sheet.category} · ${year}` })
+      } catch {
+        // closing the share sheet is not an error
+      }
+    } else download(file, file.name)
+  }
+  const canShareFiles = typeof navigator !== 'undefined' && !!navigator.canShare
+
+  return (
+    <Card className="print:hidden">
+      <CardHeader>
+        <div className="flex items-start justify-between gap-2">
+          <CardTitle className="flex items-center gap-2">
+            <ImageIcon className="size-5" /> Order images{day && <span className="text-muted-foreground"> · {day.label}</span>}
+          </CardTitle>
+          <Button size="icon" variant="ghost" className="-mr-2 -mt-2 shrink-0" onClick={onClose} aria-label="Close order images" title="Close">
+            <X />
+          </Button>
+        </div>
+        <CardDescription>
+          One image per category, in Hindi and Bengali, to send the vendor or the volunteers on WhatsApp.{' '}
+          {day ? `Only ${day.label} — pick “All days” above for every delivery.` : 'Every delivery day — pick a day above for that day alone.'}
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+        {!fontsReady && !error && <LogoSpinner small />}
+        {fontsReady && sheets.length === 0 && <p className="text-sm text-muted-foreground">Nothing to order{day ? ` for ${day.label}` : ''} yet.</p>}
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {sheets.map((s) => (
+            <figure key={s.sheet.category} className="flex flex-col gap-2 rounded-md border bg-background p-2">
+              <img src={s.url} alt={`${s.sheet.category} order, ${year}`} className="max-h-72 w-full rounded border object-contain object-top" />
+              <figcaption className="flex flex-col gap-2">
+                <span className="text-sm font-medium">
+                  {s.sheet.category} <span className="font-normal text-muted-foreground">· {s.sheet.rows.length} items</span>
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => void save(s)}>
+                    <Download /> Download
+                  </Button>
+                  {canShareFiles && (
+                    <Button size="sm" variant="durba" onClick={() => void share(s)}>
+                      <Share2 /> Share
+                    </Button>
+                  )}
+                </div>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
 
