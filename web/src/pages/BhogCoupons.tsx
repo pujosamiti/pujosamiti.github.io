@@ -29,18 +29,20 @@ import { download, loadCardFonts, loadImage } from '@/lib/cardCanvas'
  * The year's bhog coupons, /bhog/coupons — open to everyone, so the samiti
  * can send the link to the print shop. One card per bhog day: a preview of
  * its first page, and its coupons as an A4 PDF to download or print; or
- * every day in one PDF. 400 a day unless set otherwise, numbered from 1 (a
- * later top-up starts where the last run ended). See lib/bhogCoupons.ts.
+ * every day in one PDF. Each day prints its own count (400, Dashami 240 —
+ * see lib/bhogCoupons.ts), changeable on its card, numbered from 1 (a later
+ * top-up starts where the last run ended).
  */
 const LOGO = '/brand/pujo-samiti-logo-bw-transparent.png'
-const DEFAULT_COUNT = 400
+const MAX_COUNT = 5000
 
 const dayName = (d: CouponDay) => `${d.title}${d.badge ? ` ${d.badge}` : ''}`
-const fileName = (days: CouponDay[], start: number, count: number) => {
-  const part = days.length === 1 ? dayName(days[0]).toLowerCase().replace(/\s+/g, '-') : 'all-days'
-  const order = days.length === 1 ? `${String(COUPON_DAYS.indexOf(days[0]) + 1).padStart(2, '0')}-` : ''
+const fileName = (runs: { day: CouponDay; count: number }[], start: number) => {
+  const one = runs.length === 1 ? runs[0] : null
+  const part = one ? `${dayName(one.day).toLowerCase().replace(/\s+/g, '-')}-${one.count}` : 'all-days'
+  const order = one ? `${String(COUPON_DAYS.indexOf(one.day) + 1).padStart(2, '0')}-` : ''
   const range = start === 1 ? '' : `-from-${start}`
-  return `${order}bhog-coupons-${COUPON_YEAR}-${part}-${count}${range}.pdf`
+  return `${order}bhog-coupons-${COUPON_YEAR}-${part}${range}.pdf`
 }
 
 export default function BhogCoupons() {
@@ -61,25 +63,38 @@ export default function BhogCoupons() {
     }
   }, [])
 
-  const [countText, setCountText] = useState(String(DEFAULT_COUNT))
+  // each day's own count, as typed; it falls back to the day's default when empty or nonsense
+  const [countText, setCountText] = useState<Record<string, string>>(() =>
+    Object.fromEntries(COUPON_DAYS.map((d) => [d.prefix, String(d.defaultCount)])),
+  )
   const [startText, setStartText] = useState('1')
-  const count = Math.max(1, Math.min(5000, Math.floor(Number(countText)) || DEFAULT_COUNT))
   const start = Math.max(1, Math.floor(Number(startText)) || 1)
-  const pages = useMemo(() => pagesFor(start, count), [start, count])
-  const width = serialWidth(start, count)
+  const countOf = (d: CouponDay) => Math.max(1, Math.min(MAX_COUNT, Math.floor(Number(countText[d.prefix])) || d.defaultCount))
+  const counts = COUPON_DAYS.map(countOf)
+  const countKey = counts.join('|')
+  const plans = useMemo(
+    () =>
+      countKey.split('|').map((c) => {
+        const count = Number(c)
+        return { count, pages: pagesFor(start, count), width: serialWidth(start, count) }
+      }),
+    [countKey, start],
+  )
+  const totalPages = plans.reduce((s, p) => s + p.pages.length, 0)
 
   // a preview of each day's first page
   const previews = useMemo(() => {
     if (!images) return null
     const pxPerMm = 3.2
-    return COUPON_DAYS.map((day) => {
+    return COUPON_DAYS.map((day, i) => {
+      const { pages, width } = plans[i]
       const canvas = document.createElement('canvas')
       canvas.width = Math.round(PAGE.w * pxPerMm)
       canvas.height = Math.round(PAGE.h * pxPerMm)
       drawOnCanvas(canvas.getContext('2d')!, pageOps(day, pages[0], 1, pages.length, width), pxPerMm, images)
       return canvas.toDataURL('image/png')
     })
-  }, [images, pages, width])
+  }, [images, plans])
 
   const [showShare, setShowShare] = useState(false)
   const [busy, setBusy] = useState<string | null>(null)
@@ -87,14 +102,15 @@ export default function BhogCoupons() {
     if (!images) return
     setBusy(key + then)
     setError(null)
+    const runs = days.map((day) => ({ day, count: countOf(day) }))
     try {
-      const blob = await couponsPdf(days, start, count, images)
-      if (then === 'download') download(blob, fileName(days, start, count))
+      const blob = await couponsPdf(runs, start, images)
+      if (then === 'download') download(blob, fileName(runs, start))
       else {
         // the browser's own PDF viewer prints the pages at their true A4 size
         const url = URL.createObjectURL(blob)
         const win = window.open(url, '_blank')
-        if (!win) download(blob, fileName(days, start, count))
+        if (!win) download(blob, fileName(runs, start))
         setTimeout(() => URL.revokeObjectURL(url), 120_000)
       }
     } catch (e) {
@@ -138,31 +154,19 @@ export default function BhogCoupons() {
           </li>
           <li>Cut along the dashed white lines; the marks in the margin show every cut. Each coupon keeps a coloured frame.</li>
           <li>
-            {count} coupons a day = {pages.length} pages; each day's numbers start with its letter (
+            Each day's numbers start with its letter:{' '}
             {COUPON_DAYS.map((d, i) => (
               <span key={d.prefix} className="whitespace-nowrap">
-                {i > 0 && ', '}
-                {serialOf(d, 1, width)}
+                {i > 0 && ' · '}
+                {dayName(d)} {counts[i]} ({plans[i].pages.length} pages, {serialOf(d, start, plans[i].width)}–{serialOf(d, start + counts[i] - 1, plans[i].width)})
               </span>
             ))}
-            ).
+            .
           </li>
         </ul>
       </section>
 
       <div className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-sm font-medium">
-          Coupons per day
-          <input
-            type="number"
-            min={1}
-            max={5000}
-            inputMode="numeric"
-            className="h-9 w-28 rounded-md border bg-background px-2"
-            value={countText}
-            onChange={(e) => setCountText(e.target.value)}
-          />
-        </label>
         <label className="flex flex-col gap-1 text-sm font-medium">
           First number
           <input
@@ -176,7 +180,7 @@ export default function BhogCoupons() {
         </label>
         <Button disabled={!images || !!busy} onClick={() => void make('all', COUPON_DAYS, 'download')}>
           <Download aria-hidden="true" />
-          {busy === 'alldownload' ? 'Making the PDF…' : `Download all days (${pages.length * COUPON_DAYS.length} pages)`}
+          {busy === 'alldownload' ? 'Making the PDF…' : `Download all days (${totalPages} pages)`}
         </Button>
       </div>
 
@@ -202,9 +206,24 @@ export default function BhogCoupons() {
                 <span className="font-semibold">{dayName(day)} Bhog</span>
                 <span className="text-sm text-muted-foreground">· {day.dateLabel}</span>
               </div>
-              <p className="text-xs text-muted-foreground">
-                {pages.length} pages · {serialOf(day, start, width)} – {serialOf(day, start + count - 1, width)}
-              </p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <label className="flex items-center gap-1.5 font-medium text-foreground">
+                  Coupons
+                  <input
+                    type="number"
+                    min={1}
+                    max={MAX_COUNT}
+                    inputMode="numeric"
+                    aria-label={`${dayName(day)} coupons`}
+                    className="h-8 w-20 rounded-md border bg-background px-2 text-sm"
+                    value={countText[day.prefix]}
+                    onChange={(e) => setCountText((t) => ({ ...t, [day.prefix]: e.target.value }))}
+                  />
+                </label>
+                <span>
+                  {plans[i].pages.length} pages · {serialOf(day, start, plans[i].width)} – {serialOf(day, start + counts[i] - 1, plans[i].width)}
+                </span>
+              </div>
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" disabled={!images || !!busy} onClick={() => void make(day.prefix, [day], 'download')}>
                   <Download aria-hidden="true" />

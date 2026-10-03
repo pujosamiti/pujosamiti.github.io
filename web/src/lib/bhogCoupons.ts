@@ -43,18 +43,21 @@ export type CouponDay = {
   colour: string
   /** "Sat, 17 Oct 2026" */
   dateLabel: string
+  /** coupons printed for the day unless the page is told otherwise */
+  defaultCount: number
 }
 
 const INK = '#2B1A10'
 const INK_SOFT = '#6B5340'
 
 /** Each bhog day's look, by its name in the pujo calendar. */
-const LOOKS: { match: RegExp; title: string; badge: string | null; bn: string; prefix: string; colour: string }[] = [
-  { match: /^saptami$/i, title: 'Saptami', badge: null, bn: 'মহা সপ্তমী ভোগ', prefix: 'S', colour: '#C40039' }, // jaba
-  { match: /^ashtami$/i, title: 'Ashtami', badge: null, bn: 'মহা অষ্টমী ভোগ', prefix: 'A', colour: '#2A6493' }, // sharat
-  { match: /^ashtami.*2/i, title: 'Ashtami', badge: 'Day 2', bn: 'মহা অষ্টমী (অধিক দিবা)', prefix: 'A2', colour: '#17664F' }, // durba
-  { match: /^nabami$/i, title: 'Nabami', badge: null, bn: 'মহা নবমী ভোগ', prefix: 'N', colour: '#C2610C' }, // deep genda
-  { match: /^dashami$/i, title: 'Dashami', badge: null, bn: 'বিজয়া দশমী ভোগ', prefix: 'D', colour: '#6B2F8F' }, // aparajita, kept apart from the blue
+const LOOKS: { match: RegExp; title: string; badge: string | null; bn: string; prefix: string; colour: string; count: number }[] = [
+  { match: /^saptami$/i, title: 'Saptami', badge: null, bn: 'মহা সপ্তমী ভোগ', prefix: 'S', colour: '#C40039', count: 400 }, // jaba
+  { match: /^ashtami$/i, title: 'Ashtami', badge: null, bn: 'মহা অষ্টমী ভোগ', prefix: 'A', colour: '#2A6493', count: 400 }, // sharat
+  { match: /^ashtami.*2/i, title: 'Ashtami', badge: 'Day 2', bn: 'মহা অষ্টমী (অধিক দিবা)', prefix: 'A2', colour: '#17664F', count: 400 }, // durba
+  { match: /^nabami$/i, title: 'Nabami', badge: null, bn: 'মহা নবমী ভোগ', prefix: 'N', colour: '#C2610C', count: 400 }, // deep genda
+  // Dashami's bhog serves fewer: 240, ten full pages (the samiti's word, 3 Oct 2026)
+  { match: /^dashami$/i, title: 'Dashami', badge: null, bn: 'বিজয়া দশমী ভোগ', prefix: 'D', colour: '#6B2F8F', count: 240 }, // aparajita, kept apart from the blue
 ]
 
 /** "2026-10-17" → "Sat, 17 Oct 2026" (built by hand: en-IN puts a comma after the month) */
@@ -69,7 +72,9 @@ export const COUPON_DAYS: CouponDay[] = Object.entries(calendar.days as Record<s
   .sort(([a], [b]) => a.localeCompare(b))
   .flatMap(([date, label]) => {
     const look = LOOKS.find((l) => l.match.test(label.trim()))
-    return look ? [{ date, title: look.title, badge: look.badge, bn: look.bn, prefix: look.prefix, colour: look.colour, dateLabel: fmtDate(date) }] : []
+    return look
+      ? [{ date, title: look.title, badge: look.badge, bn: look.bn, prefix: look.prefix, colour: look.colour, dateLabel: fmtDate(date), defaultCount: look.count }]
+      : []
   })
 
 export const COUPON_YEAR = PUJO_YEAR
@@ -273,11 +278,11 @@ async function fontBase64(url: string) {
 }
 
 /**
- * The coupons as one PDF: every page of every day given, in order. Vector
- * throughout, the fonts embedded; the logo and each day's Bengali line are
- * embedded once and reused.
+ * The coupons as one PDF: every page of every day given, in order, each day
+ * with its own count. Vector throughout, the fonts embedded; the logo and
+ * each day's Bengali line are embedded once and reused.
  */
-export async function couponsPdf(days: CouponDay[], start: number, count: number, images: Images) {
+export async function couponsPdf(runs: { day: CouponDay; count: number }[], start: number, images: Images) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'mm', format: 'a4', orientation: 'portrait', compress: true })
   const [bold, medium] = await Promise.all([fontBase64('/fonts/HindSiliguri-Bold.ttf'), fontBase64('/fonts/HindSiliguri-Medium.ttf')])
@@ -285,12 +290,12 @@ export async function couponsPdf(days: CouponDay[], start: number, count: number
   doc.addFont('HindSiliguri-Bold.ttf', 'Hind', 'bold')
   doc.addFileToVFS('HindSiliguri-Medium.ttf', medium)
   doc.addFont('HindSiliguri-Medium.ttf', 'Hind', 'normal')
-  doc.setProperties({ title: `Bhog coupons ${COUPON_YEAR} — ${days.map((d) => d.title + (d.badge ? ` ${d.badge}` : '')).join(', ')}`, creator: 'pujosamiti.github.io' })
+  doc.setProperties({ title: `Bhog coupons ${COUPON_YEAR} — ${runs.map(({ day: d }) => d.title + (d.badge ? ` ${d.badge}` : '')).join(', ')}`, creator: 'pujosamiti.github.io' })
 
-  const width = serialWidth(start, count)
-  const pages = pagesFor(start, count)
   let firstPage = true
-  for (const day of days) {
+  for (const { day, count } of runs) {
+    const width = serialWidth(start, count)
+    const pages = pagesFor(start, count)
     for (const [i, serials] of pages.entries()) {
       if (!firstPage) doc.addPage('a4', 'portrait')
       firstPage = false
