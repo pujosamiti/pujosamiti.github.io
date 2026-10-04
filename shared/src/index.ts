@@ -921,6 +921,7 @@ export const EXPENSE_TAXONOMY: Record<string, string[]> = {
     'Daily Perishables',
     'Dashakarma',
     'Disposables',
+    'Grocery',
     'Pottery Items',
     'Printing',
     'Utensils',
