@@ -110,6 +110,24 @@ come out most even and shrink their type together until both fit. Each year:
 the photograph, the words in `CARD`/`INVITATION`, the year in the share
 image's name (and its prerender entry), then rerun the script.
 
+A fifth is the cultural evenings' **stage flex**, `/flex/01`
+(`flex-card-2026.webp`, 1200 × 630, 92 KB — the whole flex, square, in a white
+mount beside "Stage Flex 2026" on the jaba red in the alpona frame; public, no
+sign-in, noindex, out of the sitemap, shared from its own page → Share link).
+It is for the print shop: a 1600-px preview
+(`web/public/flex/thakur-dalan-flex-2026-preview.webp`) and the 16 × 16 ft
+print file, 8000 × 8000 px, which is too big for the site (the PNG is 57 MB),
+so it lives on Google Drive, shared with anyone who has the link, and the
+buttons download straight from Drive (`drive.usercontent.google.com/download?
+id=…&export=download&confirm=t`, which skips Drive's "too big to scan"
+notice) — the PNG by default, the JPG beside it, each file's Drive page as the
+fallback. Its words and the two Drive file ids live in `STAGE_FLEX` in
+`web/src/lib/stageFlex.ts`, matched by the `/flex/01` entry in
+`prerender.mjs`; the card is drawn by `npx tsx --tsconfig
+web/tsconfig.app.json scripts/flex-share-card.mts` from the preview. A new
+flex: new Drive files (new ids), a new preview and card name, the next number
+(`/flex/02`).
+
 ### Linking and markdown features
 
 Link siblings by filename — `[Mahalaya](04-mahalaya.md)` → `/durga-puja/

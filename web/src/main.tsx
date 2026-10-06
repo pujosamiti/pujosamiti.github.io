@@ -23,6 +23,7 @@ import { Procurement } from '@/pages/Procurement'
 import { ProcurementMaster } from '@/pages/ProcurementMaster'
 import { Profile } from '@/pages/Profile'
 import { Schedule } from '@/pages/Schedule'
+import { StageFlex } from '@/pages/StageFlex'
 import { Tasks } from '@/pages/Tasks'
 import { Uma } from '@/pages/Uma'
 
@@ -104,6 +105,8 @@ createRoot(document.getElementById('root')!).render(
               />
               {/* public, unlike the rest of /cultural: the flyer shared on WhatsApp and Facebook */}
               <Route path="cultural/flyer/01" element={<CulturalEvening />} />
+              {/* public too: the stage flex's print file, for the print shop */}
+              <Route path="flex/01" element={<StageFlex />} />
               <Route
                 path="invitation"
                 element={

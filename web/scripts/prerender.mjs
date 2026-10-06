@@ -270,6 +270,27 @@ ROUTES.push({
   noindex: true,
 })
 
+// ── The stage flex, /flex/01 ──────────────────────────────────────────────
+// The cultural evenings' 16 × 16 ft backdrop, for the print shop: a preview
+// and the 8000 × 8000 print file (PNG by default, or JPG) from Google Drive.
+// Its card: the whole flex beside "Stage Flex 2026" on the jaba red in the
+// alpona frame, 1200 × 630 WebP, 92 KB (under WhatsApp's ~100 KB), drawn by
+// scripts/flex-share-card.mts. No sign-in; kept out of search and the sitemap
+// like the flyer. Title and description match STAGE_FLEX in
+// web/src/lib/stageFlex.ts — keep the two in step.
+ROUTES.push({
+  path: '/flex/01',
+  title: 'Durga Puja 2026 Stage Flex · Magarpatta City',
+  description:
+    'The 16 × 16 ft stage backdrop for the Magarpatta City Durga Puja 2026 cultural evenings — a Bengali thakur dalan, three arches and alpona in the courtyard. Download the 8000 × 8000 print file, PNG or JPG.',
+  image: `${ORIGIN}/flex-card-2026.webp`,
+  imageWidth: 1200,
+  imageHeight: 630,
+  imageType: 'image/webp',
+  imageAlt: 'Stage Flex 2026 — the whole backdrop, a white Bengali thakur dalan with three arches, Durga Puja 2026, Magarpatta City, Pune on its band, alpona in the courtyard — beside the words The 16 × 16 ft backdrop, 8000 × 8000 px, PNG and JPG, on red with a white alpona frame',
+  noindex: true,
+})
+
 // ── The Durga Puja book: one route per markdown chapter ─────────────────────
 // Frontmatter drives the tags: title (+suffix), oneLiner → description,
 // image → og:image (bare filenames resolve to /bookdurgapuja/<name>).
